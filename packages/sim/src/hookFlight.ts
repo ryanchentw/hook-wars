@@ -1,7 +1,6 @@
 import { TUNING } from './config';
 import { along, dot, normalize, reflect, sub, sweepCircle } from './geometry';
-import type { Arena, GameState, Hook, PlayerId, Vec2 } from './types';
-import { isAlive } from './world';
+import type { Arena, GameState, Hook, Player, PlayerId, Vec2 } from './types';
 
 /** Caps bounces in one step so a hook wedged in a corner cannot loop forever. */
 const MAX_BOUNCES_PER_STEP = 8;
@@ -17,8 +16,8 @@ export type Flight = {
 
 type Surface = { readonly t: number; readonly normal: Vec2 };
 
-function wallHit(arena: Arena, p: Vec2, dir: Vec2): Surface | null {
-  const m = TUNING.hookRadius;
+/** `m` is the hook radius: the centre turns back that far from each wall. */
+function wallHit(arena: Arena, p: Vec2, dir: Vec2, m: number): Surface | null {
   const walls: (Surface | null)[] = [
     dir.x < 0 ? { t: (m - p.x) / dir.x, normal: { x: 1, y: 0 } } : null,
     dir.x > 0 ? { t: (arena.width - m - p.x) / dir.x, normal: { x: -1, y: 0 } } : null,
@@ -28,11 +27,11 @@ function wallHit(arena: Arena, p: Vec2, dir: Vec2): Surface | null {
   return nearest(walls.map((w) => (w ? { ...w, t: Math.max(0, w.t) } : null)));
 }
 
-function buoyHit(arena: Arena, p: Vec2, dir: Vec2, maxT: number): Surface | null {
+function buoyHit(arena: Arena, p: Vec2, dir: Vec2, maxT: number, hookRadius: number): Surface | null {
   const { pos: center, radius } = arena.buoy;
   // A hook just reflected off the buoy sits on its surface; only an approaching hook can hit it.
   if (dot(dir, sub(p, center)) >= 0) return null;
-  const t = sweepCircle(p, dir, maxT, center, radius + TUNING.hookRadius);
+  const t = sweepCircle(p, dir, maxT, center, radius + hookRadius);
   return t === null ? null : { t, normal: normalize(sub(along(p, dir, t), center)) };
 }
 
@@ -40,16 +39,19 @@ function nearest<T extends { readonly t: number }>(items: readonly (T | null)[])
   return items.reduce<T | null>((best, item) => (item && (!best || item.t < best.t) ? item : best), null);
 }
 
-function firstSurface(arena: Arena, p: Vec2, dir: Vec2, maxT: number): Surface | null {
-  const hit = nearest([wallHit(arena, p, dir), buoyHit(arena, p, dir, maxT)]);
+function firstSurface(arena: Arena, p: Vec2, dir: Vec2, maxT: number, hookRadius: number): Surface | null {
+  const hit = nearest([wallHit(arena, p, dir, hookRadius), buoyHit(arena, p, dir, maxT, hookRadius)]);
   return hit && hit.t <= maxT ? hit : null;
 }
 
-function firstPlayer(state: GameState, owner: PlayerId, p: Vec2, dir: Vec2, maxT: number) {
-  const reach = TUNING.playerRadius + TUNING.hookRadius;
+/** Only a player standing or grappling can be latched; a dragged player already rides a hook. */
+const hookable = (p: Player): boolean => p.status.kind === 'alive' || p.status.kind === 'grappling';
+
+function firstPlayer(state: GameState, hook: Hook, p: Vec2, dir: Vec2, maxT: number) {
+  const reach = TUNING.playerRadius + hook.stats.radius;
   return nearest(
     state.players
-      .filter((q) => q.id !== owner && isAlive(q))
+      .filter((q) => q.id !== hook.ownerId && hookable(q))
       .map((q) => {
         const t = sweepCircle(p, dir, maxT, q.pos, reach);
         return t === null ? null : { t, id: q.id };
@@ -62,8 +64,8 @@ export function fly(state: GameState, hook: Hook, remaining: number, travel: num
   let flight: Flight = { pos: hook.pos, dir: hook.dir, remaining, path: hook.path, bounces: [], hit: null };
   let left = Math.min(travel, remaining);
   for (let i = 0; i <= MAX_BOUNCES_PER_STEP && left > 0; i++) {
-    const surface = firstSurface(state.arena, flight.pos, flight.dir, left);
-    const target = firstPlayer(state, hook.ownerId, flight.pos, flight.dir, surface ? surface.t : left);
+    const surface = firstSurface(state.arena, flight.pos, flight.dir, left, hook.stats.radius);
+    const target = firstPlayer(state, hook, flight.pos, flight.dir, surface ? surface.t : left);
     if (target) {
       return { ...flight, pos: along(flight.pos, flight.dir, target.t), remaining: flight.remaining - target.t, hit: target.id };
     }

@@ -1,5 +1,5 @@
 import { createMatch, step, TICK_DT } from '../index';
-import type { GameEvent, GameState, Player, PlayerId, PlayerInput, TeamId, Vec2 } from '../index';
+import type { GameEvent, GameState, Player, PlayerId, PlayerInput, Purchase, TeamId, Vec2 } from '../index';
 
 export const pid = (id: string): PlayerId => id as PlayerId;
 
@@ -36,11 +36,25 @@ export function steer(id: string, x: number, y: number): PlayerInput {
   return { kind: 'steer', playerId: pid(id), dir: at(x, y) };
 }
 
+export function buy(id: string, purchase: Purchase): PlayerInput {
+  return { kind: 'buy', playerId: pid(id), purchase };
+}
+
+export function grapple(id: string, target: Vec2): PlayerInput {
+  return { kind: 'grapple', playerId: pid(id), target };
+}
+
+/** Gives the player a grapple that is ready to use. */
+export function armed(state: GameState, id: string): GameState {
+  const p = player(state, id);
+  return withPlayer(state, id, { items: { ...p.items, grapple: { kind: 'owned', readyAt: 0 } } });
+}
+
 export function toward(target: Vec2) {
   return { kind: 'toward', target } as const;
 }
 
-export type Trace ={ readonly state: GameState; readonly events: readonly GameEvent[] };
+export type Trace = { readonly state: GameState; readonly events: readonly GameEvent[] };
 
 /** Steps `ticks` times, sending `first` on the first step only, and collects every event. */
 export function run(

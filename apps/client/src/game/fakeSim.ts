@@ -20,6 +20,11 @@ export function fakePlayer(overrides: Partial<Player> & Pick<Player, 'id'>): Pla
     meleeReadyAt: 0,
     kills: 0,
     deaths: 0,
+    assists: 0,
+    gold: 150,
+    upgrades: { damage: 0, range: 0, speed: 0, size: 0 },
+    items: { grapple: { kind: 'unowned' } },
+    recentDamage: [],
     ...overrides,
   };
 }
@@ -31,10 +36,12 @@ export function fakeState(overrides: Partial<GameState> = {}): GameState {
     arena: DEFAULT_ARENA,
     players: [fakePlayer({ id: HUMAN }), fakePlayer({ id: BOT, team: 'east', isBot: true })],
     hooks: [],
+    grapples: [],
     score: { west: 0, east: 0 },
     killTarget: 5,
     phase: { kind: 'playing' },
     nextHookSeq: 0,
+    nextGrappleSeq: 0,
     events: [],
     ...overrides,
   };

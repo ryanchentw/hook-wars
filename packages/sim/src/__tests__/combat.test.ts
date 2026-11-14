@@ -25,6 +25,22 @@ describe('melee', () => {
     expect(ofKind(second.events, 'melee')).toHaveLength(4);
   });
 
+  it('reaches exactly meleeRange', () => {
+    const edge = withPlayer(brawl(), 'e', { pos: at(880, 335 + TUNING.meleeRange) });
+    expect(ofKind(step(edge, [], TICK_DT).events, 'melee')).toHaveLength(2);
+    const beyond = withPlayer(brawl(), 'e', { pos: at(880, 335 + TUNING.meleeRange + 1) });
+    expect(ofKind(step(beyond, [], TICK_DT).events, 'melee')).toEqual([]);
+  });
+
+  it('a player whose own hook is out cannot swing, but can still be struck', () => {
+    const thrown = step(brawl(), [{ kind: 'hook', playerId: pid('w'), target: at(880, 1300) }], TICK_DT);
+    expect(thrown.hooks).toHaveLength(1);
+    expect(ofKind(thrown.events, 'melee')).toEqual([{ kind: 'melee', attackerId: 'e', targetId: 'w', damage: TUNING.meleeDamage, at: player(thrown, 'w').pos }]);
+    const back = runUntil(thrown, (s) => s.hooks.length === 0, 120);
+    const swings = ofKind(run(back.state, 30).events, 'melee').filter((m) => m.attackerId === 'w');
+    expect(swings.length).toBeGreaterThan(0);
+  });
+
   it('does not reach across the canal', () => {
     const far = withPlayer(brawl(), 'e', { pos: at(1434, 335) });
     expect(ofKind(run(far, 30).events, 'melee')).toEqual([]);
@@ -32,7 +48,9 @@ describe('melee', () => {
 
   it('a kill credits the killer and their team, and the victim respawns at spawn after the delay', () => {
     const killed = step(brawl(50, 100), [], TICK_DT);
-    expect(ofKind(killed.events, 'kill')).toEqual([{ kind: 'kill', killerId: 'w', victimId: 'e', at: at(950, 335) }]);
+    expect(ofKind(killed.events, 'kill')).toEqual([
+      { kind: 'kill', killerId: 'w', victimId: 'e', assistIds: [], at: player(killed, 'e').pos },
+    ]);
     expect(player(killed, 'w').kills).toBe(1);
     expect(player(killed, 'e')).toMatchObject({ deaths: 1, status: { kind: 'dead', respawnAt: TUNING.respawnDelay } });
     expect(killed.score).toEqual({ west: 1, east: 0 });

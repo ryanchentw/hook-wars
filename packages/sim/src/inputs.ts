@@ -1,8 +1,9 @@
 import { clampToDock, dockAt } from './arena';
-import { TUNING } from './config';
 import { normalize, sub } from './geometry';
+import { castGrapple } from './grapple';
 import { IDLE, steerIntent } from './intent';
-import type { GameEvent, GameState, HookId, MoveIntent, Player, PlayerInput, Vec2 } from './types';
+import { buy, hookStats } from './shop';
+import type { GameEvent, GameState, HookId, MoveIntent, Player, PlayerInput, Purchase, Vec2 } from './types';
 import { findPlayer, isAlive, ownsHook, updatePlayer, type Outcome } from './world';
 
 function castHook(state: GameState, player: Player, target: Vec2, t: number): Outcome {
@@ -10,6 +11,7 @@ function castHook(state: GameState, player: Player, target: Vec2, t: number): Ou
   if (t < player.hookReadyAt || ownsHook(state, player.id)) return none;
   if (target.x === player.pos.x && target.y === player.pos.y) return none;
   const dir = normalize(sub(target, player.pos));
+  const stats = hookStats(player);
   const id = `h${state.nextHookSeq}` as HookId;
   const cast: GameEvent = { kind: 'hookCast', hookId: id, ownerId: player.id };
   const withHook: GameState = {
@@ -23,7 +25,8 @@ function castHook(state: GameState, player: Player, target: Vec2, t: number): Ou
         pos: player.pos,
         dir,
         path: [player.pos],
-        phase: { kind: 'extending', remaining: TUNING.hookRange },
+        phase: { kind: 'extending', remaining: stats.range },
+        stats,
       },
     ],
   };
@@ -35,6 +38,11 @@ function castHook(state: GameState, player: Player, target: Vec2, t: number): Ou
 
 function setMove(state: GameState, player: Player, move: MoveIntent): Outcome {
   return { state: updatePlayer(state, player.id, (p) => ({ ...p, move })), events: [] };
+}
+
+function purchase(state: GameState, player: Player, wanted: Purchase, t: number): Outcome {
+  const { player: next, event } = buy(player, wanted, t);
+  return event ? { state: updatePlayer(state, player.id, () => next), events: [event] } : { state, events: [] };
 }
 
 function applyInput(state: GameState, input: PlayerInput, t: number): Outcome {
@@ -53,6 +61,10 @@ function applyInput(state: GameState, input: PlayerInput, t: number): Outcome {
     }
     case 'hook':
       return isAlive(player) ? castHook(state, player, input.target, t) : none;
+    case 'buy':
+      return purchase(state, player, input.purchase, t);
+    case 'grapple':
+      return castGrapple(state, player, input.target, t);
   }
 }
 

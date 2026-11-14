@@ -3,7 +3,7 @@ import { DEFAULT_ARENA, step, TICK_DT, TUNING } from '../index';
 import type { GameState, Vec2 } from '../index';
 import { at, match, pid, player, run, runUntil, withPlayer } from './helpers';
 
-const BODY = TUNING.playerRadius * 2;
+const BODY = TUNING.bodySpacing;
 const gap = (a: Vec2, b: Vec2): number => Math.hypot(a.x - b.x, a.y - b.y);
 
 function pair(w: Vec2, e: Vec2): GameState {
@@ -22,8 +22,9 @@ describe('body separation', () => {
 
   it('overlapping players are pushed apart evenly along the line between them', () => {
     const after = step(pair(at(500, 500), at(520, 500)), [], TICK_DT);
-    expect(player(after, 'w').pos).toEqual(at(476, 500));
-    expect(player(after, 'e').pos).toEqual(at(544, 500));
+    const share = (BODY - 20) / 2;
+    expect(player(after, 'w').pos).toEqual(at(500 - share, 500));
+    expect(player(after, 'e').pos).toEqual(at(520 + share, 500));
   });
 
   it('players already a body apart are left alone', () => {

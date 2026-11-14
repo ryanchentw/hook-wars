@@ -102,6 +102,10 @@ function burstOf(event: GameEvent): Burst | null {
     case 'hookCast':
     case 'respawn':
     case 'matchEnd':
+    case 'purchase':
+    case 'grappleCast':
+    case 'grappleLand':
+    case 'grappleArrive':
       return null;
   }
 }

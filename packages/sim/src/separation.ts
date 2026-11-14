@@ -4,10 +4,10 @@ import { add, distance, scale, sub } from './geometry';
 import type { Arena, Player } from './types';
 import type { Stage } from './world';
 
-const BODY = TUNING.playerRadius * 2;
+const BODY = TUNING.bodySpacing;
 
 const solid = (p: Player): boolean => p.status.kind !== 'dead';
-/** A dragged player rides its hook, so only a free player gives way. */
+/** A dragged or grappling player is carried by a line, so only a free player gives way. */
 const yields = (p: Player): boolean => p.status.kind === 'alive';
 
 function nudge(arena: Arena, p: Player, by: { readonly x: number; readonly y: number }): Player {

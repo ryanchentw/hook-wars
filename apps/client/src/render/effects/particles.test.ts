@@ -15,7 +15,7 @@ describe('burstFor', () => {
     expect(kinds(hit(350))).toEqual(['blood']);
     expect(kinds({ kind: 'hookBounce', hookId, at })).toEqual(['spark']);
     expect(kinds({ kind: 'melee', attackerId: a, targetId: b, damage: 110, at })).toEqual(['dust']);
-    expect(kinds({ kind: 'kill', killerId: a, victimId: b, at })).toEqual(['wisp']);
+    expect(kinds({ kind: 'kill', killerId: a, victimId: b, assistIds: [], at })).toEqual(['wisp']);
   });
 
   it('draws no blood for a harmless hook on an ally, and nothing for bookkeeping events', () => {
@@ -32,7 +32,7 @@ describe('burstFor', () => {
       hit(350),
       { kind: 'hookBounce', hookId, at },
       { kind: 'melee', attackerId: a, targetId: b, damage: 110, at },
-      { kind: 'kill', killerId: a, victimId: b, at },
+      { kind: 'kill', killerId: a, victimId: b, assistIds: [], at },
     ];
     events.forEach((e) => expect(burstFor(e, random).length).toBeLessThanOrEqual(20));
   });

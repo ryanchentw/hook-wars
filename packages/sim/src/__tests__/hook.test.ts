@@ -79,7 +79,7 @@ describe('hook', () => {
     expect(e.pos.x).toBeLessThan(back.arena.canal.x0);
     expect(insideWalkable(back, e.pos)).toBe(true);
     const w = player(back, 'w');
-    expect(Math.hypot(e.pos.x - w.pos.x, e.pos.y - w.pos.y)).toBeLessThanOrEqual(TUNING.playerRadius * 2 + 1e-6);
+    expect(Math.hypot(e.pos.x - w.pos.x, e.pos.y - w.pos.y)).toBeLessThanOrEqual(TUNING.bodySpacing + 1e-6);
   });
 
   it('drags an ally without damage', () => {

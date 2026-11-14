@@ -13,6 +13,7 @@ function hook(overrides: Partial<Hook>): Hook {
     dir: { x: 1, y: 0 },
     path: [{ x: 0, y: 0 }],
     phase: { kind: 'extending', remaining: 1000 },
+    stats: { damage: 350, range: 1300, speed: 1100, retractSpeed: 1300, radius: 26 },
     ...overrides,
   };
 }

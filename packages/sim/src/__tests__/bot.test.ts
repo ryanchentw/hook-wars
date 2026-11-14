@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { botThink, createBotBrain, createMatch, step, TICK_DT, TUNING } from '../index';
 import type { BotBrain, GameState, PlayerId, PlayerInput, TeamId } from '../index';
-import { at, pid, withPlayer } from './helpers';
+import { armed, at, pid, player, withPlayer } from './helpers';
 
 function botMatch(perTeam: number, killTarget: number): GameState {
   const teams: TeamId[] = ['west', 'east'];
@@ -99,6 +99,66 @@ describe('botThink', () => {
       .flat()
       .filter((i) => i.kind === 'hook');
     expect(throws).toEqual([]);
+  });
+});
+
+describe('bot shopping', () => {
+  const buys = (s: GameState, seed = 1) =>
+    botThink(s, pid('west0'), createBotBrain(seed)).inputs.filter((i) => i.kind === 'buy');
+
+  it('buys the grapple first, and saves for it before any upgrade', () => {
+    expect(buys(withPlayer(duel(), 'west0', { gold: 1000 }))).toEqual([
+      { kind: 'buy', playerId: 'west0', purchase: { kind: 'item', id: 'grapple' } },
+    ]);
+    expect(buys(withPlayer(duel(), 'west0', { gold: 149 }))).toEqual([]);
+  });
+
+  it('then buys a random upgrade it can afford', () => {
+    const rich = withPlayer(armed(duel(), 'west0'), 'west0', { gold: 1000 });
+    const picks = Array.from({ length: 30 }, (_, seed) => buys(rich, seed)).flat();
+    expect(picks).toHaveLength(30);
+    const ids = new Set(picks.map((b) => (b.kind === 'buy' && b.purchase.kind === 'upgrade' ? b.purchase.id : 'other')));
+    expect(ids.has('other')).toBe(false);
+    expect(ids.size).toBeGreaterThan(1);
+    expect(buys(withPlayer(armed(duel(), 'west0'), 'west0', { gold: 199 }))).toEqual([]);
+  });
+
+  it('skips upgrades it has maxed', () => {
+    const maxedButSize = { damage: 4, range: 4, speed: 4, size: 0 };
+    const s = withPlayer(armed(duel(), 'west0'), 'west0', { gold: 1000, upgrades: maxedButSize });
+    expect(buys(s)).toEqual([{ kind: 'buy', playerId: 'west0', purchase: { kind: 'upgrade', id: 'size' } }]);
+  });
+});
+
+describe('bot grapple', () => {
+  const stranded = () => withPlayer(armed(duel(), 'west0'), 'west0', { pos: at(1600, 675) });
+  const grapples = (s: GameState) => botThink(s, pid('west0'), createBotBrain(1)).inputs.filter((i) => i.kind === 'grapple');
+
+  it('grapples home from the enemy dock when no enemy is close', () => {
+    const s = withPlayer(stranded(), 'east0', { pos: at(2300, 1250) });
+    const [g] = grapples(s);
+    expect(g?.kind === 'grapple' && g.target.x < s.arena.canal.x0).toBe(true);
+    const home = step(s, botThink(s, pid('west0'), createBotBrain(1)).inputs, TICK_DT);
+    expect(player(home, 'west0').status.kind).toBe('grappling');
+  });
+
+  it('stays to fight an enemy within chase range, and stays put without a ready grapple', () => {
+    expect(grapples(withPlayer(stranded(), 'east0', { pos: at(1700, 675) }))).toEqual([]);
+    const cooling = withPlayer(stranded(), 'west0', { items: { grapple: { kind: 'owned', readyAt: 9 } } });
+    expect(grapples(withPlayer(cooling, 'east0', { pos: at(2300, 1250) }))).toEqual([]);
+    expect(grapples(withPlayer(duel(), 'east0', { pos: at(2300, 1250) }))).toEqual([]);
+  });
+});
+
+describe('bot throw reach', () => {
+  it('throws further once it has bought range', () => {
+    const far = withPlayer(duel(), 'east0', { pos: at(420 + TUNING.hookRange, 335) });
+    const throws = (s: GameState) =>
+      Array.from({ length: 20 }, (_, seed) => botThink(s, pid('west0'), createBotBrain(seed)).inputs)
+        .flat()
+        .filter((i) => i.kind === 'hook');
+    expect(throws(far)).toEqual([]);
+    expect(throws(withPlayer(far, 'west0', { upgrades: { damage: 0, range: 1, speed: 0, size: 0 } })).length).toBeGreaterThan(0);
   });
 });
 

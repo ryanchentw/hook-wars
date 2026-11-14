@@ -95,7 +95,7 @@ describe('triggersFor', () => {
   it('ignores events about other players', () => {
     const events: readonly GameEvent[] = [
       { kind: 'hookCast', hookId, ownerId: them },
-      { kind: 'kill', killerId: them, victimId: 'x' as PlayerId, at },
+      { kind: 'kill', killerId: them, victimId: 'x' as PlayerId, assistIds: [], at },
     ];
     expect(triggersFor(me, events)).toEqual([]);
   });

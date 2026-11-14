@@ -1,13 +1,19 @@
 import { TEAMS } from './arena';
 import { TUNING } from './config';
+import { assistsOn, logDamage, reward, type KillRecord } from './economy';
 import { distance } from './geometry';
+import { endGrapple } from './grapple';
 import { interrupt } from './intent';
 import type { GameEvent, GameState, Player, PlayerId, TeamId } from './types';
-import type { Stage } from './world';
+import { ownsHook, type Stage } from './world';
 
 type Blow = { readonly attacker: Player; readonly target: Player };
 
-const hittable = (p: Player): boolean => p.status.kind === 'alive' || p.status.kind === 'dragged';
+const hittable = (p: Player): boolean => p.status.kind !== 'dead';
+
+/** Melee is a swing of the hook, so it needs the hook in hand and the owner on their feet. */
+const canSwing = (state: GameState, p: Player, t: number): boolean =>
+  p.status.kind === 'alive' && t >= p.meleeReadyAt && !ownsHook(state, p.id);
 
 function chooseTarget(state: GameState, attacker: Player): Player | null {
   return state.players
@@ -22,15 +28,20 @@ function chooseTarget(state: GameState, attacker: Player): Player | null {
 /** Every swing is chosen from the same snapshot, so adjacent enemies trade blows simultaneously. */
 export const resolveMelee: Stage = (state, { t }) => {
   const blows = state.players
-    .filter((p) => p.status.kind === 'alive' && t >= p.meleeReadyAt)
+    .filter((p) => canSwing(state, p, t))
     .flatMap((attacker): Blow[] => {
       const target = chooseTarget(state, attacker);
       return target ? [{ attacker, target }] : [];
     });
   const players = state.players.map((p) => {
-    const taken = blows.filter((b) => b.target.id === p.id).length * TUNING.meleeDamage;
+    const from = blows.filter((b) => b.target.id === p.id).map((b) => b.attacker.id);
+    const struck = from.reduce((acc, id) => logDamage(acc, id, t), p);
     const swung = blows.some((b) => b.attacker.id === p.id);
-    return { ...p, hp: p.hp - taken, meleeReadyAt: swung ? t + TUNING.meleeInterval : p.meleeReadyAt };
+    return {
+      ...struck,
+      hp: p.hp - from.length * TUNING.meleeDamage,
+      meleeReadyAt: swung ? t + TUNING.meleeInterval : p.meleeReadyAt,
+    };
   });
   const events: GameEvent[] = blows.map(({ attacker, target }) => ({
     kind: 'melee',
@@ -58,21 +69,21 @@ function die(p: Player, t: number): Player {
     status: { kind: 'dead', respawnAt: t + TUNING.respawnDelay },
     move: interrupt(p.move),
     deaths: p.deaths + 1,
+    recentDamage: [],
   };
 }
 
 export const resolveDeaths: Stage = (state, { t, events: stepEvents }) => {
   const victims = state.players.filter((p) => p.status.kind !== 'dead' && p.hp <= 0);
-  const kills = victims.flatMap((v) => {
-    const killerId = killerOf(stepEvents, v.id);
-    return killerId ? [{ killerId, victim: v }] : [];
+  const kills = victims.flatMap((victim): KillRecord[] => {
+    const killerId = killerOf(stepEvents, victim.id);
+    return killerId ? [{ killerId, victim, assistIds: assistsOn(victim, killerId) }] : [];
   });
   const victimIds = new Set(victims.map((v) => v.id));
   const killerTeam = (id: PlayerId): TeamId | undefined => state.players.find((p) => p.id === id)?.team;
   const players = state.players.map((p) => {
-    const credited = kills.filter((k) => k.killerId === p.id).length;
-    const scored = credited === 0 ? p : { ...p, kills: p.kills + credited };
-    return victimIds.has(p.id) ? die(scored, t) : scored;
+    const rewarded = reward(p, kills);
+    return victimIds.has(p.id) ? die(rewarded, t) : rewarded;
   });
   const score = TEAMS.reduce(
     (acc, team) => ({ ...acc, [team]: acc[team] + kills.filter((k) => killerTeam(k.killerId) === team).length }),
@@ -83,13 +94,15 @@ export const resolveDeaths: Stage = (state, { t, events: stepEvents }) => {
       ? { ...h, phase: { kind: 'retracting' as const, cargo: null } }
       : h,
   );
-  const events: GameEvent[] = kills.map(({ killerId, victim }) => ({
+  const events: GameEvent[] = kills.map(({ killerId, victim, assistIds }) => ({
     kind: 'kill',
     killerId,
     victimId: victim.id,
+    assistIds,
     at: victim.pos,
   }));
-  return { state: { ...state, players, score, hooks }, events };
+  const settled = victims.reduce<GameState>((s, v) => endGrapple(s, v.id, t), { ...state, players, score, hooks });
+  return { state: settled, events };
 };
 
 /** A simultaneous tie at or past the target keeps the match going until one team leads. */

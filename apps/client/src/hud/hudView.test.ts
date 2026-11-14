@@ -19,7 +19,7 @@ describe('deriveHud', () => {
 
   it('flags a hook in flight and a respawn countdown', () => {
     const dead = [fakePlayer({ id: HUMAN, status: { kind: 'dead', respawnAt: 12 } }), fakePlayer({ id: BOT, team: 'east' })];
-    const hooks = [{ id: 'h' as HookId, ownerId: HUMAN, pos: { x: 0, y: 0 }, dir: { x: 1, y: 0 }, path: [], phase: { kind: 'retracting' as const, cargo: null } }];
+    const hooks = [{ id: 'h' as HookId, ownerId: HUMAN, pos: { x: 0, y: 0 }, dir: { x: 1, y: 0 }, path: [], phase: { kind: 'retracting' as const, cargo: null }, stats: { damage: 350, range: 1300, speed: 1100, retractSpeed: 1300, radius: 26 } }];
     const view = deriveHud(fakeState({ time: 10, players: dead, hooks }), HUMAN, []);
     expect(view.local?.hookInFlight).toBe(true);
     expect(view.local?.respawnIn).toBeCloseTo(2);
@@ -36,7 +36,7 @@ describe('deriveHud', () => {
 describe('appendKills', () => {
   it('puts the newest kill first and keeps the feed short', () => {
     const killState = (tick: number) =>
-      fakeState({ tick, players, events: [{ kind: 'kill', killerId: HUMAN, victimId: BOT, at: { x: 0, y: 0 } }] });
+      fakeState({ tick, players, events: [{ kind: 'kill', killerId: HUMAN, victimId: BOT, assistIds: [], at: { x: 0, y: 0 } }] });
     let feed = appendKills([], killState(1));
     for (let t = 2; t <= 10; t += 1) feed = appendKills(feed, killState(t));
     expect(feed).toHaveLength(KILL_FEED_SIZE);

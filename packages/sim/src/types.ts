@@ -4,10 +4,26 @@ export type TeamId = 'west' | 'east';
 
 export type PlayerId = string & { readonly __brand: 'PlayerId' };
 export type HookId = string & { readonly __brand: 'HookId' };
+export type GrappleId = string & { readonly __brand: 'GrappleId' };
+
+export type UpgradeId = 'damage' | 'range' | 'speed' | 'size';
+export type ItemId = 'grapple';
+/** `readyAt` is the sim time at which an owned item may be used again. */
+export type ItemState = { readonly kind: 'unowned' } | { readonly kind: 'owned'; readonly readyAt: number };
+export type Purchase = { readonly kind: 'upgrade'; readonly id: UpgradeId } | { readonly kind: 'item'; readonly id: ItemId };
+
+export type HookStats = {
+  readonly damage: number;
+  readonly range: number;
+  readonly speed: number;
+  readonly retractSpeed: number;
+  readonly radius: number;
+};
 
 export type PlayerStatus =
   | { readonly kind: 'alive' }
   | { readonly kind: 'dragged'; readonly hookId: HookId }
+  | { readonly kind: 'grappling'; readonly grappleId: GrappleId }
   | { readonly kind: 'dead'; readonly respawnAt: number };
 
 export type MoveIntent =
@@ -34,6 +50,14 @@ export type Player = {
   readonly meleeReadyAt: number;
   readonly kills: number;
   readonly deaths: number;
+  readonly assists: number;
+  /** Always an integer. */
+  readonly gold: number;
+  /** Levels bought, starting at 0. */
+  readonly upgrades: Readonly<Record<UpgradeId, number>>;
+  readonly items: Readonly<Record<ItemId, ItemState>>;
+  /** The latest damage from each enemy inside the assist window. Emptied on death. */
+  readonly recentDamage: readonly { readonly from: PlayerId; readonly at: number }[];
 };
 
 export type HookPhase =
@@ -49,6 +73,21 @@ export type Hook = {
   /** Cast origin followed by every bounce point, so the chain can be drawn as a polyline. */
   readonly path: readonly Vec2[];
   readonly phase: HookPhase;
+  /** The owner's stats when the hook was cast, so a purchase mid-flight changes nothing in the air. */
+  readonly stats: HookStats;
+};
+
+/** The head flies to the anchor, then hauls its owner there in a straight line. */
+export type GrapplePhase = { readonly kind: 'flying' } | { readonly kind: 'pulling' };
+
+export type Grapple = {
+  readonly id: GrappleId;
+  readonly ownerId: PlayerId;
+  /** Where the head is. */
+  readonly pos: Vec2;
+  /** A walkable dock point; where the owner ends up. */
+  readonly anchor: Vec2;
+  readonly phase: GrapplePhase;
 };
 
 export type Rect = {
@@ -91,7 +130,18 @@ export type GameEvent =
       readonly damage: number;
       readonly at: Vec2;
     }
-  | { readonly kind: 'kill'; readonly killerId: PlayerId; readonly victimId: PlayerId; readonly at: Vec2 }
+  | {
+      readonly kind: 'kill';
+      readonly killerId: PlayerId;
+      readonly victimId: PlayerId;
+      /** Every other enemy of the victim who damaged them inside the assist window. */
+      readonly assistIds: readonly PlayerId[];
+      readonly at: Vec2;
+    }
+  | { readonly kind: 'purchase'; readonly playerId: PlayerId; readonly purchase: Purchase; readonly cost: number }
+  | { readonly kind: 'grappleCast'; readonly grappleId: GrappleId; readonly ownerId: PlayerId }
+  | { readonly kind: 'grappleLand'; readonly grappleId: GrappleId; readonly at: Vec2 }
+  | { readonly kind: 'grappleArrive'; readonly playerId: PlayerId; readonly at: Vec2 }
   | { readonly kind: 'respawn'; readonly playerId: PlayerId }
   | { readonly kind: 'matchEnd'; readonly winner: TeamId };
 
@@ -102,10 +152,12 @@ export type GameState = {
   readonly arena: Arena;
   readonly players: readonly Player[];
   readonly hooks: readonly Hook[];
+  readonly grapples: readonly Grapple[];
   readonly score: Readonly<Record<TeamId, number>>;
   readonly killTarget: number;
   readonly phase: MatchPhase;
   readonly nextHookSeq: number;
+  readonly nextGrappleSeq: number;
   /** Events produced by the step that returned this state. Replaced, not accumulated. */
   readonly events: readonly GameEvent[];
 };
@@ -116,7 +168,11 @@ export type PlayerInput =
   /** Held movement keys. Accepted in any status; the sim normalizes `dir`, and a zero or non-finite one means stop. */
   | { readonly kind: 'steer'; readonly playerId: PlayerId; readonly dir: Vec2 }
   /** `target` is the aim point. The hook flies from the player towards it. */
-  | { readonly kind: 'hook'; readonly playerId: PlayerId; readonly target: Vec2 };
+  | { readonly kind: 'hook'; readonly playerId: PlayerId; readonly target: Vec2 }
+  /** Accepted in any status, dead included. An unaffordable or unavailable purchase is ignored. */
+  | { readonly kind: 'buy'; readonly playerId: PlayerId; readonly purchase: Purchase }
+  /** `target` is the aim point. The anchor lands toward it, at most `GRAPPLE.range` away, on the nearest dock. */
+  | { readonly kind: 'grapple'; readonly playerId: PlayerId; readonly target: Vec2 };
 
 export type MatchPlayerConfig = {
   readonly id: PlayerId;
@@ -129,6 +185,8 @@ export type MatchConfig = {
   readonly players: readonly MatchPlayerConfig[];
   readonly killTarget: number;
   readonly arena?: Arena;
+  /** Defaults to `ECONOMY.startingGold`. */
+  readonly startingGold?: number;
 };
 
 /** Opaque seeded-RNG state. Advance it with `nextRandom`. */

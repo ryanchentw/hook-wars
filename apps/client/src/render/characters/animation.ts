@@ -77,6 +77,10 @@ export function triggersFor(playerId: PlayerId, events: readonly GameEvent[]): r
       case 'kill':
       case 'respawn':
       case 'matchEnd':
+      case 'purchase':
+      case 'grappleCast':
+      case 'grappleLand':
+      case 'grappleArrive':
         return [];
     }
   });

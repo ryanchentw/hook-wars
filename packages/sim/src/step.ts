@@ -1,4 +1,6 @@
 import { checkWin, resolveDeaths, resolveMelee } from './combat';
+import { settleEconomy } from './economy';
+import { advanceGrapples } from './grapple';
 import { advanceHooks } from './hooks';
 import { applyInputs } from './inputs';
 import { movePlayers, respawnPlayers } from './movement';
@@ -7,9 +9,11 @@ import type { GameEvent, GameState, PlayerInput } from './types';
 import type { Outcome, Stage } from './world';
 
 const STAGES: readonly Stage[] = [
+  settleEconomy,
   respawnPlayers,
   movePlayers,
   advanceHooks,
+  advanceGrapples,
   separatePlayers,
   resolveMelee,
   resolveDeaths,
