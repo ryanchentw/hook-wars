@@ -28,7 +28,6 @@ export const COLORS = {
   blood: 0x6b0f0f,
   dust: 0x6f675c,
   wisp: 0x4f9c8e,
-  moveMarker: 0xd9cdb4,
 } as const;
 
 export type TeamPalette = {
@@ -64,7 +63,6 @@ export const SIZES = {
   wallHeight: 4,
   buoyBob: 0.12,
   buoyTilt: 0.05,
-  moveMarkerRadius: 0.5,
 } as const;
 
 export const CAMERA = {

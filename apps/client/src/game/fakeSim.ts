@@ -13,7 +13,7 @@ export function fakePlayer(overrides: Partial<Player> & Pick<Player, 'id'>): Pla
     spawnIndex: 0,
     pos: { x: 0, y: 0 },
     facing: 0,
-    moveTarget: null,
+    move: { kind: 'idle' },
     hp: 1500,
     status: { kind: 'alive' },
     hookReadyAt: 0,

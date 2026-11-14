@@ -140,3 +140,73 @@ describe('session pause', () => {
     expect(human).toEqual([[], ['stop']]);
   });
 });
+
+describe('session steering', () => {
+  const NORTH = { x: 0, y: -1 };
+  const EAST = { x: 1, y: 0 };
+  const steers = (sim: ReturnType<typeof setup>['sim']) =>
+    sim.stepped.map((batch) => batch.flatMap((i) => (i.playerId === HUMAN && i.kind === 'steer' ? [i.dir] : [])));
+
+  it('sends nothing while no direction is held', () => {
+    const { sim, session } = setup();
+    session.advance(TICK_DT * 2);
+    expect(steers(sim)).toEqual([[], []]);
+  });
+
+  it('sends a held direction once, not every tick', () => {
+    const { sim, session } = setup();
+    session.setSteer(NORTH);
+    session.advance(TICK_DT * 3);
+    expect(steers(sim)).toEqual([[NORTH], [], []]);
+  });
+
+  it('sends a change of direction, and the release', () => {
+    const { sim, session } = setup();
+    session.setSteer(NORTH);
+    session.advance(TICK_DT);
+    session.setSteer(EAST);
+    session.advance(TICK_DT);
+    session.setSteer({ x: 0, y: 0 });
+    session.advance(TICK_DT);
+    expect(steers(sim)).toEqual([[NORTH], [EAST], [{ x: 0, y: 0 }]]);
+  });
+
+  it('sends only the last direction when it changes several times between ticks', () => {
+    const { sim, session } = setup();
+    session.setSteer(NORTH);
+    session.setSteer(EAST);
+    session.advance(TICK_DT);
+    expect(steers(sim)).toEqual([[EAST]]);
+  });
+
+  it('delivers a direction set while paused on the first tick after resuming', () => {
+    const { sim, session } = setup();
+    session.setPaused(true);
+    session.setSteer(NORTH);
+    session.advance(TICK_DT * 3);
+    session.setPaused(false);
+    session.advance(TICK_DT);
+    expect(steers(sim)).toEqual([[NORTH]]);
+  });
+
+  it('delivers a release made while paused as idle on resume', () => {
+    const { sim, session } = setup();
+    session.setSteer(NORTH);
+    session.advance(TICK_DT);
+    session.setPaused(true);
+    session.setSteer({ x: 0, y: 0 });
+    session.advance(TICK_DT);
+    session.setPaused(false);
+    session.advance(TICK_DT);
+    expect(steers(sim)).toEqual([[NORTH], [{ x: 0, y: 0 }]]);
+  });
+
+  it('re-sends a still-held direction to the fresh match after a restart', () => {
+    const { sim, session } = setup();
+    session.setSteer(NORTH);
+    session.advance(TICK_DT);
+    session.restart();
+    session.advance(TICK_DT * 2);
+    expect(steers(sim)).toEqual([[NORTH], [NORTH], []]);
+  });
+});

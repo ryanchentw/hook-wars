@@ -10,6 +10,13 @@ export type PlayerStatus =
   | { readonly kind: 'dragged'; readonly hookId: HookId }
   | { readonly kind: 'dead'; readonly respawnAt: number };
 
+export type MoveIntent =
+  | { readonly kind: 'idle' }
+  /** Walk to a point, then idle. */
+  | { readonly kind: 'toward'; readonly target: Vec2 }
+  /** Unit vector. Walk until told otherwise, as long as a key is held. */
+  | { readonly kind: 'steer'; readonly dir: Vec2 };
+
 export type Player = {
   readonly id: PlayerId;
   readonly name: string;
@@ -19,7 +26,7 @@ export type Player = {
   readonly pos: Vec2;
   /** Radians, 0 points along +x. */
   readonly facing: number;
-  readonly moveTarget: Vec2 | null;
+  readonly move: MoveIntent;
   readonly hp: number;
   readonly status: PlayerStatus;
   /** Sim time at which the next hook may be cast. */
@@ -106,6 +113,8 @@ export type GameState = {
 export type PlayerInput =
   | { readonly kind: 'move'; readonly playerId: PlayerId; readonly target: Vec2 }
   | { readonly kind: 'stop'; readonly playerId: PlayerId }
+  /** Held movement keys. Accepted in any status; the sim normalizes `dir`, and a zero or non-finite one means stop. */
+  | { readonly kind: 'steer'; readonly playerId: PlayerId; readonly dir: Vec2 }
   /** `target` is the aim point. The hook flies from the player towards it. */
   | { readonly kind: 'hook'; readonly playerId: PlayerId; readonly target: Vec2 };
 

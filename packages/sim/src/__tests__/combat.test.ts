@@ -38,13 +38,13 @@ describe('melee', () => {
     expect(killed.score).toEqual({ west: 1, east: 0 });
 
     const ignored = step(killed, [{ kind: 'move', playerId: pid('e'), target: at(500, 500) }], TICK_DT);
-    expect(player(ignored, 'e').moveTarget).toBeNull();
+    expect(player(ignored, 'e').move).toEqual({ kind: 'idle' });
     expect(ofKind(run(ignored, 30).events, 'melee')).toEqual([]);
 
     const back = runUntil(killed, (s) => player(s, 'e').status.kind === 'alive', 200);
     expect(ofKind(back.events, 'respawn')).toEqual([{ kind: 'respawn', playerId: 'e' }]);
     expect(back.state.time).toBeGreaterThanOrEqual(TUNING.respawnDelay);
-    expect(player(back.state, 'e')).toMatchObject({ pos: back.state.arena.spawns.east[0], hp: TUNING.maxHp, moveTarget: null });
+    expect(player(back.state, 'e')).toMatchObject({ pos: back.state.arena.spawns.east[0], hp: TUNING.maxHp, move: { kind: 'idle' } });
   });
 
   it('a hook can land the killing blow, and the hook keeps retracting empty', () => {

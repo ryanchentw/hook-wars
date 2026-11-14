@@ -1,7 +1,8 @@
 import { clampToDock, dockAt } from './arena';
 import { TUNING } from './config';
 import { normalize, sub } from './geometry';
-import type { GameEvent, GameState, HookId, Player, PlayerInput, Vec2 } from './types';
+import { IDLE, steerIntent } from './intent';
+import type { GameEvent, GameState, HookId, MoveIntent, Player, PlayerInput, Vec2 } from './types';
 import { findPlayer, isAlive, ownsHook, updatePlayer, type Outcome } from './world';
 
 function castHook(state: GameState, player: Player, target: Vec2, t: number): Outcome {
@@ -32,18 +33,26 @@ function castHook(state: GameState, player: Player, target: Vec2, t: number): Ou
   };
 }
 
+function setMove(state: GameState, player: Player, move: MoveIntent): Outcome {
+  return { state: updatePlayer(state, player.id, (p) => ({ ...p, move })), events: [] };
+}
+
 function applyInput(state: GameState, input: PlayerInput, t: number): Outcome {
+  const none = { state, events: [] };
   const player = findPlayer(state, input.playerId);
-  if (!player || !isAlive(player)) return { state, events: [] };
+  if (!player) return none;
   switch (input.kind) {
-    case 'move': {
-      const moveTarget = clampToDock(state.arena, input.target, dockAt(state.arena, player.pos));
-      return { state: updatePlayer(state, player.id, (p) => ({ ...p, moveTarget })), events: [] };
-    }
+    case 'steer':
+      return setMove(state, player, steerIntent(input.dir));
     case 'stop':
-      return { state: updatePlayer(state, player.id, (p) => ({ ...p, moveTarget: null })), events: [] };
+      return setMove(state, player, IDLE);
+    case 'move': {
+      if (!isAlive(player)) return none;
+      const target = clampToDock(state.arena, input.target, dockAt(state.arena, player.pos));
+      return setMove(state, player, { kind: 'toward', target });
+    }
     case 'hook':
-      return castHook(state, player, input.target, t);
+      return isAlive(player) ? castHook(state, player, input.target, t) : none;
   }
 }
 

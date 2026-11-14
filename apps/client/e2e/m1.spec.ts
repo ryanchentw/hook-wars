@@ -28,22 +28,42 @@ async function localHookCount(page: Page): Promise<number> {
 
 const distance = (a: Vec2, b: Vec2): number => Math.hypot(a.x - b.x, a.y - b.y);
 
-test('move, throw a hook across the canal, and see it come back', async ({ page }) => {
+type Axis = 'x' | 'y';
+
+/** Holds `key` until the local player's `axis` coordinate passes `mark` in the direction it moves. */
+async function holdUntil(page: Page, key: string, axis: Axis, mark: number): Promise<void> {
+  const from = (await localPlayer(page)).pos[axis];
+  await page.keyboard.down(key);
+  await page.waitForFunction(
+    ([a, m, rising]) => {
+      const hb = window.__hookbrawl!;
+      const p = hb.getState().players.find((q) => q.id === hb.getLocalPlayerId())!;
+      return rising ? p.pos[a] >= m : p.pos[a] <= m;
+    },
+    [axis, mark, mark > from] as const,
+    { timeout: 8_000 },
+  );
+  await page.keyboard.up(key);
+}
+
+async function localScreenY(page: Page): Promise<number> {
+  return (await toScreen(page, (await localPlayer(page)).pos)).y;
+}
+
+test('walk with W, throw a hook across the canal with Space, and see it come back', async ({ page }) => {
   await page.goto('/?seed=1');
   await expect(page.locator('#stage canvas')).toBeVisible();
   await page.waitForFunction(() => window.__hookbrawl !== undefined);
 
   const { arena } = await state(page);
   const start = await localPlayer(page);
-  const moveTarget = { x: arena.canal.x0 / 2, y: arena.height * 0.3 };
-  const before = distance(start.pos, moveTarget);
-  const click = await toScreen(page, moveTarget);
-  await page.mouse.click(click.x, click.y, { button: 'right' });
-  await expect.poll(async () => distance((await localPlayer(page)).pos, moveTarget), { timeout: 5_000 }).toBeLessThan(before - 100);
+  const screenYBefore = await localScreenY(page);
+  await holdUntil(page, 'KeyW', 'y', start.pos.y - 200);
+  expect(await localScreenY(page)).toBeLessThan(screenYBefore - 20);
 
-  const aim = await toScreen(page, { x: (arena.canal.x1 + arena.width) / 2, y: arena.height * 0.3 });
+  const aim = await toScreen(page, { x: (arena.canal.x1 + arena.width) / 2, y: (await localPlayer(page)).pos.y });
   await page.mouse.move(aim.x, aim.y);
-  await page.keyboard.press('q');
+  await page.keyboard.press('Space');
   await expect.poll(() => localHookCount(page), { timeout: 3_000 }).toBe(1);
   await page.waitForTimeout(250);
   await page.screenshot({ path: `${SHOT_DIR}/m1.png` });
@@ -66,14 +86,20 @@ test('a hook drags a dummy across the canal and drops it beside the thrower', as
   const fullHp = (await dummy()).hp;
 
   // The buoy sits on the straight line between the two spawns, so throw from off that line.
-  const stand = { x: arena.canal.x0 - 100, y: arena.height * 0.22 };
-  const click = await toScreen(page, stand);
-  await page.mouse.click(click.x, click.y, { button: 'right' });
-  await expect.poll(async () => distance((await localPlayer(page)).pos, stand), { timeout: 8_000 }).toBeLessThan(5);
+  await holdUntil(page, 'KeyD', 'x', arena.canal.x0 - 100);
+  const screenYBefore = await localScreenY(page);
+  await holdUntil(page, 'ArrowUp', 'y', arena.height * 0.22);
+  expect(await localScreenY(page)).toBeLessThan(screenYBefore - 20);
+
+  // Let the release reach the sim on its next tick before sampling.
+  await page.waitForTimeout(100);
+  const released = (await localPlayer(page)).pos;
+  await page.waitForTimeout(300);
+  expect((await localPlayer(page)).pos).toEqual(released);
 
   const aim = await toScreen(page, (await dummy()).pos);
   await page.mouse.move(aim.x, aim.y);
-  await page.keyboard.press('q');
+  await page.keyboard.press('Space');
   // The drag lasts under a second, so watch it every frame; a coarse poll can sample either side of it.
   await waitForDummy(page, 'dragged');
   expect((await dummy()).hp).toBeLessThan(fullHp);
@@ -87,4 +113,19 @@ test('a hook drags a dummy across the canal and drops it beside the thrower', as
   expect(gap).toBeGreaterThan(60);
   expect(gap).toBeLessThan(120);
   await page.screenshot({ path: `${SHOT_DIR}/m1-dropped.png` });
+});
+
+test('a left click throws the hook at the clicked point', async ({ page }) => {
+  await page.goto('/?opponent=idle');
+  await page.waitForFunction(() => window.__hookbrawl !== undefined);
+  const { arena } = await state(page);
+  const from = (await localPlayer(page)).pos;
+  const target = { x: arena.canal.x1, y: arena.height * 0.25 };
+  const click = await toScreen(page, target);
+  await page.mouse.click(click.x, click.y);
+  await expect.poll(() => localHookCount(page), { timeout: 3_000 }).toBe(1);
+
+  const hook = (await state(page)).hooks[0]!;
+  const wanted = Math.atan2(target.y - from.y, target.x - from.x);
+  expect(Math.abs(Math.atan2(hook.dir.y, hook.dir.x) - wanted)).toBeLessThan(0.02);
 });

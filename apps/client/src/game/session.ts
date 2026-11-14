@@ -1,5 +1,5 @@
 import { TICK_DT } from '@hookbrawl/sim';
-import type { BotBrain, GameState, MatchConfig, PlayerId, PlayerInput } from '@hookbrawl/sim';
+import type { BotBrain, GameState, MatchConfig, PlayerId, PlayerInput, Vec2 } from '@hookbrawl/sim';
 
 /** The slice of `@hookbrawl/sim` a session needs, injectable so tests can use a fake stepper. */
 export type SimApi = {
@@ -34,6 +34,8 @@ export type Session = {
   advance(realSeconds: number): void;
   /** Drops inputs sent while paused, since game controls are off then. */
   queueInput(input: PlayerInput): void;
+  /** Level-triggered: the latest held direction reaches the sim at the next tick that runs, once per change. */
+  setSteer(dir: Vec2): void;
   /** While paused, real time is discarded rather than banked, so resuming never fast-forwards. */
   setPaused(paused: boolean): void;
   frame(): Frame;
@@ -45,6 +47,7 @@ export type Session = {
 type Bot = { readonly id: PlayerId; readonly brain: BotBrain };
 
 const DEFAULT_MAX_TICKS = 5;
+const STILL: Vec2 = { x: 0, y: 0 };
 // Absorbs float drift so e.g. 3 x (1/30) s of real time yields exactly 3 ticks.
 const TICK_EPSILON = 1e-9;
 
@@ -58,6 +61,9 @@ export function createSession(sim: SimApi, setup: SessionSetup, options: Session
   let queued: readonly PlayerInput[] = [];
   let accumulator = 0;
   let paused = false;
+  let desiredSteer = STILL;
+  // A fresh match starts every player idle, so this is reset with it.
+  let sentSteer = STILL;
 
   const emit = (change: SessionChange): void => {
     listeners.forEach((listener) => listener(current, change));
@@ -69,10 +75,16 @@ export function createSession(sim: SimApi, setup: SessionSetup, options: Session
     return results.flatMap((r) => r.inputs);
   };
 
+  const takeSteer = (): readonly PlayerInput[] => {
+    if (desiredSteer.x === sentSteer.x && desiredSteer.y === sentSteer.y) return [];
+    sentSteer = desiredSteer;
+    return [{ kind: 'steer', playerId: setup.localPlayerId, dir: desiredSteer }];
+  };
+
   const tick = (): void => {
     previous = current;
     if (current.phase.kind === 'ended') return;
-    const inputs = [...queued, ...thinkBots()];
+    const inputs = [...takeSteer(), ...queued, ...thinkBots()];
     queued = [];
     current = sim.step(current, inputs, TICK_DT);
     emit('tick');
@@ -95,6 +107,9 @@ export function createSession(sim: SimApi, setup: SessionSetup, options: Session
       if (paused) return;
       queued = [...queued, input];
     },
+    setSteer(dir) {
+      desiredSteer = dir;
+    },
     setPaused(next) {
       paused = next;
     },
@@ -116,6 +131,7 @@ export function createSession(sim: SimApi, setup: SessionSetup, options: Session
       previous = current;
       bots = createBots(sim, setup, matchIndex);
       queued = [];
+      sentSteer = STILL;
       accumulator = 0;
       emit('reset');
     },

@@ -1,5 +1,6 @@
 import { facingCanal, spawnPoint, TEAMS } from './arena';
 import { DEFAULT_ARENA, TUNING } from './config';
+import { IDLE } from './intent';
 import type { Arena, GameState, MatchConfig, MatchPlayerConfig, Player } from './types';
 
 function validate(config: MatchConfig, arena: Arena): void {
@@ -25,7 +26,7 @@ function spawnPlayer(arena: Arena, cfg: MatchPlayerConfig, spawnIndex: number): 
     spawnIndex,
     pos: spawnPoint(arena, cfg.team, spawnIndex),
     facing: facingCanal(cfg.team),
-    moveTarget: null,
+    move: IDLE,
     hp: TUNING.maxHp,
     status: { kind: 'alive' },
     hookReadyAt: 0,

@@ -7,7 +7,6 @@ import { dampFocus, focusFor, poseFor, type Focus, type Viewport } from './camer
 import { applyPose, screenToGround, worldToScreen } from './camera/projection';
 import { shakeOffset } from './camera/shake';
 import { createCharactersView } from './characters/charactersView';
-import { createMoveMarker } from './characters/moveMarker';
 import { createEffectsView } from './effects/effectsView';
 import { createHooksView } from './hook/hooksView';
 import { interpolateFrame, type RenderFrame } from './interpolate';
@@ -95,12 +94,11 @@ export async function createRenderer(
   const softDot = createSoftDot();
   const arenaView = createArenaView(arena, assets, softDot);
   const characters = createCharactersView(assets, session.localPlayerId);
-  const moveMarker = createMoveMarker();
   const hooks = createHooksView(softDot);
   const effects = createEffectsView(softDot);
   const labels = createLabels(overlay);
   const damage = createDamageNumbers(overlay);
-  scene.add(arenaView.group, moveMarker.mesh, characters.group, hooks.group, effects.group);
+  scene.add(arenaView.group, characters.group, hooks.group, effects.group);
 
   // People who ask their system for less motion get the hit without the jolt.
   const shakes = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -159,7 +157,6 @@ export async function createRenderer(
     aimCamera(frame, dt);
     arenaView.update(elapsed);
     characters.update(frame, tickEvents, dt);
-    moveMarker.update(frame.state.players.find((p) => p.id === session.localPlayerId), elapsed);
     hooks.update(frame, characters.handPosition);
     effects.update(tickEvents, dt, camera);
     labels.update(labelsFor(frame, project));
@@ -212,7 +209,7 @@ export async function createRenderer(
     canvas.removeEventListener('webglcontextlost', onLost);
     canvas.removeEventListener('webglcontextrestored', onRestored);
     characters.clear();
-    [arenaView, moveMarker, hooks, effects].forEach((view) => view.dispose());
+    [arenaView, hooks, effects].forEach((view) => view.dispose());
     softDot.dispose();
     gl.dispose();
     canvas.remove();

@@ -11,7 +11,7 @@ const duel = () =>
 const r = TUNING.playerRadius;
 
 describe('movement', () => {
-  it('walks to the target at moveSpeed, then stops and clears the target', () => {
+  it('walks to the target at moveSpeed, then stops and goes idle', () => {
     const start = duel();
     const move = [{ kind: 'move', playerId: pid('w'), target: at(620, 675) }] as const;
     const halfway = run(start, 10, move).state;
@@ -20,7 +20,7 @@ describe('movement', () => {
 
     const arrived = run(start, 25, move).state;
     expect(player(arrived, 'w').pos).toEqual(at(620, 675));
-    expect(player(arrived, 'w').moveTarget).toBeNull();
+    expect(player(arrived, 'w').move).toEqual({ kind: 'idle' });
   });
 
   it('faces the direction it walks', () => {
@@ -37,8 +37,8 @@ describe('movement', () => {
       ],
       1 / 30,
     );
-    expect(player(s, 'w').moveTarget).toEqual(at(1000 - r, 500));
-    expect(player(s, 'e').moveTarget).toEqual(at(2400 - r, r));
+    expect(player(s, 'w').move).toEqual({ kind: 'toward', target: at(1000 - r, 500) });
+    expect(player(s, 'e').move).toEqual({ kind: 'toward', target: at(2400 - r, r) });
 
     const walked = run(s, 200).state;
     expect(player(walked, 'w').pos).toEqual(at(1000 - r, 500));
@@ -47,17 +47,17 @@ describe('movement', () => {
   it('a player dragged onto the enemy dock walks on that dock', () => {
     const s = withPlayer(duel(), 'e', { pos: at(600, 300) });
     const next = step(s, [{ kind: 'move', playerId: pid('e'), target: at(2000, 300) }], 1 / 30);
-    expect(player(next, 'e').moveTarget).toEqual(at(1000 - r, 300));
+    expect(player(next, 'e').move).toEqual({ kind: 'toward', target: at(1000 - r, 300) });
   });
 
-  it('stop clears the move target', () => {
+  it('stop clears the move intent', () => {
     const moving = step(duel(), [{ kind: 'move', playerId: pid('w'), target: at(800, 675) }], 1 / 30);
     const stopped = step(moving, [{ kind: 'stop', playerId: pid('w') }], 1 / 30);
-    expect(player(stopped, 'w').moveTarget).toBeNull();
+    expect(player(stopped, 'w').move).toEqual({ kind: 'idle' });
     expect(player(run(stopped, 5).state, 'w').pos).toEqual(player(stopped, 'w').pos);
   });
 
-  it('dead and dragged players ignore every input', () => {
+  it('dead and dragged players ignore move and hook inputs', () => {
     const base = withPlayer(
       withPlayer(duel(), 'w', { status: { kind: 'dead', respawnAt: 99 } }),
       'e',
@@ -73,8 +73,8 @@ describe('movement', () => {
       ],
       1 / 30,
     );
-    expect(player(s, 'w').moveTarget).toBeNull();
-    expect(player(s, 'e').moveTarget).toBeNull();
+    expect(player(s, 'w').move).toEqual({ kind: 'idle' });
+    expect(player(s, 'e').move).toEqual({ kind: 'idle' });
     expect(s.hooks).toEqual([]);
     expect(s.events).toEqual([]);
   });

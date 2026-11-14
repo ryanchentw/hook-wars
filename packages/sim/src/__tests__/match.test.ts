@@ -42,7 +42,7 @@ describe('createMatch', () => {
       hp: TUNING.maxHp,
       status: { kind: 'alive' },
       hookReadyAt: 0,
-      moveTarget: null,
+      move: { kind: 'idle' },
       kills: 0,
       deaths: 0,
     });

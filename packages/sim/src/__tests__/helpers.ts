@@ -30,7 +30,17 @@ export function at(x: number, y: number): Vec2 {
   return { x, y };
 }
 
-export type Trace = { readonly state: GameState; readonly events: readonly GameEvent[] };
+export const IDLE = { kind: 'idle' } as const;
+
+export function steer(id: string, x: number, y: number): PlayerInput {
+  return { kind: 'steer', playerId: pid(id), dir: at(x, y) };
+}
+
+export function toward(target: Vec2) {
+  return { kind: 'toward', target } as const;
+}
+
+export type Trace ={ readonly state: GameState; readonly events: readonly GameEvent[] };
 
 /** Steps `ticks` times, sending `first` on the first step only, and collects every event. */
 export function run(

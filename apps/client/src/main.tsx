@@ -3,6 +3,7 @@ import * as sim from '@hookbrawl/sim';
 import { createBootScreen } from './boot/bootScreen';
 import { createRouter } from './credits/route';
 import { installDevHook } from './devHook';
+import { facingAim } from './game/bindings';
 import { bindInput } from './game/input';
 import { createM1Setup, optionsFromQuery } from './game/matchSetup';
 import { createSession } from './game/session';
@@ -32,14 +33,22 @@ async function start(): Promise<void> {
     onContextLost: () => boot.showNotice('The graphics context was lost. Waiting for the browser to restore it…'),
     onContextRestored: boot.hide,
   });
+  const router = createRouter(window);
   const unbindInput = bindInput({
     target: renderer.canvas,
+    window,
+    document,
     playerId: session.localPlayerId,
     toWorld: renderer.screenToWorld,
+    fallbackAim: () => {
+      const local = session.getState().players.find((p) => p.id === session.localPlayerId);
+      return local === undefined ? null : facingAim(local);
+    },
+    enabled: () => router.getRoute() === 'game',
     send: (input) => session.queueInput(input),
+    steer: (dir) => session.setSteer(dir),
   });
   try {
-    const router = createRouter(window);
     const syncPause = (): void => session.setPaused(router.getRoute() === 'credits');
     syncPause();
     router.subscribe(syncPause);

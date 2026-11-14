@@ -59,7 +59,7 @@ const TRIGGERED: readonly { readonly trigger: AnimTrigger; readonly state: AnimS
 export function factsFor(player: Player, hooks: readonly Hook[]): AnimFacts {
   return {
     status: player.status.kind,
-    moving: player.moveTarget !== null,
+    moving: player.move.kind !== 'idle',
     hookOut: hooks.some((h) => h.ownerId === player.id),
   };
 }

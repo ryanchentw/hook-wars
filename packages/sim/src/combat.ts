@@ -1,6 +1,7 @@
 import { TEAMS } from './arena';
 import { TUNING } from './config';
 import { distance } from './geometry';
+import { interrupt } from './intent';
 import type { GameEvent, GameState, Player, PlayerId, TeamId } from './types';
 import type { Stage } from './world';
 
@@ -55,7 +56,7 @@ function die(p: Player, t: number): Player {
   return {
     ...p,
     status: { kind: 'dead', respawnAt: t + TUNING.respawnDelay },
-    moveTarget: null,
+    move: interrupt(p.move),
     deaths: p.deaths + 1,
   };
 }

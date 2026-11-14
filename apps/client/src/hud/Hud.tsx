@@ -37,7 +37,7 @@ function PlayerPanel({ local }: { readonly local: LocalView }) {
       </div>
       <div className={`hud-hook ${ready ? 'is-ready' : ''}`}>
         <div className="hud-hook-sweep" style={{ height: `${local.hookInFlight ? 100 : local.cooldownFraction * 100}%` }} />
-        <span className="hud-hook-key">Q</span>
+        <span className="hud-hook-key">Space</span>
         <span className="hud-hook-label">{hookLabel}</span>
       </div>
     </div>
@@ -115,7 +115,7 @@ export function Hud({ store, router }: { readonly store: HudStore; readonly rout
         {view.local !== null && <PlayerPanel local={view.local} />}
         <div className="hud-aside">
           <div className="hud-hint hud-plate">
-            <kbd>Right click</kbd> move <kbd>Q</kbd>/<kbd>Left click</kbd> hook <kbd>S</kbd> stop
+            <kbd>WASD</kbd> move <kbd>Space</kbd>/<kbd>Click</kbd> hook
           </div>
           <CreditsLink />
         </div>

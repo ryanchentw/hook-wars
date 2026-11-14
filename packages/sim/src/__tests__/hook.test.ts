@@ -71,7 +71,7 @@ describe('hook', () => {
     const [event] = ofKind(hit.events, 'hookHit');
     expect(event).toMatchObject({ ownerId: 'w', targetId: 'e', damage: TUNING.hookDamage, ally: false });
     expect(event?.at.x).toBeCloseTo(1600 - reach, 6);
-    expect(player(hit.state, 'e')).toMatchObject({ hp: TUNING.maxHp - TUNING.hookDamage, moveTarget: null });
+    expect(player(hit.state, 'e')).toMatchObject({ hp: TUNING.maxHp - TUNING.hookDamage, move: { kind: 'idle' } });
 
     const back = runUntil(hit.state, noHooks, 120).state;
     const e = player(back, 'e');

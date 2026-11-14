@@ -2,6 +2,7 @@ import { clampToNearestDock } from './arena';
 import { TUNING } from './config';
 import { along, distance, normalize, sub } from './geometry';
 import { fly } from './hookFlight';
+import { interrupt } from './intent';
 import type { GameEvent, GameState, Hook, Player, Vec2 } from './types';
 import { findPlayer, replaceHook, updatePlayer, type Outcome, type Stage, type StepContext } from './world';
 
@@ -28,7 +29,7 @@ function extend(state: GameState, hook: Hook, remaining: number, dt: number): Ou
     ...p,
     hp: p.hp - damage,
     status: { kind: 'dragged', hookId: hook.id },
-    moveTarget: null,
+    move: interrupt(p.move),
   }));
   return {
     state: replaceHook(latched, hook.id, { ...moved, phase: { kind: 'retracting', cargo: target.id } }),

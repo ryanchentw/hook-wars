@@ -235,8 +235,9 @@ body {
 .hud-hook-key {
   position: relative;
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 13px;
   font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .hud-hook-label {

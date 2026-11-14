@@ -1,6 +1,7 @@
 import { dockAt, walkableRect } from './arena';
 import { TUNING } from './config';
-import { add, distance, normalize, rotate, scale, sub } from './geometry';
+import { add, distance, rotate, scale, sub } from './geometry';
+import { velocity } from './intent';
 import { createRng, nextRandom } from './rng';
 import type { BotBrain, GameState, Player, PlayerId, PlayerInput, Rng, Vec2 } from './types';
 import { findPlayer, isAlive, ownsHook } from './world';
@@ -37,17 +38,12 @@ function chooseMove(state: GameState, bot: Player, rng: Rng): Decision {
     ),
   );
   if (prey) return { inputs: [{ kind: 'move', playerId: bot.id, target: prey.pos }], rng };
-  if (bot.moveTarget !== null) return { inputs: [], rng };
+  if (bot.move.kind !== 'idle') return { inputs: [], rng };
   const rect = walkableRect(state.arena, dock);
   const [u, afterU] = nextRandom(rng);
   const [v, afterV] = nextRandom(afterU);
   const target = { x: rect.x0 + u * (rect.x1 - rect.x0), y: rect.y0 + v * (rect.y1 - rect.y0) };
   return { inputs: [{ kind: 'move', playerId: bot.id, target }], rng: afterV };
-}
-
-function velocity(p: Player): Vec2 {
-  if (p.moveTarget === null) return { x: 0, y: 0 };
-  return scale(normalize(sub(p.moveTarget, p.pos)), TUNING.moveSpeed);
 }
 
 function chooseThrow(state: GameState, bot: Player, rng: Rng): Decision {
@@ -57,7 +53,7 @@ function chooseThrow(state: GameState, bot: Player, rng: Rng): Decision {
   const [roll, afterRoll] = nextRandom(rng);
   if (roll >= TUNING.botFireChance) return { inputs: [], rng: afterRoll };
   const [noise, afterNoise] = nextRandom(afterRoll);
-  const lead = add(target.pos, scale(velocity(target), distance(bot.pos, target.pos) / TUNING.hookSpeed));
+  const lead = add(target.pos, scale(velocity(target.move, target.pos), distance(bot.pos, target.pos) / TUNING.hookSpeed));
   const angle = (noise * 2 - 1) * TUNING.botAimNoise;
   const aim = add(bot.pos, rotate(sub(lead, bot.pos), angle));
   return { inputs: [{ kind: 'hook', playerId: bot.id, target: aim }], rng: afterNoise };

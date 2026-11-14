@@ -68,19 +68,29 @@ describe('botThink', () => {
     expect(move?.kind === 'move' && move.target.x < 1000 - TUNING.playerRadius + 1e-9).toBe(true);
   });
 
-  it('throws at a lead-predicted point within the aim noise, some of the time', () => {
-    const moving = withPlayer(duel(), 'east0', { moveTarget: at(1600, 1200) });
-    const lead = { x: 1600, y: 335 + TUNING.moveSpeed * (1180 / TUNING.hookSpeed) };
-    const ideal = Math.atan2(lead.y - 335, lead.x - 420);
-    const throws = Array.from({ length: 40 }, (_, seed) => botThink(moving, pid('west0'), createBotBrain(seed)).inputs)
+  const leadThrows = (moving: GameState) =>
+    Array.from({ length: 40 }, (_, seed) => botThink(moving, pid('west0'), createBotBrain(seed)).inputs)
       .flat()
       .filter((i): i is Extract<PlayerInput, { kind: 'hook' }> => i.kind === 'hook');
+
+  const expectLeadsDown = (moving: GameState): void => {
+    const lead = { x: 1600, y: 335 + TUNING.moveSpeed * (1180 / TUNING.hookSpeed) };
+    const ideal = Math.atan2(lead.y - 335, lead.x - 420);
+    const throws = leadThrows(moving);
     expect(throws.length).toBeGreaterThan(5);
     expect(throws.length).toBeLessThan(35);
     throws.forEach((h) => {
       const angle = Math.atan2(h.target.y - 335, h.target.x - 420);
       expect(Math.abs(angle - ideal)).toBeLessThanOrEqual(TUNING.botAimNoise + 1e-9);
     });
+  };
+
+  it('throws at a lead-predicted point within the aim noise, some of the time', () => {
+    expectLeadsDown(withPlayer(duel(), 'east0', { move: { kind: 'toward', target: at(1600, 1200) } }));
+  });
+
+  it('leads a steering player along the held direction', () => {
+    expectLeadsDown(withPlayer(duel(), 'east0', { move: { kind: 'steer', dir: at(0, 1) } }));
   });
 
   it('does not throw while its hook is cooling down', () => {

@@ -1,7 +1,8 @@
-import { facingCanal, spawnPoint } from './arena';
+import { clampToDock, dockAt, facingCanal, spawnPoint } from './arena';
 import { TUNING } from './config';
 import { along, distance, normalize, sub } from './geometry';
-import type { GameEvent, GameState, Player } from './types';
+import { IDLE, interrupt } from './intent';
+import type { Arena, GameEvent, GameState, Player, Vec2 } from './types';
 import type { Stage } from './world';
 
 function respawn(state: GameState, p: Player): Player {
@@ -11,7 +12,7 @@ function respawn(state: GameState, p: Player): Player {
     facing: facingCanal(p.team),
     hp: TUNING.maxHp,
     status: { kind: 'alive' },
-    moveTarget: null,
+    move: interrupt(p.move),
   };
 }
 
@@ -24,18 +25,35 @@ export const respawnPlayers: Stage = (state, { t }) => {
   };
 };
 
-function walk(p: Player, dt: number): Player {
-  if (p.status.kind !== 'alive' || p.moveTarget === null) return p;
-  const remaining = distance(p.pos, p.moveTarget);
-  const stride = TUNING.moveSpeed * dt;
-  if (remaining === 0) return { ...p, moveTarget: null };
-  const dir = normalize(sub(p.moveTarget, p.pos));
+function walkToward(p: Player, target: Vec2, stride: number): Player {
+  const remaining = distance(p.pos, target);
+  if (remaining === 0) return { ...p, move: IDLE };
+  const dir = normalize(sub(target, p.pos));
   const facing = Math.atan2(dir.y, dir.x);
-  if (remaining <= stride) return { ...p, pos: p.moveTarget, moveTarget: null, facing };
+  if (remaining <= stride) return { ...p, pos: target, move: IDLE, facing };
   return { ...p, pos: along(p.pos, dir, stride), facing };
 }
 
+/** Clamping each axis separately is what lets a diagonal push slide along a wall. */
+function walkSteer(arena: Arena, p: Player, dir: Vec2, stride: number): Player {
+  const pos = clampToDock(arena, along(p.pos, dir, stride), dockAt(arena, p.pos));
+  return { ...p, pos, facing: Math.atan2(dir.y, dir.x) };
+}
+
+function walk(arena: Arena, p: Player, dt: number): Player {
+  if (p.status.kind !== 'alive') return p;
+  const stride = TUNING.moveSpeed * dt;
+  switch (p.move.kind) {
+    case 'idle':
+      return p;
+    case 'toward':
+      return walkToward(p, p.move.target, stride);
+    case 'steer':
+      return walkSteer(arena, p, p.move.dir, stride);
+  }
+}
+
 export const movePlayers: Stage = (state, { dt }) => ({
-  state: { ...state, players: state.players.map((p) => walk(p, dt)) },
+  state: { ...state, players: state.players.map((p) => walk(state.arena, p, dt)) },
   events: [],
 });
