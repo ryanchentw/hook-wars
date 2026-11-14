@@ -57,6 +57,7 @@ function linkMatrix(link: LinkPlacement, stretch: number, out: Matrix4): Matrix4
 
 type Head = { readonly mesh: Mesh; readonly halo: Sprite };
 
+/** Draws every group, so the warm-up heads compile all a head can show. */
 const LIVE_BARBED: HookLook = { menace: 'live', barbed: true };
 
 /** Each hook carries a faint halo in its thrower's colour, so it is clear at a glance whose iron is in the air. In hook radii. */

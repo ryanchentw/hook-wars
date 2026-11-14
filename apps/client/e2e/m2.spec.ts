@@ -194,6 +194,8 @@ test('a grapple across the canal and a brawl on the far dock both draw within bu
   await page.keyboard.press('KeyE');
   await page.waitForFunction(() => window.__hookbrawl!.getState().grapples.length > 0);
   const grappling = await worstUntil(page, (s) => s.grapples.length === 0);
+  // Arriving staggers the player, and a hook pressed before they recover is refused.
+  await waitForArrivalEast(page);
 
   const dummy = await page.evaluate(() => {
     const hb = window.__hookbrawl!;
