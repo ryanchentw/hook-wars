@@ -25,12 +25,12 @@ function Purse({ gold, bounty }: { readonly gold: number; readonly bounty: Bount
   return (
     <div className="hud-gold">
       <span className="hud-coin" aria-hidden="true" />
-      <span key={bounty?.seq ?? 0} className={`hud-gold-value ${bounty === null ? '' : 'is-rising'}`}>
+      <span key={`gold-${bounty?.seq ?? 0}`} className={`hud-gold-value ${bounty === null ? '' : 'is-rising'}`}>
         {gold}
       </span>
       <span className="hud-sr"> gold</span>
       {bounty !== null && (
-        <span key={bounty.seq} className="hud-bounty" aria-hidden="true">
+        <span key={`bounty-${bounty.seq}`} className="hud-bounty" aria-hidden="true">
           +{bounty.amount}
         </span>
       )}
