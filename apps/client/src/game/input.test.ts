@@ -1,4 +1,4 @@
-import type { PlayerInput, Vec2 } from '@hookbrawl/sim';
+import type { PlayerInput, Purchase, Vec2 } from '@hookbrawl/sim';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { HUMAN } from './fakeSim';
 import { bindInput, type InputDeps } from './input';
@@ -26,6 +26,7 @@ const FALLBACK = { x: 999, y: 0 };
 function harness() {
   const steers: Vec2[] = [];
   const sent: PlayerInput[] = [];
+  const bought: Purchase[] = [];
   const flags = { enabled: true, visibility: 'visible' as DocumentVisibilityState };
   const canvas = Object.assign(new EventTarget(), {
     getBoundingClientRect: () => ({ left: CANVAS_ORIGIN.x, top: CANVAS_ORIGIN.y }),
@@ -43,6 +44,7 @@ function harness() {
     fallbackAim: () => FALLBACK,
     enabled: () => flags.enabled,
     send: (input) => sent.push(input),
+    buy: (purchase) => bought.push(purchase),
     steer: (dir) => steers.push(dir),
   };
   const unbind = bindInput(deps);
@@ -52,7 +54,7 @@ function harness() {
     return e;
   };
   const up = (code: string) => win.dispatchEvent(keyEvent('keyup', { code }));
-  return { steers, sent, flags, canvas, win, doc, unbind, down, up, last: () => steers.at(-1) };
+  return { steers, sent, bought, flags, canvas, win, doc, unbind, down, up, last: () => steers.at(-1) };
 }
 
 let h: ReturnType<typeof harness>;
@@ -73,7 +75,7 @@ describe('steering keys', () => {
     expect(h.down({ code: 'ArrowUp' }).defaultPrevented).toBe(true);
     expect(h.down({ code: 'ArrowUp', repeat: true }).defaultPrevented).toBe(true);
     expect(h.steers).toHaveLength(1);
-    expect(h.down({ code: 'KeyE' }).defaultPrevented).toBe(false);
+    expect(h.down({ code: 'KeyR' }).defaultPrevented).toBe(false);
   });
 
   it('ignores keys pressed with ctrl or alt', () => {
@@ -110,14 +112,49 @@ describe('hook', () => {
   });
 });
 
+describe('grapple', () => {
+  it('grapples at the cursor on E, or along the facing before the cursor has moved', () => {
+    h.down({ code: 'KeyE' });
+    h.canvas.dispatchEvent(pointerEvent('pointermove', -1, { x: 30, y: 40 }));
+    const e = h.down({ code: 'KeyE' });
+    expect(e.defaultPrevented).toBe(true);
+    expect(h.sent).toEqual([
+      { kind: 'grapple', playerId: HUMAN, target: FALLBACK },
+      { kind: 'grapple', playerId: HUMAN, target: { x: 200, y: 200 } },
+    ]);
+  });
+});
+
+describe('buy keys', () => {
+  it('buys the numbered slot once per press, ignoring auto-repeat', () => {
+    expect(h.down({ code: 'Digit2' }).defaultPrevented).toBe(true);
+    expect(h.down({ code: 'Digit2', repeat: true }).defaultPrevented).toBe(true);
+    h.down({ code: 'Digit5' });
+    expect(h.bought).toEqual([
+      { kind: 'upgrade', id: 'range' },
+      { kind: 'item', id: 'grapple' },
+    ]);
+    expect(h.sent).toEqual([]);
+  });
+
+  it('ignores digits with a modifier, so browser tab shortcuts still work', () => {
+    expect(h.down({ code: 'Digit1', ctrlKey: true }).defaultPrevented).toBe(false);
+    h.down({ code: 'Digit1', metaKey: true });
+    expect(h.bought).toEqual([]);
+  });
+});
+
 describe('while disabled', () => {
   it('leaves keydown alone so the dialog keeps its keys, but still releases on keyup', () => {
     h.down({ code: 'KeyW' });
     h.flags.enabled = false;
     const space = h.down({ code: 'Space' });
     const d = h.down({ code: 'KeyD' });
-    expect(space.defaultPrevented || d.defaultPrevented).toBe(false);
+    const digit = h.down({ code: 'Digit1' });
+    const grapple = h.down({ code: 'KeyE' });
+    expect(space.defaultPrevented || d.defaultPrevented || digit.defaultPrevented || grapple.defaultPrevented).toBe(false);
     expect(h.sent).toEqual([]);
+    expect(h.bought).toEqual([]);
     h.up('KeyW');
     expect(h.steers).toEqual([{ x: 0, y: -1 }, { x: 0, y: 0 }]);
   });

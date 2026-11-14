@@ -1,13 +1,15 @@
-import { useSyncExternalStore } from 'react';
-import type { TeamId } from '@hookbrawl/sim';
+import { Fragment, useSyncExternalStore } from 'react';
 import { CreditsDialog } from '../credits/CreditsDialog';
-import { CREDITS_HASH, type Router } from '../credits/route';
-import { CRITICAL_HP_FRACTION, LOW_HP_FRACTION } from '../game/health';
+import type { Router } from '../credits/route';
+import { SHOP_SLOTS } from '../game/bindings';
+import { EndPanel } from './EndPanel';
 import type { HudStore } from './hudStore';
-import type { EndView, KillFeedEntry, LocalView } from './hudView';
+import type { KillFeedEntry } from './hudView';
+import { CreditsLink, TEAM_LABEL } from './labels';
+import { PlayerPanel } from './PlayerPanel';
+import { ShopStrip } from './ShopStrip';
 import './hud.css';
-
-const TEAM_LABEL: Readonly<Record<TeamId, string>> = { west: 'West Dock', east: 'East Dock' };
+import './shop.css';
 
 function ScoreBar({ west, east, target }: { readonly west: number; readonly east: number; readonly target: number }) {
   return (
@@ -21,29 +23,6 @@ function ScoreBar({ west, east, target }: { readonly west: number; readonly east
   );
 }
 
-function PlayerPanel({ local }: { readonly local: LocalView }) {
-  const hpFraction = Math.max(0, local.hp) / local.maxHp;
-  const hpPct = Math.round(hpFraction * 100);
-  const hpState = hpFraction <= CRITICAL_HP_FRACTION ? 'is-critical' : hpFraction <= LOW_HP_FRACTION ? 'is-low' : '';
-  const ready = !local.hookInFlight && local.cooldownSeconds <= 0;
-  const hookLabel = local.hookInFlight ? 'in flight' : ready ? 'ready' : `${local.cooldownSeconds.toFixed(1)}s`;
-  return (
-    <div className="hud-panel hud-plate">
-      <div className="hud-hp">
-        <div className={`hud-hp-fill ${hpState}`} style={{ width: `${hpPct}%` }} />
-        <span className="hud-hp-text">
-          {Math.max(0, Math.round(local.hp))} / {local.maxHp}
-        </span>
-      </div>
-      <div className={`hud-hook ${ready ? 'is-ready' : ''}`}>
-        <div className="hud-hook-sweep" style={{ height: `${local.hookInFlight ? 100 : local.cooldownFraction * 100}%` }} />
-        <span className="hud-hook-key">Space</span>
-        <span className="hud-hook-label">{hookLabel}</span>
-      </div>
-    </div>
-  );
-}
-
 function KillFeed({ entries }: { readonly entries: readonly KillFeedEntry[] }) {
   return (
     <ul className="hud-feed">
@@ -51,52 +30,35 @@ function KillFeed({ entries }: { readonly entries: readonly KillFeedEntry[] }) {
         <li key={e.key} className="hud-plate">
           <span className={`hud-${e.killer.team}`}>{e.killer.name}</span> decked{' '}
           <span className={`hud-${e.victim.team}`}>{e.victim.name}</span>
+          {e.assisters.length > 0 && ' with '}
+          {e.assisters.map((a, i) => (
+            <Fragment key={a.name}>
+              {i > 0 && ', '}
+              <span className={`hud-${a.team}`}>{a.name}</span>
+            </Fragment>
+          ))}
         </li>
       ))}
     </ul>
   );
 }
 
-function EndPanel({ end, onPlayAgain }: { readonly end: EndView; readonly onPlayAgain: () => void }) {
-  return (
-    <div className="hud-end-backdrop">
-      <div className="hud-end hud-plate" role="dialog" aria-label="match over">
-        <h1 className={`hud-${end.winner}`}>{end.localWon ? 'Victory' : 'Defeat'}</h1>
-        <p>{TEAM_LABEL[end.winner]} wins the harbour</p>
-        <table>
-          <thead>
-            <tr>
-              <th>Player</th>
-              <th>Kills</th>
-              <th>Deaths</th>
-            </tr>
-          </thead>
-          <tbody>
-            {end.rows.map((r) => (
-              <tr key={r.id} className={r.isLocal ? 'is-local' : ''}>
-                <td className={`hud-${r.team}`}>{r.name}</td>
-                <td>{r.kills}</td>
-                <td>{r.deaths}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="hud-end-actions">
-          <button type="button" onClick={onPlayAgain} autoFocus>
-            Play again
-          </button>
-          <CreditsLink />
-        </div>
-      </div>
-    </div>
-  );
-}
+const FIRST_DIGIT = SHOP_SLOTS[0]?.digit;
+const LAST_DIGIT = SHOP_SLOTS.at(-1)?.digit;
 
-function CreditsLink() {
+/** Below 900px only the movement keys stay: every other key is printed on its own slot. */
+function Hint() {
   return (
-    <a className="hud-button" href={CREDITS_HASH}>
-      Credits
-    </a>
+    <div className="hud-hint hud-plate">
+      <kbd>WASD</kbd> move
+      <span className="hud-hint-more">
+        <kbd>Space</kbd> hook <kbd>E</kbd> grapple{' '}
+        <kbd>
+          {FIRST_DIGIT}–{LAST_DIGIT}
+        </kbd>{' '}
+        buy
+      </span>
+    </div>
   );
 }
 
@@ -112,14 +74,17 @@ export function Hud({ store, router }: { readonly store: HudStore; readonly rout
         <div className="hud-respawn hud-plate">Back on the dock in {Math.ceil(respawnIn)}</div>
       )}
       <div className="hud-bottom">
-        {view.local !== null && <PlayerPanel local={view.local} />}
+        {view.local !== null && <PlayerPanel local={view.local} feedback={view.feedback} onBuy={store.buy} />}
+        <ShopStrip slots={view.shop} feedback={view.feedback} onBuy={store.buy} />
         <div className="hud-aside">
-          <div className="hud-hint hud-plate">
-            <kbd>WASD</kbd> move <kbd>Space</kbd>/<kbd>Click</kbd> hook
-          </div>
+          <Hint />
           <CreditsLink />
         </div>
       </div>
+      {/* aria-live without role="status": the boot screen owns the page's status role. */}
+      <p className="hud-sr hud-announcer" aria-live="polite" aria-atomic="true">
+        {view.feedback.announcement}
+      </p>
       {view.end !== null && <EndPanel end={view.end} onPlayAgain={store.playAgain} />}
       <CreditsDialog open={route === 'credits'} onClose={router.closeCredits} />
     </div>

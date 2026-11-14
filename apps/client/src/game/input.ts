@@ -1,4 +1,4 @@
-import type { PlayerId, PlayerInput, Vec2 } from '@hookbrawl/sim';
+import type { PlayerId, PlayerInput, Purchase, Vec2 } from '@hookbrawl/sim';
 import { actionForKey, HOOK_POINTER_BUTTON, STILL, steerVector, type Direction, type KeyAction } from './bindings';
 
 type Canvas = EventTarget & { getBoundingClientRect(): { readonly left: number; readonly top: number } };
@@ -9,11 +9,13 @@ export type InputDeps = {
   readonly document: EventTarget & { readonly visibilityState: DocumentVisibilityState };
   readonly playerId: PlayerId;
   readonly toWorld: (screen: Vec2) => Vec2;
-  /** World aim point for a hook thrown before the cursor has been over the canvas, or null for none. */
+  /** World aim point for a hook or grapple cast before the cursor has been over the canvas, or null for none. */
   readonly fallbackAim: () => Vec2 | null;
   /** False while something else (the credits dialog) owns the keyboard. */
   readonly enabled: () => boolean;
   readonly send: (input: PlayerInput) => void;
+  /** Separate from `send` so the HUD can confirm or refuse every press. */
+  readonly buy: (purchase: Purchase) => void;
   readonly steer: (dir: Vec2) => void;
 };
 
@@ -39,13 +41,20 @@ function createHandlers(deps: InputDeps): Handlers {
     held = new Set();
     deps.steer(STILL);
   };
-  const throwHook = (): void => {
+  const aimed = (kind: 'hook' | 'grapple'): void => {
     const target = cursor === null ? deps.fallbackAim() : deps.toWorld(cursor);
-    if (target !== null) deps.send({ kind: 'hook', playerId: deps.playerId, target });
+    if (target !== null) deps.send({ kind, playerId: deps.playerId, target });
   };
   const press = (action: KeyAction): void => {
-    if (action.kind === 'hook') throwHook();
-    else if (!held.has(action.dir)) setHeld(new Set([...held, action.dir]));
+    switch (action.kind) {
+      case 'hook':
+      case 'grapple':
+        return aimed(action.kind);
+      case 'buy':
+        return deps.buy(action.purchase);
+      case 'steer':
+        if (!held.has(action.dir)) setHeld(new Set([...held, action.dir]));
+    }
   };
   const localPoint = (e: MouseEvent): Vec2 => {
     const rect = deps.target.getBoundingClientRect();
@@ -78,7 +87,7 @@ function createHandlers(deps: InputDeps): Handlers {
       if (e.button !== HOOK_POINTER_BUTTON || !deps.enabled()) return;
       e.preventDefault();
       cursor = localPoint(e);
-      throwHook();
+      aimed('hook');
     },
     contextmenu: (e) => e.preventDefault(),
   };

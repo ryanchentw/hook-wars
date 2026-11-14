@@ -1,12 +1,25 @@
-import { TUNING } from '@hookbrawl/sim';
-import type { Player, Vec2 } from '@hookbrawl/sim';
+import { hookStats, ITEM_IDS, UPGRADE_IDS } from '@hookbrawl/sim';
+import type { Player, Purchase, Vec2 } from '@hookbrawl/sim';
 
 export type Direction = 'north' | 'south' | 'west' | 'east';
 
-export type KeyAction = { readonly kind: 'steer'; readonly dir: Direction } | { readonly kind: 'hook' };
+export type KeyAction =
+  | { readonly kind: 'steer'; readonly dir: Direction }
+  | { readonly kind: 'hook' }
+  | { readonly kind: 'grapple' }
+  | { readonly kind: 'buy'; readonly purchase: Purchase };
+
+/** One shop slot per digit key, upgrades in sim order and then the items. */
+export type ShopSlot = { readonly purchase: Purchase; readonly digit: string; readonly code: string };
+
+export const SHOP_SLOTS: readonly ShopSlot[] = [
+  ...UPGRADE_IDS.map((id): Purchase => ({ kind: 'upgrade', id })),
+  ...ITEM_IDS.map((id): Purchase => ({ kind: 'item', id })),
+].map((purchase, i) => ({ purchase, digit: String(i + 1), code: `Digit${i + 1}` }));
 
 const steer = (dir: Direction): KeyAction => ({ kind: 'steer', dir });
 const HOOK: KeyAction = { kind: 'hook' };
+const GRAPPLE: KeyAction = { kind: 'grapple' };
 
 /** Keyed by `KeyboardEvent.code`, the physical key, so an IME or a non-QWERTY layout does not move the controls. */
 export const KEY_BINDINGS: ReadonlyMap<string, KeyAction> = new Map([
@@ -20,6 +33,8 @@ export const KEY_BINDINGS: ReadonlyMap<string, KeyAction> = new Map([
   ['ArrowRight', steer('east')],
   ['Space', HOOK],
   ['KeyQ', HOOK],
+  ['KeyE', GRAPPLE],
+  ...SHOP_SLOTS.map((slot): [string, KeyAction] => [slot.code, { kind: 'buy', purchase: slot.purchase }]),
 ]);
 
 export const HOOK_POINTER_BUTTON = 0;
@@ -46,10 +61,11 @@ export function steerVector(held: ReadonlySet<Direction>): Vec2 {
   );
 }
 
-/** Where a hook goes when the cursor has never been over the canvas: straight ahead. */
+/** Where a hook or grapple goes when the cursor has never been over the canvas: straight ahead. */
 export function facingAim(player: Player): Vec2 {
+  const { range } = hookStats(player);
   return {
-    x: player.pos.x + Math.cos(player.facing) * TUNING.hookRange,
-    y: player.pos.y + Math.sin(player.facing) * TUNING.hookRange,
+    x: player.pos.x + Math.cos(player.facing) * range,
+    y: player.pos.y + Math.sin(player.facing) * range,
   };
 }

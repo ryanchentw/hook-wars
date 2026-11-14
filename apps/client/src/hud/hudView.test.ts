@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { TUNING } from '@hookbrawl/sim';
-import type { HookId } from '@hookbrawl/sim';
+import type { HookId, PlayerId } from '@hookbrawl/sim';
 import { BOT, fakePlayer, fakeState, HUMAN } from '../game/fakeSim';
 import { appendKills, deriveHud, KILL_FEED_SIZE } from './hudView';
 
@@ -25,11 +25,21 @@ describe('deriveHud', () => {
     expect(view.local?.respawnIn).toBeCloseTo(2);
   });
 
-  it('builds the end panel with per-player kills and deaths', () => {
-    const ended = fakeState({ players, phase: { kind: 'ended', winner: 'east' } });
+  it('builds the end panel with per-player kills, deaths and assists', () => {
+    const scored = [fakePlayer({ id: HUMAN, name: 'You', kills: 2, deaths: 1, assists: 3 }), players[1]!];
+    const ended = fakeState({ players: scored, phase: { kind: 'ended', winner: 'east' } });
     const view = deriveHud(ended, HUMAN, []);
     expect(view.end?.localWon).toBe(false);
     expect(view.end?.rows.map((r) => r.name)).toEqual(['You', 'Bot']);
+    expect(view.end?.rows[0]).toMatchObject({ kills: 2, deaths: 1, assists: 3 });
+  });
+
+  it('shows the local gold, the shop and the grapple slot', () => {
+    const rich = [fakePlayer({ id: HUMAN, gold: 1234 }), players[1]!];
+    const view = deriveHud(fakeState({ players: rich }), HUMAN, []);
+    expect(view.local?.gold).toBe(1234);
+    expect(view.local?.grapple.kind).toBe('locked');
+    expect(view.shop).toHaveLength(5);
   });
 });
 
@@ -42,5 +52,14 @@ describe('appendKills', () => {
     expect(feed).toHaveLength(KILL_FEED_SIZE);
     expect(feed[0]?.key.startsWith('10-')).toBe(true);
     expect(feed[0]?.killer.name).toBe('You');
+  });
+
+  it('names everyone who assisted', () => {
+    const ally = fakePlayer({ id: 'ally' as PlayerId, name: 'Ally' });
+    const state = fakeState({
+      players: [...players, ally],
+      events: [{ kind: 'kill', killerId: HUMAN, victimId: BOT, assistIds: [ally.id], at: { x: 0, y: 0 } }],
+    });
+    expect(appendKills([], state)[0]?.assisters).toEqual([{ name: 'Ally', team: 'west' }]);
   });
 });

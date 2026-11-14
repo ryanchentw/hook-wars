@@ -1,10 +1,10 @@
-import { DEFAULT_ARENA, TUNING } from '@hookbrawl/sim';
+import { DEFAULT_ARENA, ITEM_IDS, TUNING, UPGRADE_IDS, UPGRADES } from '@hookbrawl/sim';
 import { PerspectiveCamera } from 'three';
 import { describe, expect, it } from 'vitest';
 import { focusFor, poseFor } from '../render/camera/framing';
 import { applyPose, worldToScreen } from '../render/camera/projection';
 import { simToWorld } from '../render/space';
-import { actionForKey, DIRECTION_VECTORS, facingAim, steerVector } from './bindings';
+import { actionForKey, DIRECTION_VECTORS, facingAim, SHOP_SLOTS, steerVector } from './bindings';
 import { fakePlayer, HUMAN } from './fakeSim';
 
 describe('key bindings', () => {
@@ -22,9 +22,24 @@ describe('key bindings', () => {
   it('throws the hook on Space and Q, and ignores everything else', () => {
     expect(actionForKey('Space')).toEqual({ kind: 'hook' });
     expect(actionForKey('KeyQ')).toEqual({ kind: 'hook' });
-    expect(actionForKey('KeyE')).toBeNull();
+    expect(actionForKey('KeyR')).toBeNull();
     expect(actionForKey('w')).toBeNull();
     expect(actionForKey('toString')).toBeNull();
+  });
+});
+
+describe('shop and grapple keys', () => {
+  it('grapples on E', () => {
+    expect(actionForKey('KeyE')).toEqual({ kind: 'grapple' });
+  });
+
+  it('numbers the shop slots 1 to 5, upgrades in sim order then the items', () => {
+    const wanted = [...UPGRADE_IDS, ...ITEM_IDS];
+    expect(SHOP_SLOTS.map((s) => s.purchase.id)).toEqual(wanted);
+    expect(SHOP_SLOTS.map((s) => s.digit)).toEqual(['1', '2', '3', '4', '5']);
+    expect(actionForKey('Digit1')).toEqual({ kind: 'buy', purchase: { kind: 'upgrade', id: 'damage' } });
+    expect(actionForKey('Digit5')).toEqual({ kind: 'buy', purchase: { kind: 'item', id: 'grapple' } });
+    expect(actionForKey('Digit6')).toBeNull();
   });
 });
 
@@ -65,5 +80,10 @@ describe('facingAim', () => {
     const aim = facingAim(p);
     expect(aim.x).toBeCloseTo(100, 9);
     expect(aim.y).toBeCloseTo(200 + TUNING.hookRange, 9);
+  });
+
+  it('reaches as far as the upgraded hook does', () => {
+    const p = fakePlayer({ id: HUMAN, pos: { x: 0, y: 0 }, facing: 0, upgrades: { damage: 0, range: 2, speed: 0, size: 0 } });
+    expect(facingAim(p).x).toBeCloseTo(TUNING.hookRange + 2 * UPGRADES.range.perLevel, 9);
   });
 });
