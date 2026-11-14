@@ -30,6 +30,8 @@ export const TUNING = {
   botAimNoise: 0.1,
   botFireChance: 0.5,
   botChaseRange: 320,
+  /** Under fog, a bot that sees no enemy walks to this share of its dock nearest the water, to look across. */
+  botScoutDepth: 0.35,
 } as const;
 
 export const DEFAULT_ARENA: Arena = {
