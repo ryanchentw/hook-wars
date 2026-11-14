@@ -1,0 +1,13 @@
+{
+  "name": "hook-brawl",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.9.0",
+  "scripts": {
+    "dev": "pnpm --filter @hookbrawl/client dev",
+    "build": "pnpm --filter @hookbrawl/client build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "e2e": "pnpm --filter @hookbrawl/client e2e"
+  }
+}
