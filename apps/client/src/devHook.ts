@@ -1,6 +1,7 @@
 import type { GameState, PlayerId, Vec2 } from '@hookbrawl/sim';
 import type { Session } from './game/session';
 import type { Renderer, RenderStats } from './render/renderer';
+import type { SceneId } from './render/scenes/types';
 
 export type DevHook = {
   getState(): GameState;
@@ -12,6 +13,12 @@ export type DevHook = {
   renderStats(): RenderStats;
   /** Holds the sim still, so a test can photograph a hook in flight where the state says it is. */
   setPaused(paused: boolean): void;
+  sceneId(): SceneId;
+  introActive(): boolean;
+  /** Starts the next match, as "Play again" does. */
+  restart(): void;
+  /** Holds the match and the picture on the frame now showing, or lets them go. */
+  freeze(frozen: boolean): void;
 };
 
 declare global {
@@ -40,5 +47,9 @@ export function installDevHook(session: Session, renderer: Renderer): void {
     },
     renderStats: () => renderer.stats(),
     setPaused: (paused) => session.setPaused(paused),
+    sceneId: () => renderer.sceneId(),
+    introActive: () => renderer.introActive(),
+    restart: () => session.restart(),
+    freeze: (frozen) => renderer.setFrozen(frozen),
   };
 }

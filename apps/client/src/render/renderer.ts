@@ -1,28 +1,32 @@
-import { TUNING } from '@hookbrawl/sim';
-import type { GameEvent, PlayerId, Vec2 } from '@hookbrawl/sim';
-import { ACESFilmicToneMapping, Color, FogExp2, PCFShadowMap, PerspectiveCamera, Scene, Vector3, WebGLRenderer } from 'three';
+import type { GameEvent, Vec2 } from '@hookbrawl/sim';
+import { ACESFilmicToneMapping, PCFShadowMap, WebGLRenderer } from 'three';
 import type { Session } from '../game/session';
 import type { Assets } from './assets/loadAssets';
-import { dampFocus, focusFor, poseFor, type Focus, type Viewport } from './camera/framing';
-import { applyPose, screenToGround, worldToScreen } from './camera/projection';
-import { shakeOffset } from './camera/shake';
-import { createCharactersView } from './characters/charactersView';
-import { createEffectsView } from './effects/effectsView';
+import { screenToGround, worldToScreen } from './camera/projection';
+import { createCameraRig, type CameraRig } from './camera/rig';
+import { createFrameLoop, type ContextEvents } from './frameLoop';
 import { createHookGeometry } from './hook/hookGeometry';
-import { createGrapplesView } from './grapple/grapplesView';
-import { createHooksView } from './hook/hooksView';
 import { CALM_IMPACTS, IMPACTS, impactsOf, type Fighter, type Impact } from './impact/impacts';
-import { interpolateFrame, type PlayerFrame, type RenderFrame } from './interpolate';
-import { createDamageNumbers } from './overlay/damageNumbers';
-import { createLabels, type LabelView } from './overlay/labels';
-import { keepInView, spreadLabels } from './overlay/spreadLabels';
-import './overlay/overlay.css';
-import { createArenaView } from './scene/arenaView';
+import { interpolateFrame, type RenderFrame } from './interpolate';
+import { INTRO_TIMING, introHaze, introPose, playsIntro } from './intro/intro';
+import { createOpening, type Opening } from './intro/opening';
+import { createWorldOverlay } from './overlay/worldOverlay';
+import type { ViewOptions } from './scenes/choice';
+import type { SceneId } from './scenes/types';
+import { createSceneShow, type SceneShow } from './sceneShow';
 import { simToWorld, worldToSim, type Vec3 } from './space';
+import type { StageShared } from './stage';
+import { createSurface, type Surface } from './surface';
 import { createSoftDot } from './textures';
-import { COLORS, LIGHTS, SHAKE, SIZES } from './theme';
 
-export type RenderStats = { readonly calls: number; readonly triangles: number };
+export type RenderStats = {
+  /** Draw calls and triangles of the most recent frame. */
+  readonly calls: number;
+  readonly triangles: number;
+  /** Geometries and textures now held on the GPU. */
+  readonly geometries: number;
+  readonly textures: number;
+};
 
 export type Renderer = {
   readonly canvas: HTMLCanvasElement;
@@ -30,48 +34,127 @@ export type Renderer = {
   worldToScreen(p: Vec2): Vec2;
   /** CSS pixels from the canvas's top-left corner to the sim ground point under them. */
   screenToWorld(p: Vec2): Vec2;
-  /** Draw calls and triangles of the most recent frame. */
   stats(): RenderStats;
+  /** The scene the current match is drawn in. */
+  sceneId(): SceneId;
+  /** True while a match's establishing shot is playing. */
+  introActive(): boolean;
+  skipIntro(): void;
+  /** Stops the picture and the match on the frame now showing, for tooling that needs to look at one exact moment. */
+  setFrozen(frozen: boolean): void;
   destroy(): void;
 };
 
-export type RendererEvents = { readonly onContextLost: () => void; readonly onContextRestored: () => void };
+export type RendererEvents = ContextEvents & {
+  /** The establishing shot started or ended; the match must not run while it plays. */
+  readonly onIntro: (active: boolean) => void;
+};
 
-const MS_PER_SECOND = 1000;
-// A tab that was hidden comes back with one huge frame; treat it as a short one.
-const MAX_FRAME_SECONDS = 0.1;
-const MAX_PIXEL_RATIO = 2;
 const WARM_UP_FRAMES = 3;
-/** Screen room one name-and-bar block needs before the next must be stacked clear of it. */
-const LABEL_BOX = { width: 72, height: SIZES.labelBlockPx };
 const NO_IMPACTS: readonly Impact[] = [];
 
 function createWebGL(): WebGLRenderer {
   try {
-    return new WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    const gl = new WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    gl.toneMapping = ACESFilmicToneMapping;
+    gl.shadowMap.enabled = true;
+    gl.shadowMap.type = PCFShadowMap;
+    return gl;
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`This browser could not start WebGL, which Hook Brawl needs to draw the harbour (${detail})`);
+    throw new Error(`This browser could not start WebGL, which Hook Brawl needs to draw the match (${detail})`);
   }
 }
 
-function fighterOf(pf: PlayerFrame | undefined): Fighter | null {
-  return pf === undefined ? null : { pos: pf.pos, team: pf.player.team };
+function impactsIn(events: readonly GameEvent[], frame: RenderFrame, session: Session, calm: boolean): readonly Impact[] {
+  if (events.length === 0) return NO_IMPACTS;
+  const fighterOf = (id: string): Fighter | null => {
+    const pf = frame.players.find((p) => p.player.id === id);
+    return pf === undefined ? null : { pos: pf.pos, team: pf.player.team };
+  };
+  return impactsOf(events, fighterOf, session.localPlayerId, calm ? CALM_IMPACTS : IMPACTS);
 }
 
-function labelsFor(frame: RenderFrame, project: (world: Vec3) => Vec2, viewport: Viewport): readonly LabelView[] {
-  const spread = spreadLabels(
-    frame.players.map(({ player, pos }) => (player.status.kind === 'dead' ? null : project(simToWorld(pos, SIZES.labelHeight)))),
-    LABEL_BOX,
-  );
-  const anchors = spread.map((anchor) => (anchor === null ? null : keepInView(anchor, LABEL_BOX, viewport)));
-  return frame.players.map(({ player }, i) => ({
-    id: player.id,
-    name: player.name,
-    team: player.team,
-    hpFraction: player.hp / TUNING.maxHp,
-    anchor: anchors[i] ?? null,
-  }));
+type PictureParts = {
+  readonly gl: WebGLRenderer;
+  readonly session: Session;
+  readonly surface: Surface;
+  readonly show: SceneShow;
+  readonly rig: CameraRig;
+  readonly opening: Opening;
+  readonly view: ViewOptions;
+  /** People who ask their system for less motion get the hit without the jolt or the freeze. */
+  readonly calm: boolean;
+};
+
+/** Keeps the picture in step with the session: collects each tick's events, re-dresses the stage for a new match, and draws. */
+function createPicture({ gl, session, surface, show, rig, opening, view, calm }: PictureParts) {
+  const overlay = createWorldOverlay(surface.overlay);
+  let pending: readonly GameEvent[] = [];
+  let elapsed = 0;
+  let stats: RenderStats = { calls: 0, triangles: 0, geometries: 0, textures: 0 };
+
+  const open = (previous: SceneId | null): void => {
+    if (playsIntro(view.intro, previous, show.id())) opening.begin(show.stage().theme.title);
+  };
+  const unsubscribe = session.subscribe((state, change) => {
+    if (change === 'tick') {
+      pending = [...pending, ...state.events];
+      return;
+    }
+    pending = [];
+    rig.reset();
+    overlay.clear();
+    open(show.nextMatch());
+  });
+  const project = (world: Vec3): Vec2 => worldToScreen(rig.camera, surface.viewport(), world);
+
+  /** Brings every view in line with the session's current frame; draws nothing. */
+  const update = (dt: number): void => {
+    const frame = interpolateFrame(session.frame());
+    const tickEvents = pending;
+    pending = [];
+    const impacts = impactsIn(tickEvents, frame, session, calm);
+    rig.jolt(impacts, dt);
+    const intro = opening.step(dt);
+    const gameplay = rig.follow(frame, surface.viewport(), dt);
+    const stage = show.stage();
+    rig.place(intro === null ? gameplay : introPose(stage.theme.intro, gameplay, intro));
+    show.setHaze(introHaze(stage.theme.intro, intro));
+    stage.update({ frame, events: tickEvents, impacts, dt, elapsed, camera: rig.camera });
+    overlay.setVisible(intro === null);
+    overlay.update(frame, impacts, { project, viewport: surface.viewport() }, dt);
+  };
+  const present = (): void => {
+    rig.shaken(() => gl.render(show.scene, rig.camera));
+    const { render, memory } = gl.info;
+    stats = { calls: render.calls, triangles: render.triangles, geometries: memory.geometries, textures: memory.textures };
+  };
+
+  return {
+    project,
+    stats: (): RenderStats => stats,
+    draw(dt: number): void {
+      elapsed += dt;
+      update(dt);
+      present();
+    },
+    /**
+     * Populates the scene (characters are created on first sight) and compiles without blocking the page where the
+     * browser allows. Then draws a few real frames: the first builds the shadow-pass shaders compileAsync skips, and
+     * waiting for the browser to hand back the next frame absorbs however long the GPU takes to catch up with it.
+     */
+    async warmUp(): Promise<void> {
+      open(null);
+      update(0);
+      await gl.compileAsync(show.scene, rig.camera);
+      for (let i = 0; i < WARM_UP_FRAMES; i += 1) {
+        present();
+        await new Promise<number>((resolve) => requestAnimationFrame(resolve));
+      }
+    },
+    dispose: unsubscribe,
+  };
 }
 
 /**
@@ -83,188 +166,50 @@ export async function createRenderer(
   host: HTMLElement,
   session: Session,
   assets: Assets,
+  view: ViewOptions,
   events: RendererEvents,
 ): Promise<Renderer> {
   const gl = createWebGL();
-  gl.toneMapping = ACESFilmicToneMapping;
-  gl.toneMappingExposure = LIGHTS.exposure;
-  gl.shadowMap.enabled = true;
-  gl.shadowMap.type = PCFShadowMap;
-  const canvas = gl.domElement;
-  const overlay = document.createElement('div');
-  overlay.className = 'world-overlay';
-  host.append(canvas, overlay);
-
-  const scene = new Scene();
-  scene.background = new Color(COLORS.night);
-  scene.fog = new FogExp2(COLORS.fog, LIGHTS.fogDensity);
-  const camera = new PerspectiveCamera();
+  const surface = createSurface(host, gl);
   const arena = session.getState().arena;
-  const softDot = createSoftDot();
-  const arenaView = createArenaView(arena, assets, softDot);
-  const hookGeometry = createHookGeometry();
-  const characters = createCharactersView(assets, { hookGeometry, softDot }, session.localPlayerId);
-  const hooks = createHooksView(hookGeometry, softDot);
-  const grapples = createGrapplesView(softDot);
-  const effects = createEffectsView(softDot);
-  const labels = createLabels(overlay);
-  const damage = createDamageNumbers(overlay);
-  scene.add(arenaView.group, characters.group, hooks.group, grapples.group, effects.group);
-
-  // People who ask their system for less motion get the hit without the jolt or the freeze.
-  const impactSpecs = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? CALM_IMPACTS : IMPACTS;
-  let viewport: Viewport = { width: 1, height: 1 };
-  let focus: Focus | null = null;
-  let pending: readonly GameEvent[] = [];
-  let shakeAge = Number.POSITIVE_INFINITY;
-  let shakeStrength = 0;
-  let elapsed = 0;
-  let last: number | null = null;
-  let contextLost = false;
-  let raf = 0;
-  let stats: RenderStats = { calls: 0, triangles: 0 };
-
-  const resize = (): void => {
-    viewport = { width: Math.max(1, host.clientWidth), height: Math.max(1, host.clientHeight) };
-    gl.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO));
-    gl.setSize(viewport.width, viewport.height);
-  };
-  const observer = new ResizeObserver(resize);
-  observer.observe(host);
-  resize();
-
-  const unsubscribe = session.subscribe((state, change) => {
-    if (change === 'tick') {
-      pending = [...pending, ...state.events];
-      return;
-    }
-    pending = [];
-    focus = null;
-    characters.clear();
-    effects.clear();
-    damage.clear();
+  const shared: StageShared = { arena, assets, softDot: createSoftDot(), hookGeometry: createHookGeometry(), localPlayerId: session.localPlayerId };
+  const show = createSceneShow(gl, host, shared, view.scene);
+  const rig = createCameraRig(arena, session.localPlayerId);
+  const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const opening = createOpening(surface.overlay, calm ? INTRO_TIMING.reduced : INTRO_TIMING.full, events.onIntro);
+  const picture = createPicture({ gl, session, surface, show, rig, opening, view, calm });
+  const loop = createFrameLoop(surface.canvas, events, (dt) => {
+    session.advance(dt);
+    picture.draw(dt);
   });
 
-  const project = (world: Vec3): Vec2 => worldToScreen(camera, viewport, world);
-  const right = new Vector3();
-  const up = new Vector3();
-
-  const aimCamera = (frame: RenderFrame, dt: number): void => {
-    const local = frame.players.find((p) => p.player.id === session.localPlayerId);
-    if (local !== undefined) {
-      const wanted = focusFor(arena, local.player.team, local.pos, viewport);
-      focus = focus === null ? wanted : dampFocus(focus, wanted, dt);
-    }
-    applyPose(camera, poseFor(focus ?? { x: 0, z: 0 }, viewport));
-  };
-
-  /** A blow the local player gives or takes jolts the camera, unless a harder jolt is still running. */
-  const jolt = (impacts: readonly Impact[], dt: number): void => {
-    shakeAge += dt;
-    const strength = impacts.reduce((most, impact) => (impact.involvesLocal ? Math.max(most, impact.spec.shake) : most), 0);
-    if (strength > 0 && (strength >= shakeStrength || shakeAge >= SHAKE.duration)) {
-      shakeAge = 0;
-      shakeStrength = strength;
-    }
-  };
-
-  /** Brings every view in line with the session's current frame; draws nothing. */
-  const update = (dt: number): void => {
-    const frame = interpolateFrame(session.frame());
-    const tickEvents = pending;
-    pending = [];
-    const frameOf = (id: PlayerId): PlayerFrame | undefined => frame.players.find((p) => p.player.id === id);
-    const positionOf = (id: PlayerId): Vec2 | null => frameOf(id)?.pos ?? null;
-    const impacts = tickEvents.length === 0 ? NO_IMPACTS : impactsOf(tickEvents, (id) => fighterOf(frameOf(id)), session.localPlayerId, impactSpecs);
-    jolt(impacts, dt);
-
-    aimCamera(frame, dt);
-    arenaView.update(elapsed);
-    characters.update(frame, tickEvents, impacts, dt);
-    hooks.update(frame, characters.handPosition);
-    grapples.update(frame, characters.offHandPosition);
-    effects.update(tickEvents, impacts, dt, camera, (id) => frameOf(id)?.player.facing ?? null);
-    labels.update(labelsFor(frame, project, viewport), dt);
-    damage.spawn(impacts);
-    damage.update(dt, project, positionOf);
-  };
-
-  const present = (): void => {
-    const unshaken = camera.position.clone();
-    const offset = shakeOffset(shakeAge, shakeStrength);
-    camera.matrixWorld.extractBasis(right, up, new Vector3());
-    camera.position.addScaledVector(right, offset.right).addScaledVector(up, offset.up);
-    camera.updateMatrixWorld(true);
-    gl.render(scene, camera);
-    stats = { calls: gl.info.render.calls, triangles: gl.info.render.triangles };
-    // Aiming reads the camera between frames, so it must not see the shake.
-    camera.position.copy(unshaken);
-    camera.updateMatrixWorld(true);
-  };
-
-  const onFrame = (now: number): void => {
-    raf = requestAnimationFrame(onFrame);
-    const dt = last === null ? 0 : Math.min(MAX_FRAME_SECONDS, Math.max(0, (now - last) / MS_PER_SECOND));
-    last = now;
-    if (contextLost) return;
-    elapsed += dt;
-    session.advance(dt);
-    update(dt);
-    present();
-  };
-
-  const onLost = (event: Event): void => {
-    // Without this the browser never offers the context back.
-    event.preventDefault();
-    contextLost = true;
-    events.onContextLost();
-  };
-  const onRestored = (): void => {
-    contextLost = false;
-    last = null;
-    events.onContextRestored();
-  };
-  canvas.addEventListener('webglcontextlost', onLost);
-  canvas.addEventListener('webglcontextrestored', onRestored);
-
   const destroy = (): void => {
-    cancelAnimationFrame(raf);
-    unsubscribe();
-    observer.disconnect();
-    canvas.removeEventListener('webglcontextlost', onLost);
-    canvas.removeEventListener('webglcontextrestored', onRestored);
-    characters.clear();
-    [arenaView, hooks, grapples, effects].forEach((view) => view.dispose());
-    softDot.dispose();
-    hookGeometry.dispose();
+    loop.stop();
+    picture.dispose();
+    opening.dispose();
+    show.dispose();
+    shared.softDot.dispose();
+    shared.hookGeometry.dispose();
     gl.dispose();
-    canvas.remove();
-    overlay.remove();
+    surface.dispose();
   };
-
   try {
-    // Populate the scene (characters are created on first sight) and compile without blocking the page where the
-    // browser allows. Then draw a few real frames: the first builds the shadow-pass shaders compileAsync skips, and
-    // waiting for the browser to hand back the next frame absorbs however long the GPU takes to catch up with it.
-    update(0);
-    await gl.compileAsync(scene, camera);
-    for (let i = 0; i < WARM_UP_FRAMES; i += 1) {
-      present();
-      await new Promise<number>((resolve) => {
-        raf = requestAnimationFrame(resolve);
-      });
-    }
+    await picture.warmUp();
   } catch (error) {
     destroy();
     throw error;
   }
-  raf = requestAnimationFrame(onFrame);
+  loop.start();
 
   return {
-    canvas,
-    worldToScreen: (p) => project(simToWorld(p)),
-    screenToWorld: (p) => worldToSim(screenToGround(camera, viewport, p)),
-    stats: () => stats,
+    canvas: surface.canvas,
+    worldToScreen: (p) => picture.project(simToWorld(p)),
+    screenToWorld: (p) => worldToSim(screenToGround(rig.camera, surface.viewport(), p)),
+    stats: picture.stats,
+    sceneId: show.id,
+    introActive: opening.active,
+    skipIntro: opening.skip,
+    setFrozen: loop.setHeld,
     destroy,
   };
 }

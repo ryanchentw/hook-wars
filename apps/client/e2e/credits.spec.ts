@@ -8,7 +8,7 @@ async function tick(page: Page): Promise<number> {
 
 test('credits open from the HUD, pause the match, and close with Escape', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
-  await page.goto('/?seed=1');
+  await page.goto('/?seed=1&intro=off');
   await page.waitForFunction(() => window.__hookbrawl !== undefined);
   await expect.poll(() => tick(page)).toBeGreaterThan(5);
 
@@ -35,7 +35,7 @@ test('credits open from the HUD, pause the match, and close with Escape', async 
 });
 
 test('a shared credits link opens paused and the back button closes it', async ({ page }) => {
-  await page.goto('/?seed=1#/credits');
+  await page.goto('/?seed=1&intro=off#/credits');
   await page.waitForFunction(() => window.__hookbrawl !== undefined);
   const dialog = page.getByRole('dialog', { name: '致敬' });
   await expect(dialog).toBeVisible();
@@ -68,7 +68,7 @@ async function localHooks(page: Page): Promise<number> {
 }
 
 test('a key released behind the credits dialog does not leave the player walking, and Space is a game key again once it closes', async ({ page }) => {
-  await page.goto('/?opponent=idle');
+  await page.goto('/?opponent=idle&intro=off');
   await page.waitForFunction(() => window.__hookbrawl !== undefined);
   const startX = await localX(page);
 
@@ -92,5 +92,5 @@ test('a key released behind the credits dialog does not leave the player walking
 
   await page.keyboard.press('Space');
   await expect.poll(() => localHooks(page), { timeout: 3_000 }).toBe(1);
-  await expect(page).toHaveURL(/\/\?opponent=idle$/);
+  await expect(page).toHaveURL(/\/\?opponent=idle&intro=off$/);
 });

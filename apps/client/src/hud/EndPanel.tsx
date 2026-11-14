@@ -6,7 +6,7 @@ export function EndPanel({ end, onPlayAgain }: { readonly end: EndView; readonly
     <div className="hud-end-backdrop">
       <div className="hud-end hud-plate" role="dialog" aria-label="match over">
         <h1 className={`hud-${end.winner}`}>{end.localWon ? 'Victory' : 'Defeat'}</h1>
-        <p>{TEAM_LABEL[end.winner]} wins the harbour</p>
+        <p>{TEAM_LABEL[end.winner]} wins the match</p>
         <table>
           <thead>
             <tr>

@@ -13,7 +13,8 @@ import {
 } from 'three';
 import type { GrappleFrame, RenderFrame } from '../interpolate';
 import { toWorldLength } from '../space';
-import { COLORS, GRAPPLE_LOOK, SIZES, TEAM_COLORS } from '../theme';
+import type { Tints } from '../scenes/types';
+import { GRAPPLE_LOOK, SIZES, TEAM_COLORS } from '../theme';
 import { createGrappleGeometry, GRAPPLE_EYE_OFFSET } from './grappleGeometry';
 
 export type GrapplesView = {
@@ -49,22 +50,21 @@ type Looks = {
   readonly halos: Record<TeamId, SpriteMaterial>;
 };
 
-function createLooks(softDot: Texture): Looks {
-  const glow = GRAPPLE_LOOK.ropeGlow;
+function createLooks(softDot: Texture, tints: Tints): Looks {
   return {
     rope: {
       geometry: new CylinderGeometry(GRAPPLE_LOOK.ropeRadius, GRAPPLE_LOOK.ropeRadius, 1, 6),
-      material: new MeshStandardMaterial({ color: COLORS.rope, roughness: 0.9, emissive: COLORS.rope, emissiveIntensity: glow }),
+      material: new MeshStandardMaterial({ color: tints.rope, roughness: 0.9, emissive: tints.rope, emissiveIntensity: tints.ropeGlow }),
     },
     claw: {
       geometry: createGrappleGeometry(),
       materials: perTeam(
-        (team) => new MeshStandardMaterial({ color: COLORS.iron, roughness: 0.4, metalness: 0.6, emissive: TEAM_COLORS[team].glow, emissiveIntensity: 0.12 }),
+        (team) => new MeshStandardMaterial({ color: tints.iron, roughness: 0.4, metalness: 0.6, emissive: tints.teams[team].glow, emissiveIntensity: 0.12 }),
       ),
     },
     halos: perTeam(
       (team) =>
-        new SpriteMaterial({ map: softDot, color: TEAM_COLORS[team].glow, blending: AdditiveBlending, depthWrite: false, opacity: GRAPPLE_LOOK.haloOpacity }),
+        new SpriteMaterial({ map: softDot, color: tints.teams[team].glow, blending: AdditiveBlending, depthWrite: false, opacity: GRAPPLE_LOOK.haloOpacity }),
     ),
   };
 }
@@ -89,9 +89,9 @@ function createSlot(looks: Looks): Slot {
 }
 
 /** Draws each grapple as a pale rope from the owner's off hand to a small claw; a fixed pool, so a frame allocates nothing. */
-export function createGrapplesView(softDot: Texture): GrapplesView {
+export function createGrapplesView(softDot: Texture, tints: Tints): GrapplesView {
   const group = new Group();
-  const looks = createLooks(softDot);
+  const looks = createLooks(softDot, tints);
   const slots: readonly Slot[] = Array.from({ length: SLOTS }, () => createSlot(looks));
   slots.forEach((slot) => group.add(slot.rope, slot.head));
   const from = new Vector3();

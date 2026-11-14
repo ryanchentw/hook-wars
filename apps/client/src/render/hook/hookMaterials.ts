@@ -1,6 +1,6 @@
 import type { TeamId } from '@hookbrawl/sim';
 import { AdditiveBlending, Color, MeshBasicMaterial, MeshStandardMaterial, SpriteMaterial, type Material, type Texture } from 'three';
-import { COLORS, TEAM_COLORS } from '../theme';
+import type { Tints } from '../scenes/types';
 import { HOOK_GROUPS } from './hookGeometry';
 import { MENACES, MENACE_STYLES, type HookLook, type Menace } from './hookLook';
 
@@ -29,11 +29,11 @@ export function createHiddenMaterial(): Material {
   return new MeshBasicMaterial({ visible: false });
 }
 
-function dressingFor(team: TeamId, menace: Menace, hidden: Material, softDot: Texture): Dressing {
+function dressingFor(team: TeamId, menace: Menace, hidden: Material, softDot: Texture, tints: Tints): Dressing {
   const style = MENACE_STYLES[menace];
-  const glow = style.tint ?? TEAM_COLORS[team].glow;
+  const glow = style.tint ?? tints.teams[team].glow;
   const iron = new MeshStandardMaterial({
-    color: new Color(COLORS.iron).multiplyScalar(style.iron),
+    color: new Color(tints.iron).multiplyScalar(style.iron),
     roughness: 0.34,
     metalness: 0.6,
     emissive: glow,
@@ -45,10 +45,10 @@ function dressingFor(team: TeamId, menace: Menace, hidden: Material, softDot: Te
   return { plain: facesFor(iron, hidden, false), barbed: facesFor(iron, hidden, true), halo };
 }
 
-export function createHookMaterials(softDot: Texture): HookMaterials {
+export function createHookMaterials(softDot: Texture, tints: Tints): HookMaterials {
   const hidden = createHiddenMaterial();
-  const teams = Object.keys(TEAM_COLORS) as TeamId[];
-  const table = new Map(teams.flatMap((team) => MENACES.map((m) => [`${team}:${m}`, dressingFor(team, m, hidden, softDot)] as const)));
+  const teams = Object.keys(tints.teams) as TeamId[];
+  const table = new Map(teams.flatMap((team) => MENACES.map((m) => [`${team}:${m}`, dressingFor(team, m, hidden, softDot, tints)] as const)));
   return {
     dress(team, look) {
       const dressing = table.get(`${team}:${look.menace}`);

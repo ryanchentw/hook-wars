@@ -27,7 +27,7 @@ async function snapshot(page: Page): Promise<Snapshot> {
 }
 
 async function boot(page: Page, query: string): Promise<void> {
-  await page.goto(`/${query}`);
+  await page.goto(`/${query}&intro=off`);
   await page.waitForFunction(() => window.__hookbrawl !== undefined);
 }
 

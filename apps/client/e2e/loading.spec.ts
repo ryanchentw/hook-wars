@@ -12,7 +12,7 @@ test('shows a loading panel, then a retryable error when a model fails, and star
   await page.route(MODELS, (route) => {
     (route.request().url().includes('/characters/') ? heldCharacters : heldProps).push(route);
   });
-  await page.goto('/?seed=1');
+  await page.goto('/?seed=1&intro=off');
 
   const stage = page.locator('#stage');
   const status = page.getByRole('status');
@@ -47,7 +47,7 @@ test('shows a loading panel, then a retryable error when a model fails, and star
 test('survives losing and regaining the WebGL context', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto('/?seed=1');
+  await page.goto('/?seed=1&intro=off');
   await page.waitForFunction(() => window.__hookbrawl !== undefined);
   await expect.poll(() => tick(page)).toBeGreaterThan(2);
 

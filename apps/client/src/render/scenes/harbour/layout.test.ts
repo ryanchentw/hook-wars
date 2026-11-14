@@ -1,26 +1,7 @@
 import { DEFAULT_ARENA } from '@hookbrawl/sim';
 import { describe, expect, it } from 'vitest';
-import type { PropName } from '../assets/manifest';
-import { toWorldLength } from '../space';
-import { layOutArena, type Placement } from './layout';
-
-/** Half extents and height of each model as shipped, read from the files' own bounds. */
-const BOUNDS: Readonly<Record<PropName, { readonly halfX: number; readonly halfZ: number; readonly height: number }>> = {
-  floorStone: { halfX: 2, halfZ: 2, height: 0.05 },
-  floorTimber: { halfX: 2, halfZ: 2, height: 0.05 },
-  wall: { halfX: 2, halfZ: 0.5, height: 4 },
-  wallPillar: { halfX: 2, halfZ: 0.75, height: 4 },
-  wallGated: { halfX: 2, halfZ: 0.5, height: 4 },
-  parapet: { halfX: 2, halfZ: 0.25, height: 1.1 },
-  pillar: { halfX: 0.75, halfZ: 0.75, height: 4 },
-  torchMounted: { halfX: 0.28, halfZ: 0.62, height: 0.68 },
-  torchStanding: { halfX: 0.28, halfZ: 0.28, height: 0.73 },
-  barrel: { halfX: 0.9, halfZ: 0.9, height: 2 },
-  barrelStack: { halfX: 0.93, halfZ: 0.93, height: 1.77 },
-  crates: { halfX: 1.16, halfZ: 1.16, height: 2.14 },
-  boxes: { halfX: 1.86, halfZ: 1.86, height: 3.31 },
-  keg: { halfX: 1.02, halfZ: 1.02, height: 2.05 },
-};
+import { toWorldLength } from '../../space';
+import { layOutArena, propFootprint } from './layout';
 
 const arena = DEFAULT_ARENA;
 const layout = layOutArena(arena);
@@ -28,17 +9,7 @@ const w = toWorldLength(arena.width);
 const d = toWorldLength(arena.height);
 const canal = { from: toWorldLength(arena.canal.x0), to: toWorldLength(arena.canal.x1) };
 
-type Footprint = { readonly x0: number; readonly x1: number; readonly z0: number; readonly z1: number; readonly top: number };
-
-function footprint(prop: PropName, p: Placement): Footprint {
-  const b = BOUNDS[prop];
-  const turned = Math.abs(Math.sin(p.yaw));
-  // A prop turned to any odd angle is boxed by its larger half extent, which only overestimates.
-  const square = turned > 1e-6 && turned < 1 - 1e-6;
-  const hx = square ? Math.max(b.halfX, b.halfZ) * Math.SQRT2 : (turned > 0.5 ? b.halfZ : b.halfX) * (turned > 0.5 ? p.scale.z : p.scale.x);
-  const hz = square ? hx : (turned > 0.5 ? b.halfX : b.halfZ) * (turned > 0.5 ? p.scale.x : p.scale.z);
-  return { x0: p.x - hx, x1: p.x + hx, z0: p.z - hz, z1: p.z + hz, top: p.y + b.height * p.scale.y };
-}
+const footprint = propFootprint;
 
 const EPS = 1e-6;
 
@@ -87,15 +58,12 @@ describe('arena layout', () => {
   });
 
   it('lights a handful of torches, all off the docks', () => {
-    expect(layout.torches.length).toBeGreaterThanOrEqual(4);
-    expect(layout.torches.length).toBeLessThanOrEqual(8);
-    layout.torches.forEach((t) => {
-      expect(t.flame.z < 0 || t.flame.z > d).toBe(true);
-      expect(t.flame.y).toBeGreaterThan(0);
+    expect(layout.lamps.length).toBeGreaterThanOrEqual(4);
+    expect(layout.lamps.length).toBeLessThanOrEqual(8);
+    layout.lamps.forEach((t) => {
+      expect(t.glowAt.z < 0 || t.glowAt.z > d).toBe(true);
+      expect(t.glowAt.y).toBeGreaterThan(0);
     });
   });
 
-  it('puts the water below the walking surface', () => {
-    expect(layout.water.level).toBeLessThan(-1);
-  });
 });

@@ -1,5 +1,4 @@
 import { Color, DataTexture, LinearFilter, LinearMipmapLinearFilter, RepeatWrapping, RGBAFormat, SRGBColorSpace, UnsignedByteType } from 'three';
-import { COLORS } from './theme';
 
 const BYTE = 255;
 
@@ -89,11 +88,11 @@ function hash(x: number, y: number): number {
   return s - Math.floor(s);
 }
 
-/** Blotchy rust with darker streaks running down, wrapped round the buoy. */
-export function createRust(): DataTexture {
-  const base = new Color(COLORS.rust);
-  const dark = new Color(COLORS.rustDark);
-  const bright = new Color(COLORS.rustBright);
+/** Blotchy rust with darker streaks running down, to wrap round a drum. */
+export function createRust(tones: { readonly base: number; readonly dark: number; readonly bright: number }): DataTexture {
+  const base = new Color(tones.base);
+  const dark = new Color(tones.dark);
+  const bright = new Color(tones.bright);
   const size = 64;
   const texture = dataTexture(size, (u, v) => {
     const x = Math.floor(u * size);

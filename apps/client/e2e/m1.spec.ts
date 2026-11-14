@@ -51,7 +51,7 @@ async function localScreenY(page: Page): Promise<number> {
 }
 
 test('walk with W, throw a hook across the canal with Space, and see it come back', async ({ page }) => {
-  await page.goto('/?seed=1');
+  await page.goto('/?seed=1&intro=off');
   await expect(page.locator('#stage canvas')).toBeVisible();
   await page.waitForFunction(() => window.__hookbrawl !== undefined);
 
@@ -79,7 +79,7 @@ async function waitForDummy(page: Page, status: Player['status']['kind']): Promi
 }
 
 test('a hook drags a dummy across the canal and drops it beside the thrower', async ({ page }) => {
-  await page.goto('/?opponent=idle');
+  await page.goto('/?opponent=idle&intro=off');
   await page.waitForFunction(() => window.__hookbrawl !== undefined);
   const { arena } = await state(page);
   const dummy = async (): Promise<Player> => (await state(page)).players.find((p) => p.team === 'east')!;
@@ -116,7 +116,7 @@ test('a hook drags a dummy across the canal and drops it beside the thrower', as
 });
 
 test('a left click throws the hook at the clicked point', async ({ page }) => {
-  await page.goto('/?opponent=idle');
+  await page.goto('/?opponent=idle&intro=off');
   await page.waitForFunction(() => window.__hookbrawl !== undefined);
   const { arena } = await state(page);
   const from = (await localPlayer(page)).pos;

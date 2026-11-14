@@ -2,7 +2,8 @@ import type { HookId, PlayerId, TeamId } from '@hookbrawl/sim';
 import { Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, Sprite, TorusGeometry, Vector3, type BufferGeometry, type Texture } from 'three';
 import type { HookFrame, RenderFrame } from '../interpolate';
 import { simToWorld, toWorldLength, type Vec3 } from '../space';
-import { CHAIN, COLORS, SIZES, TEAM_COLORS } from '../theme';
+import type { Tints } from '../scenes/types';
+import { CHAIN, SIZES } from '../theme';
 import { hookLook, type HookLook } from './hookLook';
 import { createHookMaterials } from './hookMaterials';
 import { layOutChain, type LinkPlacement } from './chainLinks';
@@ -64,16 +65,17 @@ const LIVE_BARBED: HookLook = { menace: 'live', barbed: true };
 const HALO_SIZE = 4.2;
 
 /** `hookGeometry` is shared with the hooks the fighters carry; whoever made it disposes of it. */
-export function createHooksView(hookGeometry: BufferGeometry, softDot: Texture): HooksView {
+export function createHooksView(hookGeometry: BufferGeometry, softDot: Texture, tints: Tints): HooksView {
+  const teams = Object.keys(tints.teams) as TeamId[];
   const group = new Group();
   const linkGeometry = new TorusGeometry((LINK.width - LINK.thickness) / 2, LINK.thickness / 2, 6, 12);
   linkGeometry.scale(LINK.length / LINK.width, 1, 1);
   const linkMaterial = new MeshStandardMaterial({
-    color: COLORS.iron,
+    color: tints.iron,
     roughness: 0.38,
     metalness: 0.55,
-    emissive: COLORS.iron,
-    emissiveIntensity: 0.16,
+    emissive: tints.iron,
+    emissiveIntensity: tints.chainGlow,
   });
   const capacity = CHAIN.maxLinks * FULL_CHAINS;
   const links = new InstancedMesh(linkGeometry, linkMaterial, capacity);
@@ -82,7 +84,7 @@ export function createHooksView(hookGeometry: BufferGeometry, softDot: Texture):
   links.count = 0;
   group.add(links);
 
-  const materials = createHookMaterials(softDot);
+  const materials = createHookMaterials(softDot, tints);
   let heads = new Map<HookId, Head>();
   const matrix = new Matrix4();
 
@@ -104,7 +106,7 @@ export function createHooksView(hookGeometry: BufferGeometry, softDot: Texture):
     if (halo !== null) head.halo.material = halo;
   };
   // Never drawn. Their presence lets the renderer compile the hook shaders up front, not on the first throw.
-  const warmUp = (Object.keys(TEAM_COLORS) as TeamId[]).map(createHead);
+  const warmUp = teams.map(createHead);
   warmUp.forEach(({ mesh }) => {
     mesh.visible = false;
     group.add(mesh);

@@ -5,6 +5,8 @@
   inset: 0;
   pointer-events: none;
   background: radial-gradient(ellipse at 50% 46%, transparent 48%, rgba(2, 3, 4, 0.34) 78%, rgba(1, 2, 3, 0.72) 100%);
+  /* Each scene says how much of this it wants. */
+  opacity: var(--vignette, 1);
 }
 
 .world-overlay {
@@ -42,10 +44,7 @@
   font: 700 13px var(--font-display);
   letter-spacing: 0.06em;
   line-height: 1;
-  text-shadow:
-    0 0 3px #000,
-    0 1px 2px #000,
-    0 0 8px #000;
+  text-shadow: var(--name-shadow);
 }
 
 .unit-west .unit-name {
@@ -90,17 +89,20 @@
 
 .damage-number {
   font: 900 22px var(--font-display);
-  color: #e9dcc0;
+  color: var(--damage-ink);
   letter-spacing: 0.02em;
-  text-shadow:
-    0 0 2px #1a0403,
-    0 2px 0 #1a0403,
-    0 0 10px rgba(120, 12, 8, 0.9);
+  text-shadow: var(--damage-shadow);
 }
 
 .damage-heavy {
   font-size: 34px;
-  color: #f0b9a0;
+  color: var(--damage-heavy-ink);
+}
+
+/* The camera is away on the establishing shot: nothing it would pin to a fighter is where the fighter appears. */
+.world-overlay.is-away .unit-label,
+.world-overlay.is-away .damage-number {
+  visibility: hidden;
 }
 
 @media (max-width: 640px) {

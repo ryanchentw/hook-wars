@@ -18,7 +18,8 @@ import {
 import type { CharacterAsset } from '../assets/loadAssets';
 import type { Impact } from '../impact/impacts';
 import { facingToYaw, simToWorld, toWorldLength } from '../space';
-import { GRAPPLE_LOOK, SIZES, TEAM_COLORS } from '../theme';
+import type { Tints } from '../scenes/types';
+import { GRAPPLE_LOOK, SIZES } from '../theme';
 import { ANIMATIONS, fadeDuration, nextAnimState, type AnimFacts, type AnimState, type AnimTrigger } from './animation';
 import { createFlash } from './flash';
 import { createFlourishView, type FlourishView } from './flourishView';
@@ -182,13 +183,13 @@ type Rig = {
 };
 
 /** What every character draws with and nobody but the renderer disposes of. */
-export type SharedLooks = { readonly hookGeometry: BufferGeometry; readonly softDot: Texture };
+export type SharedLooks = { readonly hookGeometry: BufferGeometry; readonly softDot: Texture; readonly tints: Tints };
 
 /**
  * The figure's scene nodes. `group` is always the true sim position and carries the rings;
  * `pivot` takes the lunge and the recoil, and `body` the turn, so neither moves the rings.
  */
-function createRig(root: Object3D, player: Player, isLocal: boolean, softDot: Texture): Rig {
+function createRig(root: Object3D, player: Player, isLocal: boolean, { softDot, tints }: SharedLooks): Rig {
   const group = new Group();
   const pivot = new Group();
   const body = new Group();
@@ -196,8 +197,8 @@ function createRig(root: Object3D, player: Player, isLocal: boolean, softDot: Te
   pivot.add(body);
   const radius = toWorldLength(TUNING.playerRadius);
   const rings = [
-    createRing(radius, TEAM_COLORS[player.team].signal, 0.95),
-    ...(isLocal ? [createRing(radius - SIZES.ringWidth - LOCAL_RING_GAP, TEAM_COLORS[player.team].glow, 0.55)] : []),
+    createRing(radius, tints.teams[player.team].signal, 0.95),
+    ...(isLocal ? [createRing(radius - SIZES.ringWidth - LOCAL_RING_GAP, tints.teams[player.team].glow, 0.55)] : []),
   ];
   const flourish = createFlourishView(softDot);
   group.add(pivot, ...rings, flourish.group);
@@ -217,11 +218,11 @@ function tiltFor(status: Player['status']['kind'], hauled: boolean): Tilt {
 }
 
 export function createCharacterView(asset: CharacterAsset, looks: SharedLooks, player: Player, isLocal: boolean): CharacterView {
-  const model = instantiateCharacter(asset, player.team);
-  const heldHook = createHeldHook(looks.hookGeometry, player.team);
+  const model = instantiateCharacter(asset, player.team, looks.tints);
+  const heldHook = createHeldHook(looks.hookGeometry, player.team, looks.tints);
   model.hand.add(heldHook.mesh);
   const materials = [...model.materials, heldHook.material];
-  const rig = createRig(model.root, player, isLocal, looks.softDot);
+  const rig = createRig(model.root, player, isLocal, looks);
   const { group, pivot, body, rings, flourish } = rig;
   const mixer = new AnimationMixer(model.root);
   const animator = createAnimator(mixer, createActions(mixer, asset));
@@ -261,6 +262,7 @@ export function createCharacterView(asset: CharacterAsset, looks: SharedLooks, p
       mixer.stopAllAction();
       mixer.uncacheRoot(model.root);
       materials.forEach((m) => m.dispose());
+      model.dispose();
       rig.dispose();
       heldHook.dispose();
     },

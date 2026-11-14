@@ -1,4 +1,3 @@
-import type { Arena } from '@hookbrawl/sim';
 import {
   BoxGeometry,
   Color,
@@ -10,17 +9,11 @@ import {
   Quaternion,
   Vector3,
   type BufferGeometry,
-  type Texture,
 } from 'three';
-import type { Assets } from '../assets/loadAssets';
-import { toWorldLength } from '../space';
-import { COLORS } from '../theme';
+import type { Animated, SetContext } from '../types';
 import { createBuoy } from './buoy';
-import { layOutArena, type Box, type PropGroup, type Surface } from './layout';
-import { createLighting } from './lighting';
-import { createWater } from './water';
-
-export type ArenaView = { readonly group: Group; update(elapsed: number): void; dispose(): void };
+import type { ArenaLayout, Box, PropGroup, Surface } from './layout';
+import { HARBOUR_COLORS as COLORS } from './look';
 
 const SURFACE_TINT: Readonly<Record<Surface, number>> = {
   stone: COLORS.stoneTint,
@@ -66,11 +59,9 @@ function weather(mesh: InstancedMesh): void {
   }
 }
 
-/** The static harbour: instanced tiles, walls and cargo, the canal water, the buoy and the lights. */
-export function createArenaView(arena: Arena, assets: Assets, softDot: Texture): ArenaView {
-  const layout = layOutArena(arena);
+/** The static harbour: instanced tiles, walls and cargo, and the buoy. */
+export function buildHarbourSet(layout: ArenaLayout, { arena, assets, softDot }: SetContext): Animated {
   const group = new Group();
-
   const materials = Object.fromEntries(
     (Object.keys(SURFACE_TINT) as Surface[]).map((surface) => [
       surface,
@@ -79,39 +70,33 @@ export function createArenaView(arena: Arena, assets: Assets, softDot: Texture):
   ) as Record<Surface, MeshStandardMaterial>;
   const ledgeMaterial = new MeshStandardMaterial({ color: COLORS.ledge, roughness: 0.95 });
 
-  const instances = layout.groups
-    .filter((g) => g.placements.length > 0)
-    .map((g) => instanced(g, assets.props[g.prop].geometry, materials[g.surface]));
-  instances.forEach((mesh, i) => {
-    const surface = layout.groups.filter((g) => g.placements.length > 0)[i]?.surface;
-    if (surface === 'stone' || surface === 'timber') weather(mesh);
+  const placed = layout.groups.filter((g) => g.placements.length > 0);
+  const instances = placed.map((g) => {
+    const mesh = instanced(g, assets.props[g.prop].geometry, materials[g.surface]);
+    if (g.surface === 'stone' || g.surface === 'timber') weather(mesh);
+    return mesh;
   });
   const copingMaterial = new MeshStandardMaterial({ color: COLORS.coping, roughness: 0.8 });
   const ledges = [
     ...layout.ledges.map((box) => boxMesh(box, ledgeMaterial, true)),
     ...layout.copings.map((box) => boxMesh(box, copingMaterial, false)),
   ];
-  const water = createWater(layout.water);
   const buoy = createBuoy(arena, softDot);
-  const lighting = createLighting({ w: toWorldLength(arena.width), d: toWorldLength(arena.height) }, layout.torches, softDot);
-  group.add(...instances, ...ledges, water.mesh, buoy.group, lighting.group);
+  group.add(...instances, ...ledges, buoy.group);
 
   return {
     group,
-    update(elapsed) {
-      water.update(elapsed);
-      buoy.update(elapsed);
-      lighting.update(elapsed);
-    },
+    update: buoy.update,
     dispose() {
       instances.forEach((mesh) => mesh.dispose());
+      // The models stay loaded for the next time this scene comes round; only their copies on the GPU are let go.
+      placed.forEach((g) => assets.props[g.prop].geometry.dispose());
+      assets.propTexture.dispose();
       ledges.forEach((mesh) => mesh.geometry.dispose());
       Object.values(materials).forEach((m) => m.dispose());
       ledgeMaterial.dispose();
       copingMaterial.dispose();
-      water.dispose();
       buoy.dispose();
-      lighting.dispose();
     },
   };
 }

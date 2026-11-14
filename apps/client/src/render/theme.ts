@@ -1,26 +1,7 @@
 import type { TeamId } from '@hookbrawl/sim';
 
-/** Every colour the 3D scene uses. Hex numbers so they can go straight into three.js materials. */
+/** Colours that are the same in every scene; each scene's own are in its look. Hex numbers so they can go straight into three.js materials. */
 export const COLORS = {
-  night: 0x05080b,
-  fog: 0x070c10,
-  moon: 0xb4c2dc,
-  skyFill: 0x51607c,
-  groundFill: 0x2b2622,
-  torch: 0xff8a3c,
-  torchGlow: 0xffb45e,
-  stoneTint: 0x8f9aa6,
-  timberTint: 0x9a8f86,
-  wallTint: 0x77818c,
-  propTint: 0x8b8580,
-  ledge: 0x1b1f24,
-  coping: 0x8f97a3,
-  water: 0x0b1a1c,
-  rust: 0x7a3f26,
-  rustDark: 0x3a2018,
-  rustBright: 0xb5622f,
-  buoyLamp: 0xff5a2a,
-  buoyPaint: 0x9c8e6e,
   iron: 0x9aa0a8,
   /** What shows through a helm's visor: nothing. */
   visorVoid: 0x0b0b0d,
@@ -29,7 +10,7 @@ export const COLORS = {
   blood: 0x9c1512,
   wisp: 0x4f9c8e,
   dust: 0xd6c9ad,
-  /** Tarred hemp: warm and pale enough to stand out from the iron chain and the black water. */
+  /** Tarred hemp: warm and pale enough to stand out from the iron chain and dark water. */
   rope: 0xd9b77a,
   coin: 0xffc93c,
 } as const;
@@ -59,14 +40,6 @@ export const SIZES = {
   chainHeight: 1.7,
   ringWidth: 0.16,
   ringLift: 0.03,
-  waterLevel: -1.7,
-  quayDepth: 4,
-  ledgeHeight: 1.3,
-  ledgeDepth: 4,
-  tile: 4,
-  wallHeight: 4,
-  buoyBob: 0.12,
-  buoyTilt: 0.05,
 } as const;
 
 export const CAMERA = {
@@ -160,21 +133,6 @@ export const FLOURISH = {
 
 /** How a struck fighter is lit for the few frames after a blow. */
 export const HIT_FLASH = { color: 0xffffff, intensity: 2.6 } as const;
-
-export const LIGHTS = {
-  moonIntensity: 3.4,
-  rimIntensity: 0.9,
-  hemiIntensity: 1.5,
-  torchIntensity: 160,
-  torchDistance: 30,
-  torchDecay: 1.9,
-  torchFlicker: 0.22,
-  shadowMapSize: 2048,
-  fogDensity: 0.0105,
-  exposure: 1.3,
-  /** How much of its own texture a character gives off, so a dark pelt never sinks into the night. */
-  characterSelfLight: 0.22,
-} as const;
 
 export const CHAIN = {
   /** Sim units between link centres; successive links overlap so the chain reads as one line. */

@@ -1,7 +1,8 @@
 import type { Arena } from '@hookbrawl/sim';
-import type { PropName } from '../assets/manifest';
-import { toWorldLength, type Vec3 } from '../space';
-import { SIZES } from '../theme';
+import { PROP_BOUNDS, type PropName } from '../../assets/manifest';
+import { toWorldLength, type Vec3 } from '../../space';
+import type { Footprint, SceneLayout } from '../types';
+import { HARBOUR_SIZES as SIZES, TORCH } from './look';
 
 export type Placement = {
   readonly x: number;
@@ -23,17 +24,12 @@ export type PropGroup = {
 
 export type Box = { readonly min: Vec3; readonly max: Vec3 };
 
-export type TorchSpot = { readonly flame: Vec3 };
-
-export type ArenaLayout = {
+export type ArenaLayout = SceneLayout & {
   readonly groups: readonly PropGroup[];
   /** Solid masonry under and behind the tiles: the raised ledges that ring the quays. */
   readonly ledges: readonly Box[];
   /** Pale edging stones set flush into the dock along every drop, so the edge of the walkable ground reads at a glance. */
   readonly copings: readonly Box[];
-  readonly torches: readonly TorchSpot[];
-  /** One sheet under the canal and out past the harbour mouth; the walls hide where it stops. */
-  readonly water: { readonly level: number; readonly centre: Vec3; readonly width: number; readonly depth: number };
 };
 
 type Span = { readonly from: number; readonly to: number };
@@ -52,6 +48,8 @@ const TILE_TOP = 0.05;
 /** How far the water runs south of the docks before the fog has swallowed it. */
 const OPEN_WATER = 90;
 const COPING = { width: 0.7, depth: 0.4, proud: 0.012 };
+/** Half the thickness of the iron hoops round the buoy's drum. */
+export const BUOY_HOOP = 0.09;
 
 const at = (x: number, y: number, z: number, yaw = 0, scale: Vec3 = ONE): Placement => ({ x, y, z, yaw, scale });
 
@@ -161,29 +159,54 @@ export function layOutArena(arena: Arena): ArenaLayout {
     ...decor(w, canal, ledge, top),
   ];
 
+  const ledges = [
+    ...northLedges.map((s) => box(s, { from: -ledge, to: 0 }, top)),
+    box({ from: -ledge, to: 0 }, depth, top),
+    box({ from: w, to: w + ledge }, depth, top),
+  ];
+
   return {
     groups,
-    ledges: [
-      ...northLedges.map((s) => box(s, { from: -ledge, to: 0 }, top)),
-      box({ from: -ledge, to: 0 }, depth, top),
-      box({ from: w, to: w + ledge }, depth, top),
-    ],
+    ledges,
+    footprints: [...groups.flatMap((g) => g.placements.map((p) => propFootprint(g.prop, p))), ...ledges.map(boxFootprint)],
+    obstacle: buoyFootprint(arena),
     copings: [
       coping({ from: canal.from - COPING.width, to: canal.from }, depth),
       coping({ from: canal.to, to: canal.to + COPING.width }, depth),
       ...docks.map((s) => coping(s, { from: d - COPING.width, to: d })),
     ],
-    torches: [
-      ...northTorches.map((p) => ({ flame: { x: p.x, y: p.y + 0.75, z: p.z + 0.45 } })),
-      ...mouthTorches.map((p) => ({ flame: { x: p.x, y: p.y + 0.75, z: p.z } })),
+    lamps: [
+      ...northTorches.map((p) => ({ ...TORCH, glowAt: { x: p.x, y: p.y + 0.75, z: p.z + 0.45 } })),
+      ...mouthTorches.map((p) => ({ ...TORCH, glowAt: { x: p.x, y: p.y + 0.75, z: p.z } })),
     ],
+    // One sheet under the canal and out past the harbour mouth; the walls hide where it stops.
     water: {
-      level: SIZES.waterLevel,
       centre: { x: w / 2, y: SIZES.waterLevel, z: (d + OPEN_WATER - ledge) / 2 },
       width: w + 2 * ledge,
       depth: d + OPEN_WATER + ledge,
     },
   };
+}
+
+/** The box a placed prop stands in. A prop turned to an odd angle is boxed by its larger half extent, which only overestimates. */
+export function propFootprint(prop: PropName, p: Placement): Footprint {
+  const b = PROP_BOUNDS[prop];
+  const turned = Math.abs(Math.sin(p.yaw));
+  const square = turned > 1e-6 && turned < 1 - 1e-6;
+  const quarter = turned > 0.5;
+  const hx = square ? Math.max(b.halfX, b.halfZ) * Math.SQRT2 : quarter ? b.halfZ * p.scale.z : b.halfX * p.scale.x;
+  const hz = square ? hx : quarter ? b.halfX * p.scale.x : b.halfZ * p.scale.z;
+  return { label: prop, x0: p.x - hx, x1: p.x + hx, z0: p.z - hz, z1: p.z + hz, top: p.y + b.height * p.scale.y };
+}
+
+/** The buoy's drum is the sim's circle; its two iron hoops stand proud of it by their own thickness. */
+function buoyFootprint(arena: Arena): ArenaLayout['obstacle'] {
+  const radius = toWorldLength(arena.buoy.radius);
+  return { x: toWorldLength(arena.buoy.pos.x), z: toWorldLength(arena.buoy.pos.y), radius, reach: radius + BUOY_HOOP };
+}
+
+function boxFootprint(b: Box): Footprint {
+  return { label: 'ledge', x0: b.min.x, x1: b.max.x, z0: b.min.z, z1: b.max.z, top: b.max.y };
 }
 
 function coping(xs: Span, zs: Span): Box {

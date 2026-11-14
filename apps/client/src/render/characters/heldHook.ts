@@ -2,7 +2,8 @@ import { hookStats, TUNING } from '@hookbrawl/sim';
 import type { Player, TeamId } from '@hookbrawl/sim';
 import { Mesh, MeshStandardMaterial, type BufferGeometry, type Material, type Object3D } from 'three';
 import { createHiddenMaterial, facesFor } from '../hook/hookMaterials';
-import { COLORS, HELD_HOOK, SIZES, TEAM_COLORS } from '../theme';
+import type { Tints } from '../scenes/types';
+import { HELD_HOOK, SIZES } from '../theme';
 
 export type HeldHook = {
   readonly mesh: Mesh<BufferGeometry, Material[]>;
@@ -25,12 +26,12 @@ function sizeHeldHook(hook: Object3D, simRadius: number): void {
  * The hook as a fighter carries it, to hang on the hand slot bone. The slot's +y runs out of the top of the fist,
  * the way the pack's swords point, so the shank is stood along it with the fist closed just above the chain ring.
  */
-export function createHeldHook(geometry: BufferGeometry, team: TeamId): HeldHook {
+export function createHeldHook(geometry: BufferGeometry, team: TeamId, tints: Tints): HeldHook {
   const material = new MeshStandardMaterial({
-    color: COLORS.iron,
+    color: tints.iron,
     roughness: 0.34,
     metalness: 0.6,
-    emissive: TEAM_COLORS[team].glow,
+    emissive: tints.teams[team].glow,
     emissiveIntensity: HELD_HOOK.glow,
   });
   const hidden = createHiddenMaterial();

@@ -13,11 +13,11 @@ import {
   TorusGeometry,
   type Texture,
 } from 'three';
-import { simToWorld, toWorldLength } from '../space';
-import { createRust } from '../textures';
-import { COLORS, SIZES } from '../theme';
-
-export type Buoy = { readonly group: Group; update(elapsed: number): void; dispose(): void };
+import { simToWorld, toWorldLength } from '../../space';
+import { createRust } from '../../textures';
+import type { Animated } from '../types';
+import { BUOY_HOOP } from './layout';
+import { HARBOUR_COLORS as COLORS, HARBOUR_SIZES as SIZES } from './look';
 
 /** Heights above the waterline. The drum stays full width past hook height, so a hook visibly strikes iron. */
 const SHAPE = { keel: -0.9, shoulder: 4.1, cap: 5.5, mast: 6.6, hoops: [0.5, 3.9], band: { from: 1.7, to: 3.1 } } as const;
@@ -25,10 +25,10 @@ const SEGMENTS = 20;
 const LAMP = { glowSize: 2.2, intensity: 34, distance: 16 } as const;
 
 /** A rusted can buoy moored mid-canal. Its drum is exactly the sim's buoy radius. */
-export function createBuoy(arena: Arena, softDot: Texture): Buoy {
+export function createBuoy(arena: Arena, softDot: Texture): Animated {
   const radius = toWorldLength(arena.buoy.radius);
   const centre = simToWorld(arena.buoy.pos);
-  const rust = createRust();
+  const rust = createRust({ base: COLORS.rust, dark: COLORS.rustDark, bright: COLORS.rustBright });
   rust.repeat.set(3, 1);
   const iron = new MeshStandardMaterial({ map: rust, roughness: 0.92, metalness: 0.25 });
   const dark = new MeshStandardMaterial({ color: COLORS.rustDark, roughness: 0.8, metalness: 0.4 });
@@ -46,7 +46,7 @@ export function createBuoy(arena: Arena, softDot: Texture): Buoy {
   mast.position.y = SHAPE.cap + mastHeight / 2;
   const light = new Mesh(new SphereGeometry(0.24, 10, 8), lamp);
   light.position.y = SHAPE.mast + 0.1;
-  const hoopGeometry = new TorusGeometry(radius, 0.09, 6, SEGMENTS);
+  const hoopGeometry = new TorusGeometry(radius, BUOY_HOOP, 6, SEGMENTS);
   const hoops = SHAPE.hoops.map((y) => {
     const hoop = new Mesh(hoopGeometry, dark);
     hoop.rotation.x = Math.PI / 2;

@@ -25,6 +25,24 @@ export const PROP_FILES = {
 
 export type PropName = keyof typeof PROP_FILES;
 
+/** Half extents and height of each prop as shipped, read from the files' own bounds. World units. */
+export const PROP_BOUNDS: Readonly<Record<PropName, { readonly halfX: number; readonly halfZ: number; readonly height: number }>> = {
+  floorStone: { halfX: 2, halfZ: 2, height: 0.05 },
+  floorTimber: { halfX: 2, halfZ: 2, height: 0.05 },
+  wall: { halfX: 2, halfZ: 0.5, height: 4 },
+  wallPillar: { halfX: 2, halfZ: 0.75, height: 4 },
+  wallGated: { halfX: 2, halfZ: 0.5, height: 4 },
+  parapet: { halfX: 2, halfZ: 0.25, height: 1.1 },
+  pillar: { halfX: 0.75, halfZ: 0.75, height: 4 },
+  torchMounted: { halfX: 0.28, halfZ: 0.62, height: 0.68 },
+  torchStanding: { halfX: 0.28, halfZ: 0.28, height: 0.73 },
+  barrel: { halfX: 0.9, halfZ: 0.9, height: 2 },
+  barrelStack: { halfX: 0.93, halfZ: 0.93, height: 1.77 },
+  crates: { halfX: 1.16, halfZ: 1.16, height: 2.14 },
+  boxes: { halfX: 1.86, halfZ: 1.86, height: 3.31 },
+  keg: { halfX: 1.02, halfZ: 1.02, height: 2.05 },
+};
+
 /** Bone the chain is held in. GLTFLoader strips the dot from the rig's `handslot.r`. */
 export const HAND_BONE = 'handslotr';
 /** Bone the grapple rope is held in, so it never tangles with the hook in the other fist. */
