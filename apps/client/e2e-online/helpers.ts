@@ -40,13 +40,21 @@ export async function matchUp(page: Page): Promise<void> {
   await page.waitForFunction(() => window.__hookbrawl!.getView().tick > 0, null, { timeout: 30_000 });
 }
 
-/** Two players in one room, a side each, in a match the first of them started. */
-export async function startDuel(browser: Browser, options: { query?: string; beforeStart?: (host: Page) => Promise<void> } = {}) {
+/** The host sets fog of war and waits for the server to agree. */
+export async function setFog(host: Page, on: boolean): Promise<void> {
+  const fog = host.getByLabel('Fog of war');
+  if ((await fog.isChecked()) !== on) await fog.click();
+  await expect(fog).toBeChecked({ checked: on });
+}
+
+/** Two players in one room, a side each, in a match the first of them started. Fog is off unless asked for, since most specs follow the enemy. */
+export async function startDuel(browser: Browser, options: { query?: string; fog?: boolean; beforeStart?: (host: Page) => Promise<void> } = {}) {
   const [host, guest] = [await player(browser), await player(browser)];
   const query = options.query ?? '';
   const code = await createRoom(host, 'Ada', query === '' ? '' : `?${query}`);
   await joinByLink(guest, code, 'Bo', query === '' ? '' : `&${query}`);
   await expect(host.locator('.team-east .slot-human')).toContainText('Bo');
+  await setFog(host, options.fog ?? false);
   await options.beforeStart?.(host);
   await host.getByRole('button', { name: 'Start match' }).click();
   await Promise.all([matchUp(host), matchUp(guest)]);

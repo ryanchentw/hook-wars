@@ -25,13 +25,13 @@ const hosted = (): RoomState => play(createRoom(), { kind: 'join', by: HOST, nam
 const withBot = (): RoomState => play(hosted(), { kind: 'addBot', by: HOST, slot: east(0) });
 
 describe('createRoom', () => {
-  it('opens an empty lobby with three slots a side, rotating scenes and first to 10', () => {
+  it('opens an empty lobby with three slots a side, rotating scenes, first to 10 and fog of war on', () => {
     const room = createRoom();
     expect(room.host).toBeNull();
     expect(room.phase).toEqual({ kind: 'lobby' });
     expect(room.slots.west).toHaveLength(SLOTS_PER_TEAM);
     expect(room.slots.east.every((s) => s.kind === 'empty')).toBe(true);
-    expect(room.settings).toEqual({ scene: 'rotate', killTarget: 10, fog: false });
+    expect(room.settings).toEqual({ scene: 'rotate', killTarget: 10, fog: true });
     expect(room.matchesStarted).toBe(0);
   });
 });
@@ -134,7 +134,7 @@ describe('bots', () => {
 describe('settings', () => {
   it('takes a known scene or rotate and a preset kill target from the host', () => {
     const room = play(hosted(), { kind: 'setScene', by: HOST, scene: 'daan' }, { kind: 'setKillTarget', by: HOST, killTarget: 5 });
-    expect(room.settings).toEqual({ scene: 'daan', killTarget: 5, fog: false });
+    expect(room.settings).toEqual({ scene: 'daan', killTarget: 5, fog: true });
     expect(play(room, { kind: 'setScene', by: HOST, scene: 'rotate' }).settings.scene).toBe('rotate');
   });
 
@@ -149,19 +149,19 @@ describe('settings', () => {
 });
 
 describe('fog of war', () => {
-  it('is turned on and off by the host in the lobby', () => {
-    const on = play(hosted(), { kind: 'setFog', by: HOST, fog: true });
-    expect(on.settings.fog).toBe(true);
-    expect(play(on, { kind: 'setFog', by: HOST, fog: false }).settings.fog).toBe(false);
+  it('is turned off and on again by the host in the lobby', () => {
+    const off = play(hosted(), { kind: 'setFog', by: HOST, fog: false });
+    expect(off.settings.fog).toBe(false);
+    expect(play(off, { kind: 'setFog', by: HOST, fog: true }).settings.fog).toBe(true);
   });
 
   it('ignores a guest, a value that is not a boolean, no change, and a match in play', () => {
     const room = play(hosted(), { kind: 'join', by: GUEST, name: 'Ada' }, { kind: 'addBot', by: HOST, slot: east(0) });
-    expect(reduce(room, { kind: 'setFog', by: GUEST, fog: true })).toBe(room);
-    expect(reduce(room, { kind: 'setFog', by: HOST, fog: 'yes' as unknown as boolean })).toBe(room);
-    expect(reduce(room, { kind: 'setFog', by: HOST, fog: false })).toBe(room);
+    expect(reduce(room, { kind: 'setFog', by: GUEST, fog: false })).toBe(room);
+    expect(reduce(room, { kind: 'setFog', by: HOST, fog: 'no' as unknown as boolean })).toBe(room);
+    expect(reduce(room, { kind: 'setFog', by: HOST, fog: true })).toBe(room);
     const playing = play(room, { kind: 'startMatch', by: HOST });
-    expect(reduce(playing, { kind: 'setFog', by: HOST, fog: true })).toBe(playing);
+    expect(reduce(playing, { kind: 'setFog', by: HOST, fog: false })).toBe(playing);
   });
 });
 

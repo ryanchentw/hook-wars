@@ -1,6 +1,6 @@
 import { isSlotRef, parseKillTarget, parseName, parseScene } from './parse';
 import { allSlots, canStart, fighterCount, hasEmptySlot, seatOf, slotAt } from './selectors';
-import { SLOTS_PER_TEAM, type MemberId, type RoomAction, type RoomState, type Slot, type SlotRef } from './types';
+import { DEFAULT_SETTINGS, SLOTS_PER_TEAM, type MemberId, type RoomAction, type RoomState, type Slot, type SlotRef } from './types';
 
 const EMPTY: Slot = { kind: 'empty' };
 const BOT: Slot = { kind: 'bot' };
@@ -10,7 +10,7 @@ export function createRoom(): RoomState {
   return {
     host: null,
     slots: { west: empty, east: empty },
-    settings: { scene: 'rotate', killTarget: 10, fog: false },
+    settings: DEFAULT_SETTINGS,
     phase: { kind: 'lobby' },
     matchesStarted: 0,
   };

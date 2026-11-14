@@ -139,12 +139,12 @@ describe('in a room', () => {
     const { app, sent, server } = harness();
     app.createRoom('Ada');
     server.welcome(lobbyOf('Ada'));
-    app.act({ kind: 'setFog', fog: true });
+    app.act({ kind: 'setFog', fog: false });
     app.start();
-    expect(sent).toEqual([{ t: 'lobby', action: { kind: 'setFog', fog: true } }, { t: 'lobby', action: { kind: 'startMatch' } }]);
-    expect(app.getSnapshot().room.settings.fog).toBe(false);
-    server.say({ t: 'room', lobby: { room: { ...lobbyOf('Ada', 'Bo'), settings: { scene: 'rotate', killTarget: 10, fog: true } }, away: ['m2' as MemberId] } });
-    expect(app.getSnapshot()).toMatchObject({ room: { settings: { fog: true } }, online: { away: ['m2'] } });
+    expect(sent).toEqual([{ t: 'lobby', action: { kind: 'setFog', fog: false } }, { t: 'lobby', action: { kind: 'startMatch' } }]);
+    expect(app.getSnapshot().room.settings.fog).toBe(true);
+    server.say({ t: 'room', lobby: { room: { ...lobbyOf('Ada', 'Bo'), settings: { scene: 'rotate', killTarget: 10, fog: false } }, away: ['m2' as MemberId] } });
+    expect(app.getSnapshot()).toMatchObject({ room: { settings: { fog: false } }, online: { away: ['m2'] } });
   });
 
   it('gives the seat up when the player goes back to the menu', () => {

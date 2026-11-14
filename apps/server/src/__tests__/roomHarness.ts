@@ -1,5 +1,5 @@
 import type { ClientMessageOf, LobbyAction, ServerMessage, ServerMessageOf } from '@hookbrawl/protocol';
-import type { MemberId, PlayerName } from '@hookbrawl/room';
+import { DEFAULT_SETTINGS, type MemberId, type PlayerName } from '@hookbrawl/room';
 import { advance, createRoomCore, disconnect, input, join, leave, lobbyAction, rejoin, type Outbound, type Room, type RoomRules, type Step } from '../rooms/core';
 
 export const TICK_MS = 1000 / 30;
@@ -81,15 +81,15 @@ export function harness(rules: RoomRules = RULES) {
 }
 
 /** Two members seated, one a side, with the first of them hosting. */
-export function duel(rules: RoomRules = RULES, fog = false) {
+export function duel(rules: RoomRules = RULES, fog = DEFAULT_SETTINGS.fog) {
   const h = harness(rules);
   const west = h.join('Ada');
   const east = h.join('Bo');
-  if (fog) h.act(west, { kind: 'setFog', fog: true });
+  if (fog !== h.room.lobby.settings.fog) h.act(west, { kind: 'setFog', fog });
   return { h, west, east };
 }
 
-export function started(rules: RoomRules = RULES, fog = false) {
+export function started(rules: RoomRules = RULES, fog = DEFAULT_SETTINGS.fog) {
   const game = duel(rules, fog);
   game.h.act(game.west, { kind: 'startMatch' });
   // A millisecond past the start, so each further step of one tick lands just after a tick comes due and never just before.

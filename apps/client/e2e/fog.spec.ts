@@ -88,7 +88,7 @@ test('with fog off the dummy is in view and drawn from the start', async ({ page
   await expect.poll(() => seen(page, target.id)).toEqual({ inView: true, drawn: true });
 });
 
-test('the lobby turns fog of war on by keyboard, explains it, and the match plays under it', async ({ page }) => {
+test('the lobby opens with fog of war on, explains it, toggles it by keyboard, and the match plays under it', async ({ page }) => {
   test.setTimeout(90_000);
   await page.setViewportSize(DESKTOP);
   await page.goto('/');
@@ -97,10 +97,12 @@ test('the lobby turns fog of war on by keyboard, explains it, and the match play
   await expect(page.getByRole('heading', { name: 'Lobby' })).toBeFocused();
 
   const fog = page.getByRole('checkbox', { name: 'Fog of war' });
-  await expect(fog).not.toBeChecked();
+  await expect(fog).toBeChecked();
   await expect(fog).toHaveAccessibleDescription(/Enemies show only when someone on your side/);
   await tabTo(page, 'Fog of war');
   await expect(fog).toBeFocused();
+  await page.keyboard.press('Space');
+  await expect(fog).not.toBeChecked();
   await page.keyboard.press('Space');
   await expect(fog).toBeChecked();
   await tabTo(page, 'Fill with bots');

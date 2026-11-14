@@ -30,6 +30,8 @@ export type RoomSettings = {
   readonly fog: boolean;
 };
 
+export const DEFAULT_SETTINGS: RoomSettings = { scene: 'rotate', killTarget: 10, fog: true };
+
 export type RoomPhase = { readonly kind: 'lobby' } | { readonly kind: 'in-match' };
 
 export type RoomState = {

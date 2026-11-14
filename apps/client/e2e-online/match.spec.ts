@@ -87,7 +87,7 @@ test('the local fighter moves at once, before the server has answered', async ({
 });
 
 test('with fog on, a client is never sent the enemy it cannot see', async ({ browser }) => {
-  const { host, guest } = await startDuel(browser, { beforeStart: (page) => page.getByLabel('Fog of war').check() });
+  const { host, guest } = await startDuel(browser, { fog: true });
   const sentEnemy = (page: Page, enemy: string) =>
     page.evaluate((id) => {
       const frames = window.__hookbrawlNet!.received();

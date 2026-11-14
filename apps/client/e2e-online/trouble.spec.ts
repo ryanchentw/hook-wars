@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { close, createRoom, DESKTOP, EAST, joinByLink, matchUp, player, posOf, SHOT_DIR, startDuel, walkUntil } from './helpers';
+import { close, createRoom, DESKTOP, EAST, joinByLink, matchUp, player, posOf, setFog, SHOT_DIR, startDuel, walkUntil } from './helpers';
 
 test.use({ viewport: DESKTOP });
 
@@ -60,6 +60,7 @@ test('after the match both are back in the same lobby, and the host starts the r
   await joinByLink(guest, code, 'Bo');
   await expect(host.locator('.team-east .slot-human')).toContainText('Bo');
   await host.getByLabel('Kills to win').selectOption('5');
+  await setFog(host, false);
   await host.getByRole('button', { name: 'Fill with bots' }).click();
   await host.getByRole('button', { name: 'Start match' }).click();
   await Promise.all([matchUp(host), matchUp(guest)]);

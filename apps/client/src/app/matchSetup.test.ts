@@ -75,6 +75,7 @@ describe('directRoom', () => {
     expect(pageOptionsFromQuery('?fog=yes', 0).direct?.fog).toBe(false);
     expect(pageOptionsFromQuery('?seed=1', 0).direct?.fog).toBe(false);
     expect(planOf(directRoom({ roster: { west: 1, east: 1 }, scene: 'rotate', fog: true }, ME)).config.fog).toBe(true);
+    expect(planOf(directRoom({ roster: { west: 1, east: 1 }, scene: 'rotate', fog: false }, ME)).config.fog).toBe(false);
   });
 
   it('fills a 3v3 and keeps a chosen scene', () => {
