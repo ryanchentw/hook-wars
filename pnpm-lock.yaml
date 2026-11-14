@@ -48,6 +48,22 @@ importers:
         specifier: ^5.1.0
         version: 5.1.0(@vitest/coverage-v8@5.1.0)(vite@8.3.8)
 
+  packages/room:
+    dependencies:
+      '@hookbrawl/sim':
+        specifier: workspace:*
+        version: link:../sim
+    devDependencies:
+      '@vitest/coverage-v8':
+        specifier: ^5.1.0
+        version: 5.1.0(vitest@5.1.0)
+      typescript:
+        specifier: ^7.0.2
+        version: 7.0.2
+      vitest:
+        specifier: ^5.1.0
+        version: 5.1.0(@vitest/coverage-v8@5.1.0)(vite@8.3.8)
+
   packages/sim:
     devDependencies:
       '@vitest/coverage-v8':
