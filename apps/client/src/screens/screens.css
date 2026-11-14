@@ -248,6 +248,37 @@
   padding: 14px 16px;
 }
 
+.lobby-fog {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 2px 10px;
+}
+
+.lobby-fog .field-hint {
+  grid-column: 2;
+  margin: 0;
+}
+
+.field-check {
+  inline-size: 20px;
+  block-size: 20px;
+  margin: 0;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+
+.field-check:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.field-check:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 .lobby-actions {
   display: flex;
   flex-wrap: wrap;

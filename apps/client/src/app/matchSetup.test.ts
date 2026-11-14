@@ -22,7 +22,7 @@ describe('pageOptionsFromQuery', () => {
   it('shows the menu for a plain address and goes straight to a match for any test switch', () => {
     expect(pageOptionsFromQuery('', 0).direct).toBeNull();
     expect(pageOptionsFromQuery('?utm=x', 0).direct).toBeNull();
-    for (const query of ['?seed=1', '?opponent=idle', '?gold=5', '?scene=daan', '?intro=off', '?roster=3v3']) {
+    for (const query of ['?seed=1', '?opponent=idle', '?gold=5', '?scene=daan', '?intro=off', '?roster=3v3', '?fog=on']) {
       expect(pageOptionsFromQuery(query, 0).direct).not.toBeNull();
     }
   });
@@ -59,7 +59,7 @@ describe('pageOptionsFromQuery', () => {
 
 describe('directRoom', () => {
   it('puts the local player first on the west against one bot, first to ten, already in play', () => {
-    const room = directRoom({ roster: { west: 1, east: 1 }, scene: 'rotate' }, ME);
+    const room = directRoom({ roster: { west: 1, east: 1 }, scene: 'rotate', fog: false }, ME);
     expect(room.phase.kind).toBe('in-match');
     const { config, scene } = planOf(room);
     expect(config.killTarget).toBe(10);
@@ -70,15 +70,22 @@ describe('directRoom', () => {
     ]);
   });
 
+  it('turns fog of war on only for ?fog=on, and carries it into the match', () => {
+    expect(pageOptionsFromQuery('?fog=on', 0).direct?.fog).toBe(true);
+    expect(pageOptionsFromQuery('?fog=yes', 0).direct?.fog).toBe(false);
+    expect(pageOptionsFromQuery('?seed=1', 0).direct?.fog).toBe(false);
+    expect(planOf(directRoom({ roster: { west: 1, east: 1 }, scene: 'rotate', fog: true }, ME)).config.fog).toBe(true);
+  });
+
   it('fills a 3v3 and keeps a chosen scene', () => {
-    const plan = planOf(directRoom({ roster: { west: 3, east: 3 }, scene: 'daan' }, ME));
+    const plan = planOf(directRoom({ roster: { west: 3, east: 3 }, scene: 'daan', fog: false }, ME));
     expect(plan.config.players.filter((p) => p.isBot)).toHaveLength(5);
     expect(plan.scene).toBe('daan');
   });
 });
 
 describe('sessionSetupFor', () => {
-  const duel = planOf(directRoom({ roster: { west: 2, east: 2 }, scene: 'rotate' }, ME), 9);
+  const duel = planOf(directRoom({ roster: { west: 2, east: 2 }, scene: 'rotate', fog: false }, ME), 9);
 
   it('drives every bot with its own seed and finds the local fighter', () => {
     const setup = sessionSetupFor(duel, ME, NO_OVERRIDES);

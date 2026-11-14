@@ -146,7 +146,7 @@ describe('app controller', () => {
   });
 
   it('opens a test address straight into the match it asks for', async () => {
-    const page: PageOptions = { ...MENU_PAGE, direct: { roster: { west: 3, east: 3 }, scene: 'harbour' } };
+    const page: PageOptions = { ...MENU_PAGE, direct: { roster: { west: 3, east: 3 }, scene: 'harbour', fog: false } };
     const { app, matches, settle } = harness({ page });
     await settle();
     expect(app.getSnapshot().route.screen).toBe('match');

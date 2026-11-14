@@ -53,7 +53,7 @@ function TeamColumn({ team, view, act, rowRef }: { readonly team: TeamId; readon
 }
 
 function Settings({ view, act }: { readonly view: AppView; readonly act: (a: LocalAction) => void }) {
-  const ids = { scene: useId(), kills: useId() };
+  const ids = { scene: useId(), kills: useId(), fog: useId(), fogHint: useId() };
   const { settings } = view.room;
   const locked = view.room.host !== view.member;
   return (
@@ -79,6 +79,23 @@ function Settings({ view, act }: { readonly view: AppView; readonly act: (a: Loc
           </option>
         ))}
       </select>
+      <div className="lobby-fog">
+        <input
+          id={ids.fog}
+          type="checkbox"
+          className="field-check"
+          checked={settings.fog}
+          disabled={locked}
+          aria-describedby={ids.fogHint}
+          onChange={(e) => act({ kind: 'setFog', fog: e.target.checked })}
+        />
+        <label htmlFor={ids.fog} className="field-label">
+          Fog of war
+        </label>
+        <span id={ids.fogHint} className="field-hint">
+          Enemies show only when someone on your side is close enough to see them.
+        </span>
+      </div>
     </div>
   );
 }
