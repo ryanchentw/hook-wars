@@ -12,6 +12,7 @@
     "e2e": "playwright test"
   },
   "dependencies": {
+    "@hookbrawl/protocol": "workspace:*",
     "@hookbrawl/room": "workspace:*",
     "@hookbrawl/sim": "workspace:*",
     "react": "^19.3.1",
