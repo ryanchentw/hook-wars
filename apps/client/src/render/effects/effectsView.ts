@@ -1,4 +1,4 @@
-import type { GameEvent, PlayerId } from '@hookbrawl/sim';
+import type { SeenEvent, PlayerId } from '@hookbrawl/sim';
 import { Group, type Camera, type Texture } from 'three';
 import type { Impact } from '../impact/impacts';
 import { burstFor, createRandom, impactBursts, stepParticles, type Particle } from './particles';
@@ -9,7 +9,7 @@ import { createSlashView } from './slashView';
 export type EffectsView = {
   readonly group: Group;
   /** `events` are the sim events since the previous call, each delivered exactly once, and `impacts` the blows among them. */
-  update(events: readonly GameEvent[], impacts: readonly Impact[], dt: number, camera: Camera, facingOf: (id: PlayerId) => number | null): void;
+  update(events: readonly SeenEvent[], impacts: readonly Impact[], dt: number, camera: Camera, facingOf: (id: PlayerId) => number | null): void;
   clear(): void;
   dispose(): void;
 };

@@ -1,5 +1,5 @@
-import { DEFAULT_ARENA } from '@hookbrawl/sim';
-import type { GameState, Player, PlayerId, PlayerInput } from '@hookbrawl/sim';
+import { DEFAULT_ARENA, viewFor } from '@hookbrawl/sim';
+import type { GameState, Player, PlayerId, PlayerInput, TeamView } from '@hookbrawl/sim';
 import type { SimApi } from './session';
 
 export const HUMAN = 'human' as PlayerId;
@@ -48,6 +48,11 @@ export function fakeState(overrides: Partial<GameState> = {}): GameState {
   };
 }
 
+/** What the west side sees of `fakeState(overrides)`; open vision unless the overrides fog it. */
+export function fakeView(overrides: Partial<GameState> = {}): TeamView {
+  return viewFor(fakeState(overrides), 'west');
+}
+
 export type FakeSim = SimApi & { readonly stepped: (readonly PlayerInput[])[]; readonly matches: { count: number } };
 
 /** A stand-in for the sim that only advances the clock and records every input batch it received. */
@@ -74,5 +79,6 @@ export function createFakeSim(endAtTick = Number.POSITIVE_INFINITY): FakeSim {
     },
     createBotBrain: (seed) => ({ rng: { seed }, nextThinkAt: 0 }),
     botThink: (_state, botId, brain) => ({ inputs: [{ kind: 'stop', playerId: botId }], brain }),
+    viewFor,
   };
 }

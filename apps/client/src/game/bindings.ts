@@ -1,5 +1,5 @@
 import { hookStats, ITEM_IDS, UPGRADE_IDS } from '@hookbrawl/sim';
-import type { Player, Purchase, Vec2 } from '@hookbrawl/sim';
+import type { SeenPlayer, Purchase, Vec2 } from '@hookbrawl/sim';
 
 export type Direction = 'north' | 'south' | 'west' | 'east';
 
@@ -62,7 +62,7 @@ export function steerVector(held: ReadonlySet<Direction>): Vec2 {
 }
 
 /** Where a hook or grapple goes when the cursor has never been over the canvas: straight ahead. */
-export function facingAim(player: Player): Vec2 {
+export function facingAim(player: SeenPlayer): Vec2 {
   const { range } = hookStats(player);
   return {
     x: player.pos.x + Math.cos(player.facing) * range,

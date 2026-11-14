@@ -10,8 +10,7 @@ function redactMove(move: MoveIntent, from: Player['pos']): MoveIntent {
 
 function seenPlayer(player: Player, fogged: boolean): SeenPlayer {
   if (!fogged) return player;
-  const { gold: _gold, ...rest } = player;
-  return { ...rest, move: redactMove(player.move, player.pos) };
+  return { ...player, gold: null, move: redactMove(player.move, player.pos) };
 }
 
 function card(player: Player, goldShown: boolean): PlayerCard {

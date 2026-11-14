@@ -1,5 +1,5 @@
 import { TUNING } from '@hookbrawl/sim';
-import type { GameState, Player, PlayerId, TeamId } from '@hookbrawl/sim';
+import type { Player, PlayerCard, PlayerId, TeamId, TeamView } from '@hookbrawl/sim';
 import { grappleView, shopSlots, type GrappleView, type ShopSlotView, type SlotId, type PurchaseOutcome } from './shopView';
 
 export type Named = { readonly name: string; readonly team: TeamId };
@@ -46,7 +46,8 @@ export type ScoreRow = {
   readonly kills: number;
   readonly deaths: number;
   readonly assists: number;
-  readonly gold: number;
+  /** Null for an enemy under fog. */
+  readonly gold: number | null;
   readonly isLocal: boolean;
   readonly isBot: boolean;
 };
@@ -70,10 +71,16 @@ export type HudView = {
 
 export const KILL_FEED_SIZE = 4;
 
-const named = (p: Player): Named => ({ name: p.name, team: p.team });
+const named = (p: PlayerCard): Named => ({ name: p.name, team: p.team });
 
-export function appendKills(feed: readonly KillFeedEntry[], state: GameState): readonly KillFeedEntry[] {
-  const byId = (id: PlayerId): Player | undefined => state.players.find((p) => p.id === id);
+/** The local player with their purse, which their own team always sees; undefined once they are not in the view. */
+export function ownPlayer(state: TeamView, localId: PlayerId): Player | undefined {
+  const me = state.players.find((p) => p.id === localId);
+  return me === undefined || me.gold === null ? undefined : { ...me, gold: me.gold };
+}
+
+export function appendKills(feed: readonly KillFeedEntry[], state: TeamView): readonly KillFeedEntry[] {
+  const byId = (id: PlayerId): PlayerCard | undefined => state.roster.find((p) => p.id === id);
   const fresh = state.events.flatMap((e): readonly KillFeedEntry[] => {
     if (e.kind !== 'kill') return [];
     const killer = byId(e.killerId);
@@ -95,7 +102,7 @@ export function cooldownLabel(seconds: number): string {
   return `${(Math.ceil(seconds * TENTHS) / TENTHS).toFixed(1)}s`;
 }
 
-function localView(state: GameState, me: Player): LocalView {
+function localView(state: TeamView, me: Player): LocalView {
   const localId = me.id;
   const cooldownSeconds = Math.max(0, me.hookReadyAt - state.time);
   return {
@@ -112,7 +119,7 @@ function localView(state: GameState, me: Player): LocalView {
   };
 }
 
-const scoreRow = (p: Player, localId: PlayerId): ScoreRow => ({
+const scoreRow = (p: PlayerCard, localId: PlayerId): ScoreRow => ({
   id: p.id,
   name: p.name,
   team: p.team,
@@ -124,25 +131,24 @@ const scoreRow = (p: Player, localId: PlayerId): ScoreRow => ({
   isBot: p.isBot,
 });
 
-function scoreboardOf(state: GameState, localId: PlayerId): Scoreboard {
-  const rows = state.players.map((p) => scoreRow(p, localId));
+function scoreboardOf(state: TeamView, localId: PlayerId): Scoreboard {
+  const rows = state.roster.map((p) => scoreRow(p, localId));
   return { west: rows.filter((r) => r.team === 'west'), east: rows.filter((r) => r.team === 'east') };
 }
 
-function endView(state: GameState, localId: PlayerId): EndView | null {
+function endView(state: TeamView): EndView | null {
   if (state.phase.kind !== 'ended') return null;
   const winner = state.phase.winner;
-  const localTeam = state.players.find((p) => p.id === localId)?.team;
-  return { winner, localWon: localTeam === winner };
+  return { winner, localWon: state.viewer === winner };
 }
 
 export function deriveHud(
-  state: GameState,
+  state: TeamView,
   localId: PlayerId,
   killFeed: readonly KillFeedEntry[],
   feedback: Feedback = NO_FEEDBACK,
 ): HudView {
-  const me = state.players.find((p) => p.id === localId);
+  const me = ownPlayer(state, localId);
   return {
     score: state.score,
     killTarget: state.killTarget,
@@ -151,6 +157,6 @@ export function deriveHud(
     feedback,
     killFeed,
     scoreboard: scoreboardOf(state, localId),
-    end: endView(state, localId),
+    end: endView(state),
   };
 }

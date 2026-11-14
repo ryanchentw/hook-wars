@@ -1,4 +1,4 @@
-import type { Arena, GameEvent, PlayerId } from '@hookbrawl/sim';
+import type { Arena, SeenEvent, PlayerId } from '@hookbrawl/sim';
 import { Color, FogExp2, Group, type BufferGeometry, type Camera, type Scene, type Texture, type Vector3, type WebGLRenderer } from 'three';
 import type { Assets } from './assets/loadAssets';
 import { createCharactersView } from './characters/charactersView';
@@ -26,7 +26,7 @@ export type StageShared = {
 export type StageUpdate = {
   readonly frame: RenderFrame;
   /** Sim events since the previous update, each delivered exactly once, and the blows among them. */
-  readonly events: readonly GameEvent[];
+  readonly events: readonly SeenEvent[];
   readonly impacts: readonly Impact[];
   readonly dt: number;
   readonly elapsed: number;

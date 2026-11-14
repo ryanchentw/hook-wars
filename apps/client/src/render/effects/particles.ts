@@ -1,5 +1,5 @@
 import { TUNING } from '@hookbrawl/sim';
-import type { GameEvent, PlayerId, Vec2 } from '@hookbrawl/sim';
+import type { SeenEvent, PlayerId, Vec2 } from '@hookbrawl/sim';
 import { contactPoint, type Impact } from '../impact/impacts';
 import { simToWorld, type Vec3 } from '../space';
 import { COLORS, SIZES } from '../theme';
@@ -80,7 +80,9 @@ const CONTACT_INSET = TUNING.playerRadius * 0.75;
 const DEATH_FALL = 45;
 
 /** Who the event is about and where the burst should start, given which way each player faces. */
-function originOf(event: GameEvent & { readonly at: Vec2 }, facingOf: (id: PlayerId) => number | null): Vec2 {
+/** Null for a kill out of sight, which has no place to rise from. */
+function originOf(event: SeenEvent, facingOf: (id: PlayerId) => number | null): Vec2 | null {
+  if (!('at' in event) || event.at === null) return null;
   if (event.kind !== 'kill') return event.at;
   const facing = facingOf(event.victimId);
   if (facing === null) return event.at;
@@ -127,7 +129,7 @@ function emit(burst: Burst, origin: Vec3, heading: number, random: () => number)
   });
 }
 
-function burstOf(event: GameEvent): Burst | null {
+function burstOf(event: SeenEvent): Burst | null {
   switch (event.kind) {
     case 'hookBounce':
       return BURSTS.hookBounce;
@@ -150,10 +152,11 @@ function burstOf(event: GameEvent): Burst | null {
 }
 
 /** `facingOf` is the sim facing of each player, so a kill's wisp can rise from the fallen body rather than its feet. */
-export function burstFor(event: GameEvent, random: () => number, facingOf: (id: PlayerId) => number | null = FACING_UNKNOWN): readonly Particle[] {
+export function burstFor(event: SeenEvent, random: () => number, facingOf: (id: PlayerId) => number | null = FACING_UNKNOWN): readonly Particle[] {
   const burst = burstOf(event);
-  if (burst === null || !('at' in event)) return [];
-  return emit(burst, simToWorld(originOf(event, facingOf), burst.height), 0, random);
+  const origin = burst === null ? null : originOf(event, facingOf);
+  if (burst === null || origin === null) return [];
+  return emit(burst, simToWorld(origin, burst.height), 0, random);
 }
 
 /** Everything a blow throws off, from the point where the weapon met the body. */

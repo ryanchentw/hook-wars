@@ -1,7 +1,10 @@
 import { ITEMS, TUNING, UPGRADES } from './config';
 import type { GameEvent, HookStats, ItemId, Items, Player, Purchase } from './types';
 
-export function hookStats(player: Player): HookStats {
+/** What a fighter carries: all the shop needs to know besides their purse. */
+type Kit = Pick<Player, 'upgrades' | 'items'>;
+
+export function hookStats(player: Kit): HookStats {
   const { damage, range, speed, size } = player.upgrades;
   const faster = speed * UPGRADES.speed.perLevel;
   return {
@@ -15,7 +18,7 @@ export function hookStats(player: Player): HookStats {
 }
 
 /** The price of the next level or of the item, or null when the upgrade is maxed or the item owned. */
-export function priceOf(player: Player, purchase: Purchase): number | null {
+export function priceOf(player: Kit, purchase: Purchase): number | null {
   switch (purchase.kind) {
     case 'upgrade':
       return UPGRADES[purchase.id].costs[player.upgrades[purchase.id]] ?? null;
@@ -24,7 +27,7 @@ export function priceOf(player: Player, purchase: Purchase): number | null {
   }
 }
 
-export function canBuy(player: Player, purchase: Purchase): boolean {
+export function canBuy(player: Kit & { readonly gold: number }, purchase: Purchase): boolean {
   const price = priceOf(player, purchase);
   return price !== null && player.gold >= price;
 }

@@ -1,6 +1,6 @@
 import type { Purchase } from '@hookbrawl/sim';
-import type { Session } from '../game/session';
-import { appendKills, deriveHud, NO_FEEDBACK, type Feedback, type HudView, type KillFeedEntry } from './hudView';
+import type { SessionView } from '../game/session';
+import { appendKills, deriveHud, NO_FEEDBACK, ownPlayer, type Feedback, type HudView, type KillFeedEntry } from './hudView';
 import { bountyEarned, describeOutcome, resolvePurchases, shopSlots, type ResolvedPurchase } from './shopView';
 
 export type HudStore = {
@@ -12,8 +12,8 @@ export type HudStore = {
 
 type Tracked = { readonly feedback: Feedback; readonly seq: number };
 
-function applyOutcomes(tracked: Tracked, resolved: readonly ResolvedPurchase[], session: Session): Tracked {
-  const me = session.getState().players.find((p) => p.id === session.localPlayerId);
+function applyOutcomes(tracked: Tracked, resolved: readonly ResolvedPurchase[], session: SessionView): Tracked {
+  const me = ownPlayer(session.getView(), session.localPlayerId);
   if (me === undefined || resolved.length === 0) return tracked;
   const slots = shopSlots(me);
   return resolved.reduce<Tracked>((acc, { purchase, outcome }) => {
@@ -37,13 +37,13 @@ function applyBounty(tracked: Tracked, amount: number): Tracked {
 }
 
 /** Recomputes the HUD once per sim tick, never per animation frame, and caches it for `useSyncExternalStore`. */
-export function createHudStore(session: Session): HudStore {
+export function createHudStore(session: SessionView): HudStore {
   const listeners = new Set<() => void>();
   const localId = session.localPlayerId;
   let feed: readonly KillFeedEntry[] = [];
   let pending: readonly Purchase[] = [];
   let tracked: Tracked = { feedback: NO_FEEDBACK, seq: 0 };
-  let snapshot = deriveHud(session.getState(), localId, feed, tracked.feedback);
+  let snapshot = deriveHud(session.getView(), localId, feed, tracked.feedback);
 
   session.subscribe((state) => {
     feed = appendKills(feed, state);

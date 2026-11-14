@@ -44,7 +44,7 @@ type Controls = { readonly ui: Store<MatchUi>; setPaused(paused: boolean): void;
 function bindControls(deps: MatchDeps, session: Session, renderer: Renderer, hud: HudStore, pause: PauseGate): Controls {
   const { router } = deps;
   const ui = createStore<MatchUi>({ scores: false, paused: false });
-  const ended = (): boolean => session.getState().phase.kind === 'ended';
+  const ended = (): boolean => session.getView().phase.kind === 'ended';
   const credits = (): boolean => router.getRoute().credits;
   const free = (): boolean => !credits() && !ui.getSnapshot().paused;
   const playing = (): boolean => free() && !renderer.introActive();
@@ -63,7 +63,7 @@ function bindControls(deps: MatchDeps, session: Session, renderer: Renderer, hud
       playerId: session.localPlayerId,
       toWorld: renderer.screenToWorld,
       fallbackAim: () => {
-        const local = session.getState().players.find((p) => p.id === session.localPlayerId);
+        const local = session.getView().players.find((p) => p.id === session.localPlayerId);
         return local === undefined ? null : facingAim(local);
       },
       enabled: playing,

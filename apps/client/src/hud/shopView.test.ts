@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ECONOMY, ITEMS, UPGRADES } from '@hookbrawl/sim';
 import type { GameEvent, GrappleId, HookId, Player, Purchase } from '@hookbrawl/sim';
-import { BOT, fakePlayer, fakeState, HUMAN } from '../game/fakeSim';
+import { BOT, fakePlayer, fakeView, HUMAN } from '../game/fakeSim';
 import { bountyEarned, describeOutcome, grappleView, resolvePurchases, shopSlots } from './shopView';
 
 const DAMAGE: Purchase = { kind: 'upgrade', id: 'damage' };
@@ -58,24 +58,24 @@ describe('grappleView', () => {
   it('is locked with its price and whether it is affordable until bought', () => {
     const rich = fakePlayer({ id: HUMAN, gold: ITEMS.grapple.cost });
     const poor = fakePlayer({ id: HUMAN, gold: ITEMS.grapple.cost - 1 });
-    expect(grappleView(fakeState({ players: [rich] }), rich)).toEqual({ kind: 'locked', price: ITEMS.grapple.cost, affordable: true });
-    expect(grappleView(fakeState({ players: [poor] }), poor)).toEqual({ kind: 'locked', price: ITEMS.grapple.cost, affordable: false });
+    expect(grappleView(fakeView({ players: [rich] }), rich)).toEqual({ kind: 'locked', price: ITEMS.grapple.cost, affordable: true });
+    expect(grappleView(fakeView({ players: [poor] }), poor)).toEqual({ kind: 'locked', price: ITEMS.grapple.cost, affordable: false });
   });
 
   it('counts down its cooldown as seconds and a fraction of the full cooldown', () => {
     const me = fakePlayer({ id: HUMAN, items: owned(14) });
-    const view = grappleView(fakeState({ time: 10, players: [me] }), me);
+    const view = grappleView(fakeView({ time: 10, players: [me] }), me);
     expect(view).toEqual({ kind: 'cooldown', seconds: 4, fraction: 4 / ITEMS.grapple.cooldown });
   });
 
   it('is busy while grappling, dead or with the hook out, and ready otherwise', () => {
     const ready = fakePlayer({ id: HUMAN, items: owned(0) });
-    expect(grappleView(fakeState({ time: 5, players: [ready] }), ready)).toEqual({ kind: 'ready' });
-    expect(grappleView(fakeState({ time: 5, players: [ready], hooks: [hook] }), ready)).toEqual({ kind: 'busy' });
+    expect(grappleView(fakeView({ time: 5, players: [ready] }), ready)).toEqual({ kind: 'ready' });
+    expect(grappleView(fakeView({ time: 5, players: [ready], hooks: [hook] }), ready)).toEqual({ kind: 'busy' });
     const dead = { ...ready, status: { kind: 'dead' as const, respawnAt: 9 } };
-    expect(grappleView(fakeState({ time: 5, players: [dead] }), dead)).toEqual({ kind: 'busy' });
+    expect(grappleView(fakeView({ time: 5, players: [dead] }), dead)).toEqual({ kind: 'busy' });
     const pulling = { ...ready, status: { kind: 'grappling' as const, grappleId: 'g0' as GrappleId } };
-    expect(grappleView(fakeState({ time: 5, players: [pulling] }), pulling)).toEqual({ kind: 'busy' });
+    expect(grappleView(fakeView({ time: 5, players: [pulling] }), pulling)).toEqual({ kind: 'busy' });
   });
 });
 
@@ -84,7 +84,7 @@ describe('resolvePurchases', () => {
 
   it('confirms each press the sim granted and gives the reason for each it refused', () => {
     const me = fakePlayer({ id: HUMAN, gold: 0, upgrades: { damage: MAX_LEVEL, range: 0, speed: 0, size: 0 }, items: owned(0) });
-    const state = fakeState({ players: [me], events: [bought(DAMAGE, UPGRADES.damage.costs[MAX_LEVEL - 1]!)] });
+    const state = fakeView({ players: [me], events: [bought(DAMAGE, UPGRADES.damage.costs[MAX_LEVEL - 1]!)] });
     expect(resolvePurchases([DAMAGE, DAMAGE, RANGE, GRAPPLE], state, HUMAN)).toEqual([
       { purchase: DAMAGE, outcome: 'bought' },
       { purchase: DAMAGE, outcome: 'maxed' },
@@ -94,7 +94,7 @@ describe('resolvePurchases', () => {
   });
 
   it('ignores purchases made by someone else', () => {
-    const state = fakeState({
+    const state = fakeView({
       players: [fakePlayer({ id: HUMAN, gold: 0 }), fakePlayer({ id: BOT, team: 'east' })],
       events: [{ kind: 'purchase', playerId: BOT, purchase: RANGE, cost: UPGRADES.range.costs[0]! }],
     });
@@ -112,10 +112,10 @@ describe('bountyEarned', () => {
   });
 
   it('adds kill and assist gold for the local player, and nothing for passive income', () => {
-    expect(bountyEarned(fakeState(), HUMAN)).toBe(0);
-    expect(bountyEarned(fakeState({ events: [kill(HUMAN, [])] }), HUMAN)).toBe(ECONOMY.killGold);
-    expect(bountyEarned(fakeState({ events: [kill(BOT, [HUMAN])] }), HUMAN)).toBe(ECONOMY.assistGold);
-    expect(bountyEarned(fakeState({ events: [kill(BOT, [])] }), HUMAN)).toBe(0);
+    expect(bountyEarned(fakeView(), HUMAN)).toBe(0);
+    expect(bountyEarned(fakeView({ events: [kill(HUMAN, [])] }), HUMAN)).toBe(ECONOMY.killGold);
+    expect(bountyEarned(fakeView({ events: [kill(BOT, [HUMAN])] }), HUMAN)).toBe(ECONOMY.assistGold);
+    expect(bountyEarned(fakeView({ events: [kill(BOT, [])] }), HUMAN)).toBe(0);
   });
 });
 

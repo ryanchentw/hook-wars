@@ -1,4 +1,4 @@
-import type { GameEvent, PlayerId } from '@hookbrawl/sim';
+import type { SeenEvent, PlayerId } from '@hookbrawl/sim';
 import { Group, type Vector3 } from 'three';
 import type { Assets } from '../assets/loadAssets';
 import type { Impact } from '../impact/impacts';
@@ -10,7 +10,7 @@ import { startsFlourish } from './flourish';
 export type CharactersView = {
   readonly group: Group;
   /** `events` are the sim events since the previous call, each delivered exactly once, and `impacts` the blows among them. */
-  update(frame: RenderFrame, events: readonly GameEvent[], impacts: readonly Impact[], dt: number): void;
+  update(frame: RenderFrame, events: readonly SeenEvent[], impacts: readonly Impact[], dt: number): void;
   handPosition(playerId: PlayerId): Vector3 | null;
   offHandPosition(playerId: PlayerId): Vector3 | null;
   clear(): void;

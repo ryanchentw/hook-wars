@@ -213,8 +213,8 @@ export type BotBrain = {
   readonly nextThinkAt: number;
 };
 
-/** A fighter as a team sees them. Gold is on the roster, where it can be hidden. */
-export type SeenPlayer = Omit<Player, 'gold'>;
+/** A fighter as a team sees them: an enemy's purse is null under fog. */
+export type SeenPlayer = Omit<Player, 'gold'> & { readonly gold: number | null };
 
 /** What every team knows about every fighter, seen or not. */
 export type PlayerCard = {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { TUNING } from '@hookbrawl/sim';
 import type { HookId, PlayerId } from '@hookbrawl/sim';
-import { BOT, fakePlayer, fakeState, HUMAN } from '../game/fakeSim';
+import { BOT, fakePlayer, fakeView, HUMAN } from '../game/fakeSim';
 import { appendKills, cooldownLabel, deriveHud, KILL_FEED_SIZE } from './hudView';
 
 const players = [
@@ -11,7 +11,7 @@ const players = [
 
 describe('deriveHud', () => {
   it('reports cooldown remaining as seconds and a fraction of the full cooldown', () => {
-    const view = deriveHud(fakeState({ time: 10, players }), HUMAN, []);
+    const view = deriveHud(fakeView({ time: 10, players }), HUMAN, []);
     expect(view.local?.cooldownSeconds).toBeCloseTo(0.6);
     expect(view.local?.cooldownFraction).toBeCloseTo(0.6 / TUNING.hookCooldown);
     expect(view.local?.hookInFlight).toBe(false);
@@ -20,15 +20,15 @@ describe('deriveHud', () => {
   it('flags a hook in flight and a respawn countdown', () => {
     const dead = [fakePlayer({ id: HUMAN, status: { kind: 'dead', respawnAt: 12 } }), fakePlayer({ id: BOT, team: 'east' })];
     const hooks = [{ id: 'h' as HookId, ownerId: HUMAN, pos: { x: 0, y: 0 }, dir: { x: 1, y: 0 }, path: [], phase: { kind: 'retracting' as const, cargo: null }, stats: { damage: 350, range: 1300, speed: 1100, retractSpeed: 1300, radius: 26, barbed: false } }];
-    const view = deriveHud(fakeState({ time: 10, players: dead, hooks }), HUMAN, []);
+    const view = deriveHud(fakeView({ time: 10, players: dead, hooks }), HUMAN, []);
     expect(view.local?.hookInFlight).toBe(true);
     expect(view.local?.respawnIn).toBeCloseTo(2);
   });
 
   it('says who won once the match is over', () => {
-    const ended = fakeState({ players, phase: { kind: 'ended', winner: 'east' } });
+    const ended = fakeView({ players, phase: { kind: 'ended', winner: 'east' } });
     expect(deriveHud(ended, HUMAN, []).end).toEqual({ winner: 'east', localWon: false });
-    expect(deriveHud(fakeState({ players }), HUMAN, []).end).toBeNull();
+    expect(deriveHud(fakeView({ players }), HUMAN, []).end).toBeNull();
   });
 
   it('lists every fighter by side with kills, deaths, assists and gold', () => {
@@ -37,7 +37,7 @@ describe('deriveHud', () => {
       fakePlayer({ id: BOT, name: 'Pike', team: 'east', isBot: true }),
       fakePlayer({ id: 'ally' as PlayerId, name: 'Gull', isBot: true, assists: 4 }),
     ];
-    const board = deriveHud(fakeState({ players: roster }), HUMAN, []).scoreboard;
+    const board = deriveHud(fakeView({ players: roster }), HUMAN, []).scoreboard;
     expect(board.west.map((r) => [r.name, r.isLocal, r.isBot])).toEqual([
       ['You', true, false],
       ['Gull', false, true],
@@ -46,26 +46,36 @@ describe('deriveHud', () => {
     expect(board.east.map((r) => r.name)).toEqual(['Pike']);
   });
 
+  it('keeps hidden enemies on the board under fog, with their gold hidden and ours shown', () => {
+    const far = [fakePlayer({ id: HUMAN, gold: 40 }), fakePlayer({ id: BOT, name: 'Pike', team: 'east', pos: { x: 2000, y: 0 }, kills: 3 })];
+    const view = fakeView({ players: far, vision: { kind: 'fog', radius: 900 } });
+    expect(view.players.map((p) => p.id)).toEqual([HUMAN]);
+    const board = deriveHud(view, HUMAN, []).scoreboard;
+    expect(board.east[0]).toMatchObject({ name: 'Pike', kills: 3, gold: null });
+    expect(board.west[0]?.gold).toBe(40);
+    expect(deriveHud(view, HUMAN, []).local?.gold).toBe(40);
+  });
+
   it('shows the local gold, the shop and the grapple slot', () => {
     const rich = [fakePlayer({ id: HUMAN, gold: 1234 }), players[1]!];
-    const view = deriveHud(fakeState({ players: rich }), HUMAN, []);
+    const view = deriveHud(fakeView({ players: rich }), HUMAN, []);
     expect(view.local?.gold).toBe(1234);
     expect(view.local?.grapple.kind).toBe('locked');
     expect(view.shop).toHaveLength(6);
   });
 
   it('marks the hook barbed once the barb is owned', () => {
-    const plain = deriveHud(fakeState({ players }), HUMAN, []);
+    const plain = deriveHud(fakeView({ players }), HUMAN, []);
     expect(plain.local?.hookBarbed).toBe(false);
     const kitted = [fakePlayer({ id: HUMAN, items: { grapple: { kind: 'unowned' }, barb: { kind: 'owned' } } }), players[1]!];
-    expect(deriveHud(fakeState({ players: kitted }), HUMAN, []).local?.hookBarbed).toBe(true);
+    expect(deriveHud(fakeView({ players: kitted }), HUMAN, []).local?.hookBarbed).toBe(true);
   });
 });
 
 describe('appendKills', () => {
   it('puts the newest kill first and keeps the feed short', () => {
     const killState = (tick: number) =>
-      fakeState({ tick, players, events: [{ kind: 'kill', killerId: HUMAN, victimId: BOT, assistIds: [], at: { x: 0, y: 0 } }] });
+      fakeView({ tick, players, events: [{ kind: 'kill', killerId: HUMAN, victimId: BOT, assistIds: [], at: { x: 0, y: 0 } }] });
     let feed = appendKills([], killState(1));
     for (let t = 2; t <= 10; t += 1) feed = appendKills(feed, killState(t));
     expect(feed).toHaveLength(KILL_FEED_SIZE);
@@ -74,14 +84,14 @@ describe('appendKills', () => {
   });
 
   it('lists a kill once even when the same state is seen twice', () => {
-    const state = fakeState({ tick: 7, players, events: [{ kind: 'kill', killerId: HUMAN, victimId: BOT, assistIds: [], at: { x: 0, y: 0 } }] });
+    const state = fakeView({ tick: 7, players, events: [{ kind: 'kill', killerId: HUMAN, victimId: BOT, assistIds: [], at: { x: 0, y: 0 } }] });
     const once = appendKills([], state);
     expect(appendKills(once, state)).toEqual(once);
   });
 
   it('names everyone who assisted', () => {
     const ally = fakePlayer({ id: 'ally' as PlayerId, name: 'Ally' });
-    const state = fakeState({
+    const state = fakeView({
       players: [...players, ally],
       events: [{ kind: 'kill', killerId: HUMAN, victimId: BOT, assistIds: [ally.id], at: { x: 0, y: 0 } }],
     });

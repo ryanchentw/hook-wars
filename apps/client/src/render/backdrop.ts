@@ -1,4 +1,4 @@
-import { createMatch, DEFAULT_ARENA } from '@hookbrawl/sim';
+import { createMatch, DEFAULT_ARENA, viewFor } from '@hookbrawl/sim';
 import type { PlayerId } from '@hookbrawl/sim';
 import { PerspectiveCamera } from 'three';
 import { poseFor } from './camera/framing';
@@ -18,14 +18,14 @@ const NOBODY = '' as PlayerId;
 
 /** The docks with nobody on them: the scene is drawn but no match exists, so nothing can tick. */
 function emptyFrame(): RenderFrame {
-  const state = createMatch({
+  const match = createMatch({
     killTarget: 1,
     players: [
       { id: 'west' as PlayerId, name: '', team: 'west', isBot: false },
       { id: 'east' as PlayerId, name: '', team: 'east', isBot: false },
     ],
   });
-  return { state, players: [], hooks: [], grapples: [] };
+  return { state: viewFor(match, 'west'), players: [], hooks: [], grapples: [] };
 }
 
 /** Where along the establishing shot the camera is: a slow swing, or the shot's middle held still for less motion. */

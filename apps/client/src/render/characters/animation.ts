@@ -1,4 +1,4 @@
-import type { GameEvent, Grapple, Hook, Player, PlayerId } from '@hookbrawl/sim';
+import type { SeenEvent, Grapple, Hook, SeenPlayer, PlayerId } from '@hookbrawl/sim';
 
 export type AnimState = 'idle' | 'run' | 'throw' | 'hold' | 'swing' | 'flinch' | 'dragged' | 'stagger' | 'brace' | 'haul' | 'death';
 
@@ -40,7 +40,7 @@ export const ANIMATIONS: Readonly<Record<AnimState, AnimSpec>> = {
 export const REQUIRED_CLIPS: readonly string[] = [...new Set(Object.values(ANIMATIONS).map((spec) => spec.clip))];
 
 export type AnimFacts = {
-  readonly status: Player['status']['kind'];
+  readonly status: SeenPlayer['status']['kind'];
   readonly moving: boolean;
   readonly hookOut: boolean;
   readonly grapple: Grapple['phase']['kind'] | null;
@@ -67,7 +67,7 @@ const TRIGGERED: readonly { readonly trigger: AnimTrigger; readonly state: AnimS
   { trigger: 'hurt', state: 'flinch' },
 ];
 
-export function factsFor(player: Player, hooks: readonly Hook[], grapples: readonly Grapple[]): AnimFacts {
+export function factsFor(player: SeenPlayer, hooks: readonly Hook[], grapples: readonly Grapple[]): AnimFacts {
   return {
     status: player.status.kind,
     moving: player.move.kind !== 'idle',
@@ -76,7 +76,7 @@ export function factsFor(player: Player, hooks: readonly Hook[], grapples: reado
   };
 }
 
-export function triggersFor(playerId: PlayerId, events: readonly GameEvent[]): readonly AnimTrigger[] {
+export function triggersFor(playerId: PlayerId, events: readonly SeenEvent[]): readonly AnimTrigger[] {
   return events.flatMap((e): readonly AnimTrigger[] => {
     switch (e.kind) {
       case 'hookCast':

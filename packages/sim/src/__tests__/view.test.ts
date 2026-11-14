@@ -48,9 +48,10 @@ describe('viewFor', () => {
     const s = withPlayer(hidden(), 'e', { pos: at(900, 600) });
     const enemy = viewFor(s, 'west').players.find((p) => p.id === 'e');
     expect(enemy).toBeDefined();
-    expect(enemy).not.toHaveProperty('gold');
+    expect(enemy?.gold).toBeNull();
     expect(enemy?.move.kind).toBe('steer');
     expect(JSON.stringify(enemy)).not.toContain('2100');
+    expect(JSON.stringify(enemy)).not.toContain('999');
   });
 
   it('starts a hidden thrower’s chain at the edge of sight, never at the thrower', () => {

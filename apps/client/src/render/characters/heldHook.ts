@@ -1,5 +1,5 @@
 import { hookStats, TUNING } from '@hookbrawl/sim';
-import type { Player, TeamId } from '@hookbrawl/sim';
+import type { SeenPlayer, TeamId } from '@hookbrawl/sim';
 import { Mesh, MeshStandardMaterial, type BufferGeometry, type Material, type Object3D } from 'three';
 import { createHiddenMaterial, facesFor } from '../hook/hookMaterials';
 import type { Tints } from '../scenes/types';
@@ -10,7 +10,7 @@ export type HeldHook = {
   /** Drawn on every face of the hook, so flashing or fading it covers the barb's spurs too. */
   readonly material: MeshStandardMaterial;
   /** Shows the hook unless it is out on its chain, at the size its owner would throw it, with spurs once barbed. */
-  update(player: Player, hookOut: boolean): void;
+  update(player: SeenPlayer, hookOut: boolean): void;
   dispose(): void;
 };
 

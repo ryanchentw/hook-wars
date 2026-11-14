@@ -1,11 +1,11 @@
-import type { GameEvent, Player } from '@hookbrawl/sim';
+import type { SeenEvent, SeenPlayer } from '@hookbrawl/sim';
 import { envelope } from '../impact/timing';
 import { FLOURISH } from '../theme';
 
 const SHAPE = { attack: 0, hold: 0, release: FLOURISH.life } as const;
 
 /** Whether this tick's events hold a purchase by `player` that should light them up. */
-export function startsFlourish(player: Player, events: readonly GameEvent[]): boolean {
+export function startsFlourish(player: SeenPlayer, events: readonly SeenEvent[]): boolean {
   return player.status.kind !== 'dead' && events.some((e) => e.kind === 'purchase' && e.playerId === player.id);
 }
 

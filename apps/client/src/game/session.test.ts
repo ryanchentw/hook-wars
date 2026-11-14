@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import * as sim from '@hookbrawl/sim';
 import { TICK_DT } from '@hookbrawl/sim';
 import type { MatchConfig } from '@hookbrawl/sim';
 import { BOT, createFakeSim, HUMAN } from './fakeSim';
@@ -197,5 +198,39 @@ describe('session steering', () => {
     session.setPaused(false);
     session.advance(TICK_DT);
     expect(steers(sim)).toEqual([[NORTH], [{ x: 0, y: 0 }]]);
+  });
+});
+
+describe('session views', () => {
+  /** The real sim under fog: the local west fighter at its spawn cannot see the east one at theirs. */
+  function fogged() {
+    const players = [
+      { id: HUMAN, name: 'You', team: 'west' as const, isBot: false },
+      { id: BOT, name: 'Dummy', team: 'east' as const, isBot: false },
+    ];
+    return createSession(sim, { config: { killTarget: 5, fog: true, players }, localPlayerId: HUMAN, bots: [] });
+  }
+
+  it('hands out only what the local team can see, every tick and in every frame', () => {
+    const session = fogged();
+    const seen: string[][] = [];
+    session.subscribe((view) => seen.push(view.players.map((p) => p.id)));
+    session.advance(TICK_DT * 2);
+    expect(seen).toEqual([[HUMAN], [HUMAN]]);
+    const { previous, current } = session.frame();
+    expect([previous, current].map((v) => v.players.map((p) => p.id))).toEqual([[HUMAN], [HUMAN]]);
+    expect(session.getView().roster.map((c) => c.id)).toEqual([HUMAN, BOT]);
+    expect(session.getState().players).toHaveLength(2);
+  });
+
+  it('shows everyone with fog off', () => {
+    const { session } = setup();
+    session.advance(TICK_DT);
+    expect(session.getView().players.map((p) => p.id)).toEqual([HUMAN, BOT]);
+    expect(session.localTeam).toBe('west');
+  });
+
+  it('refuses a local player who is not in the match', () => {
+    expect(() => createSession(createFakeSim(), { config, localPlayerId: 'ghost' as typeof HUMAN, bots: [] })).toThrow(/not in this match/);
   });
 });

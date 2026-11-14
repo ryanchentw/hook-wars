@@ -1,5 +1,5 @@
 import { canBuy, ECONOMY, ITEMS, priceOf, UPGRADES } from '@hookbrawl/sim';
-import type { GameState, Player, PlayerId, Purchase } from '@hookbrawl/sim';
+import type { Player, PlayerId, Purchase, SeenPlayer, TeamView } from '@hookbrawl/sim';
 import { SHOP_SLOTS } from '../game/bindings';
 
 export type SlotId = Purchase['id'];
@@ -37,7 +37,7 @@ export const SLOT_NAMES: Readonly<Record<SlotId, string>> = {
   barb: 'Barb',
 };
 
-function levelOf(player: Player, purchase: Purchase): ShopSlotView['level'] {
+function levelOf(player: SeenPlayer, purchase: Purchase): ShopSlotView['level'] {
   if (purchase.kind === 'item') return null;
   return { current: player.upgrades[purchase.id], max: UPGRADES[purchase.id].costs.length };
 }
@@ -62,7 +62,7 @@ export function shopSlots(player: Player): readonly ShopSlotView[] {
 }
 
 /** Cooldown shows first, since it is the wait that matters; busy covers every state in which the sim refuses a cast. */
-export function grappleView(state: GameState, player: Player): GrappleView {
+export function grappleView(state: TeamView, player: Player): GrappleView {
   const item = player.items.grapple;
   if (item.kind === 'unowned') return { kind: 'locked', price: ITEMS.grapple.cost, affordable: canBuy(player, GRAPPLE) };
   const seconds = Math.max(0, item.readyAt - state.time);
@@ -73,7 +73,7 @@ export function grappleView(state: GameState, player: Player): GrappleView {
 
 const samePurchase = (a: Purchase, b: Purchase): boolean => a.kind === b.kind && a.id === b.id;
 
-function refusal(player: Player | undefined, purchase: Purchase): PurchaseOutcome {
+function refusal(player: SeenPlayer | undefined, purchase: Purchase): PurchaseOutcome {
   if (player === undefined || priceOf(player, purchase) !== null) return 'poor';
   return purchase.kind === 'upgrade' ? 'maxed' : 'owned';
 }
@@ -82,7 +82,7 @@ function refusal(player: Player | undefined, purchase: Purchase): PurchaseOutcom
  * Matches the buys sent since the last tick against the purchases that tick granted.
  * The sim drops a refused buy without an event, so an unmatched press was refused.
  */
-export function resolvePurchases(pending: readonly Purchase[], state: GameState, localId: PlayerId): readonly ResolvedPurchase[] {
+export function resolvePurchases(pending: readonly Purchase[], state: TeamView, localId: PlayerId): readonly ResolvedPurchase[] {
   const player = state.players.find((p) => p.id === localId);
   let granted = state.events.flatMap((e) => (e.kind === 'purchase' && e.playerId === localId ? [e.purchase] : []));
   return pending.map((purchase) => {
@@ -107,7 +107,7 @@ export function describeOutcome(slot: ShopSlotView, outcome: PurchaseOutcome): s
 }
 
 /** Gold from kills and assists this tick. Passive income is left out so it never flashes the purse. */
-export function bountyEarned(state: GameState, localId: PlayerId): number {
+export function bountyEarned(state: TeamView, localId: PlayerId): number {
   return state.events.reduce((sum, e) => {
     if (e.kind !== 'kill') return sum;
     if (e.killerId === localId) return sum + ECONOMY.killGold;

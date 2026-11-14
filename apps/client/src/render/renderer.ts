@@ -1,6 +1,6 @@
-import type { GameEvent, Vec2 } from '@hookbrawl/sim';
+import type { SeenEvent, Vec2 } from '@hookbrawl/sim';
 import type { WebGLRenderer } from 'three';
-import type { Session } from '../game/session';
+import type { SessionView } from '../game/session';
 import { screenToGround, worldToScreen } from './camera/projection';
 import { createCameraRig, type CameraRig } from './camera/rig';
 import { createFrameLoop, type ContextEvents } from './frameLoop';
@@ -58,7 +58,7 @@ export type RendererEvents = ContextEvents & {
 const WARM_UP_FRAMES = 3;
 const NO_IMPACTS: readonly Impact[] = [];
 
-function impactsIn(events: readonly GameEvent[], frame: RenderFrame, session: Session, calm: boolean): readonly Impact[] {
+function impactsIn(events: readonly SeenEvent[], frame: RenderFrame, session: SessionView, calm: boolean): readonly Impact[] {
   if (events.length === 0) return NO_IMPACTS;
   const fighterOf = (id: string): Fighter | null => {
     const pf = frame.players.find((p) => p.player.id === id);
@@ -69,7 +69,7 @@ function impactsIn(events: readonly GameEvent[], frame: RenderFrame, session: Se
 
 type PictureParts = {
   readonly gl: WebGLRenderer;
-  readonly session: Session;
+  readonly session: SessionView;
   readonly surface: Surface;
   readonly show: SceneShow;
   readonly rig: CameraRig;
@@ -82,7 +82,7 @@ type PictureParts = {
 /** Keeps the picture in step with the session: collects each tick's events and draws. */
 function createPicture({ gl, session, surface, show, rig, opening, intro, calm }: PictureParts) {
   const overlay = createWorldOverlay(surface.overlay);
-  let pending: readonly GameEvent[] = [];
+  let pending: readonly SeenEvent[] = [];
   let elapsed = 0;
   let stats: RenderStats = { calls: 0, triangles: 0, geometries: 0, textures: 0 };
 
@@ -148,9 +148,9 @@ function createPicture({ gl, session, surface, show, rig, opening, intro, calm }
  * Resolves once every shader is compiled and frames are flowing, so the match never opens on a stalled picture;
  * the session is not advanced before then.
  */
-export async function createRenderer(graphics: Graphics, session: Session, view: MatchView, events: RendererEvents): Promise<Renderer> {
+export async function createRenderer(graphics: Graphics, session: SessionView, view: MatchView, events: RendererEvents): Promise<Renderer> {
   const { gl, surface, host, assets, softDot, hookGeometry } = graphics;
-  const arena = session.getState().arena;
+  const arena = session.getView().arena;
   const shared: StageShared = { arena, assets, softDot, hookGeometry, localPlayerId: session.localPlayerId };
   const show = createSceneShow(gl, host, shared, view.scene);
   const rig = createCameraRig(arena, session.localPlayerId);

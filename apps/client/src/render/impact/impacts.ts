@@ -1,4 +1,4 @@
-import type { GameEvent, PlayerId, TeamId, Vec2 } from '@hookbrawl/sim';
+import type { SeenEvent, PlayerId, TeamId, Vec2 } from '@hookbrawl/sim';
 import type { BurstName } from '../effects/particles';
 import type { ImpactTiming, Pop } from './timing';
 
@@ -70,7 +70,7 @@ export type Impact = {
 
 type Blow = { readonly kind: ImpactKind; readonly attackerId: PlayerId; readonly targetId: PlayerId; readonly damage: number; readonly at: Vec2 };
 
-function blowOf(event: GameEvent): Blow | null {
+function blowOf(event: SeenEvent): Blow | null {
   if (event.kind === 'melee') return { kind: 'melee', attackerId: event.attackerId, targetId: event.targetId, damage: event.damage, at: event.at };
   if (event.kind === 'hookHit' && event.damage > 0) {
     return { kind: 'hook', attackerId: event.ownerId, targetId: event.targetId, damage: event.damage, at: event.at };
@@ -80,7 +80,7 @@ function blowOf(event: GameEvent): Blow | null {
 
 /** The damaging blows among one tick's events, each resolved against where the fighters are standing. */
 export function impactsOf(
-  events: readonly GameEvent[],
+  events: readonly SeenEvent[],
   fighterOf: (id: PlayerId) => Fighter | null,
   localId: PlayerId,
   specs: Readonly<Record<ImpactKind, ImpactSpec>>,

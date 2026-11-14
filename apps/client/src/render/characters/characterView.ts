@@ -1,5 +1,5 @@
 import { TUNING } from '@hookbrawl/sim';
-import type { Player, Vec2 } from '@hookbrawl/sim';
+import type { SeenPlayer, Vec2 } from '@hookbrawl/sim';
 import {
   AnimationMixer,
   Group,
@@ -28,7 +28,7 @@ import { createHitReaction } from './hitReaction';
 import { instantiateCharacter } from './model';
 
 export type CharacterUpdate = {
-  readonly player: Player;
+  readonly player: SeenPlayer;
   readonly pos: Vec2;
   readonly facts: AnimFacts;
   readonly triggers: readonly AnimTrigger[];
@@ -69,7 +69,7 @@ function shortestTurn(from: number, to: number): number {
   return ((((to - from) % tau) + tau + Math.PI) % tau) - Math.PI;
 }
 
-function deathOpacity(player: Player, simTime: number): number {
+function deathOpacity(player: SeenPlayer, simTime: number): number {
   if (player.status.kind !== 'dead') return 1;
   const progress = 1 - (player.status.respawnAt - simTime) / TUNING.respawnDelay;
   return 1 - Math.min(1, Math.max(0, (progress - FADE_FROM) / (1 - FADE_FROM)));
@@ -189,7 +189,7 @@ export type SharedLooks = { readonly hookGeometry: BufferGeometry; readonly soft
  * The figure's scene nodes. `group` is always the true sim position and carries the rings;
  * `pivot` takes the lunge and the recoil, and `body` the turn, so neither moves the rings.
  */
-function createRig(root: Object3D, player: Player, isLocal: boolean, { softDot, tints }: SharedLooks): Rig {
+function createRig(root: Object3D, player: SeenPlayer, isLocal: boolean, { softDot, tints }: SharedLooks): Rig {
   const group = new Group();
   const pivot = new Group();
   const body = new Group();
@@ -212,12 +212,12 @@ function createRig(root: Object3D, player: Player, isLocal: boolean, { softDot, 
   return { group, pivot, body, rings, flourish, dispose };
 }
 
-function tiltFor(status: Player['status']['kind'], hauled: boolean): Tilt {
+function tiltFor(status: SeenPlayer['status']['kind'], hauled: boolean): Tilt {
   if (status === 'dragged') return DRAG;
   return hauled ? HAUL : UPRIGHT;
 }
 
-export function createCharacterView(asset: CharacterAsset, looks: SharedLooks, player: Player, isLocal: boolean): CharacterView {
+export function createCharacterView(asset: CharacterAsset, looks: SharedLooks, player: SeenPlayer, isLocal: boolean): CharacterView {
   const model = instantiateCharacter(asset, player.team, looks.tints);
   const heldHook = createHeldHook(looks.hookGeometry, player.team, looks.tints);
   model.hand.add(heldHook.mesh);
