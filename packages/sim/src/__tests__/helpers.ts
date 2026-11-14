@@ -1,5 +1,5 @@
 import { createMatch, step, TICK_DT } from '../index';
-import type { GameEvent, GameState, Player, PlayerId, PlayerInput, Purchase, TeamId, Vec2 } from '../index';
+import type { GameEvent, GameState, Grapple, GrappleId, Hook, HookId, Player, PlayerId, PlayerInput, Purchase, TeamId, Vec2 } from '../index';
 
 export const pid = (id: string): PlayerId => id as PlayerId;
 
@@ -108,3 +108,26 @@ export function ofKind<K extends GameEvent['kind']>(
 ): Extract<GameEvent, { kind: K }>[] {
   return events.filter((e): e is Extract<GameEvent, { kind: K }> => e.kind === kind);
 }
+
+/** West `w` and east `e` one-on-one, or more with extra ids, under fog unless told otherwise. */
+export function fogMatch(roster: readonly (readonly [string, TeamId])[] = [['w', 'west'], ['e', 'east']], fog = true): GameState {
+  return createMatch({ killTarget: 50, fog, players: roster.map(([id, team]) => ({ id: pid(id), name: id, team, isBot: false })) });
+}
+
+export function hookOf(owner: string, pos: { x: number; y: number }, patch: Partial<Hook> = {}): Hook {
+  return {
+    id: `${owner}-hook` as HookId,
+    ownerId: pid(owner),
+    pos,
+    dir: { x: 1, y: 0 },
+    path: [{ x: 400, y: 600 }],
+    phase: { kind: 'extending', remaining: 500 },
+    stats: { damage: 350, range: 1300, speed: 1100, retractSpeed: 1300, radius: 26, barbed: false },
+    ...patch,
+  };
+}
+
+export function grappleOf(owner: string, pos: { x: number; y: number }): Grapple {
+  return { id: `${owner}-grapple` as GrappleId, ownerId: pid(owner), pos, anchor: pos, phase: { kind: 'flying' } };
+}
+

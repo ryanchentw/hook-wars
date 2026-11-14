@@ -1,5 +1,5 @@
 import { facingCanal, spawnPoint, TEAMS } from './arena';
-import { DEFAULT_ARENA, ECONOMY, TUNING } from './config';
+import { DEFAULT_ARENA, ECONOMY, TUNING, VISION } from './config';
 import { IDLE } from './intent';
 import type { Arena, GameState, MatchConfig, MatchPlayerConfig, Player } from './types';
 
@@ -61,6 +61,7 @@ export function createMatch(config: MatchConfig): GameState {
     grapples: [],
     score: { west: 0, east: 0 },
     killTarget: config.killTarget,
+    vision: config.fog === true ? { kind: 'fog', radius: VISION.radius } : { kind: 'open' },
     phase: { kind: 'playing' },
     nextHookSeq: 0,
     nextGrappleSeq: 0,

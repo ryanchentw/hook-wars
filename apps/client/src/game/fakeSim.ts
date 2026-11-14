@@ -39,6 +39,7 @@ export function fakeState(overrides: Partial<GameState> = {}): GameState {
     grapples: [],
     score: { west: 0, east: 0 },
     killTarget: 5,
+    vision: { kind: 'open' },
     phase: { kind: 'playing' },
     nextHookSeq: 0,
     nextGrappleSeq: 0,

@@ -92,3 +92,8 @@ export const GRAPPLE = {
   flightSpeed: 1800,
   pullSpeed: 900,
 } as const;
+
+export const VISION = {
+  /** How far each living fighter sees under fog, in sim units. */
+  radius: 900,
+} as const;

@@ -155,6 +155,9 @@ export type GameEvent =
   | { readonly kind: 'respawn'; readonly playerId: PlayerId }
   | { readonly kind: 'matchEnd'; readonly winner: TeamId };
 
+/** Open: everyone sees everything. Fog: a team sees only what is inside `radius` of one of its living fighters. */
+export type Vision = { readonly kind: 'open' } | { readonly kind: 'fog'; readonly radius: number };
+
 export type GameState = {
   readonly tick: number;
   /** Seconds since match start. */
@@ -165,6 +168,7 @@ export type GameState = {
   readonly grapples: readonly Grapple[];
   readonly score: Readonly<Record<TeamId, number>>;
   readonly killTarget: number;
+  readonly vision: Vision;
   readonly phase: MatchPhase;
   readonly nextHookSeq: number;
   readonly nextGrappleSeq: number;
@@ -197,6 +201,8 @@ export type MatchConfig = {
   readonly arena?: Arena;
   /** Defaults to `ECONOMY.startingGold`. */
   readonly startingGold?: number;
+  /** Fog of war over the enemy, at `VISION.radius`. Off by default. */
+  readonly fog?: boolean;
 };
 
 /** Opaque seeded-RNG state. Advance it with `nextRandom`. */
@@ -205,4 +211,49 @@ export type Rng = { readonly seed: number };
 export type BotBrain = {
   readonly rng: Rng;
   readonly nextThinkAt: number;
+};
+
+/** A fighter as a team sees them. Gold is on the roster, where it can be hidden. */
+export type SeenPlayer = Omit<Player, 'gold'>;
+
+/** What every team knows about every fighter, seen or not. */
+export type PlayerCard = {
+  readonly id: PlayerId;
+  readonly name: string;
+  readonly team: TeamId;
+  readonly isBot: boolean;
+  readonly kills: number;
+  readonly deaths: number;
+  readonly assists: number;
+  /** Null for an enemy under fog. */
+  readonly gold: number | null;
+};
+
+/** `ropeFrom` is where the visible rope starts when its owner is out of sight; null runs it from the owner's hand. */
+export type SeenGrapple = Grapple & { readonly ropeFrom: Vec2 | null };
+
+type KillEvent = Extract<GameEvent, { readonly kind: 'kill' }>;
+/** A kill is always news, but where it happened is not when the victim lay out of sight. */
+export type SeenEvent = Exclude<GameEvent, KillEvent> | (Omit<KillEvent, 'at'> & { readonly at: Vec2 | null });
+
+/**
+ * Everything one team is entitled to know about a match: all a client needs to draw a frame, and nothing more.
+ * A hook's `path` starts where its chain comes into sight: at the owner when the owner is seen, else at the edge of vision.
+ */
+export type TeamView = {
+  readonly viewer: TeamId;
+  readonly tick: number;
+  readonly time: number;
+  readonly arena: Arena;
+  readonly vision: Vision;
+  readonly score: Readonly<Record<TeamId, number>>;
+  readonly killTarget: number;
+  readonly phase: MatchPhase;
+  /** Only the fighters this team sees, in match order. */
+  readonly players: readonly SeenPlayer[];
+  /** Every fighter, in match order. */
+  readonly roster: readonly PlayerCard[];
+  readonly hooks: readonly Hook[];
+  readonly grapples: readonly SeenGrapple[];
+  readonly events: readonly SeenEvent[];
 };
