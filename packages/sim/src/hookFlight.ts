@@ -48,10 +48,11 @@ function firstSurface(arena: Arena, p: Vec2, dir: Vec2, maxT: number, hookRadius
 const HOOKABLE: ReadonlySet<Player['status']['kind']> = new Set(['alive', 'grappling', 'staggered']);
 const hookable = (p: Player): boolean => HOOKABLE.has(p.status.kind);
 
-function firstPlayer(state: GameState, hook: Hook, p: Vec2, dir: Vec2, maxT: number) {
+/** The first of `players` the hook would latch moving up to `maxT` from `p` along unit `dir`; never its owner. */
+export function firstPlayer(players: readonly Player[], hook: Hook, p: Vec2, dir: Vec2, maxT: number) {
   const reach = TUNING.playerRadius + hook.stats.radius;
   return nearest(
-    state.players
+    players
       .filter((q) => q.id !== hook.ownerId && hookable(q))
       .map((q) => {
         const t = sweepCircle(p, dir, maxT, q.pos, reach);
@@ -66,7 +67,7 @@ export function fly(state: GameState, hook: Hook, remaining: number, travel: num
   let left = Math.min(travel, remaining);
   for (let i = 0; i <= MAX_BOUNCES_PER_STEP && left > 0; i++) {
     const surface = firstSurface(state.arena, flight.pos, flight.dir, left, hook.stats.radius);
-    const target = firstPlayer(state, hook, flight.pos, flight.dir, surface ? surface.t : left);
+    const target = firstPlayer(state.players, hook, flight.pos, flight.dir, surface ? surface.t : left);
     if (target) {
       return { ...flight, pos: along(flight.pos, flight.dir, target.t), remaining: flight.remaining - target.t, hit: target.id };
     }

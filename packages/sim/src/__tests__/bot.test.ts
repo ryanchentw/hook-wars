@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { botThink, createBotBrain, createMatch, step, TICK_DT, TUNING } from '../index';
 import type { BotBrain, GameState, PlayerId, PlayerInput, TeamId } from '../index';
-import { armed, at, pid, player, withPlayer } from './helpers';
+import { armed, at, barbed, pid, player, withPlayer } from './helpers';
 
 function botMatch(perTeam: number, killTarget: number): GameState {
   const teams: TeamId[] = ['west', 'east'];
@@ -113,19 +113,26 @@ describe('bot shopping', () => {
     expect(buys(withPlayer(duel(), 'west0', { gold: 149 }))).toEqual([]);
   });
 
-  it('then buys a random upgrade it can afford', () => {
+  it('then buys a random upgrade or the barb it can afford', () => {
     const rich = withPlayer(armed(duel(), 'west0'), 'west0', { gold: 1000 });
     const picks = Array.from({ length: 30 }, (_, seed) => buys(rich, seed)).flat();
     expect(picks).toHaveLength(30);
-    const ids = new Set(picks.map((b) => (b.kind === 'buy' && b.purchase.kind === 'upgrade' ? b.purchase.id : 'other')));
-    expect(ids.has('other')).toBe(false);
-    expect(ids.size).toBeGreaterThan(1);
+    const ids = new Set(picks.map((b) => (b.kind === 'buy' ? b.purchase.id : 'other')));
+    expect(ids.has('grapple')).toBe(false);
+    expect(ids.has('barb')).toBe(true);
+    expect(ids.size).toBeGreaterThan(2);
     expect(buys(withPlayer(armed(duel(), 'west0'), 'west0', { gold: 199 }))).toEqual([]);
+  });
+
+  it('buys the barb only once', () => {
+    const rich = withPlayer(barbed(armed(duel(), 'west0'), 'west0'), 'west0', { gold: 1000 });
+    const picks = Array.from({ length: 30 }, (_, seed) => buys(rich, seed)).flat();
+    expect(picks.every((b) => b.kind === 'buy' && b.purchase.kind === 'upgrade')).toBe(true);
   });
 
   it('skips upgrades it has maxed', () => {
     const maxedButSize = { damage: 4, range: 4, speed: 4, size: 0 };
-    const s = withPlayer(armed(duel(), 'west0'), 'west0', { gold: 1000, upgrades: maxedButSize });
+    const s = withPlayer(barbed(armed(duel(), 'west0'), 'west0'), 'west0', { gold: 1000, upgrades: maxedButSize });
     expect(buys(s)).toEqual([{ kind: 'buy', playerId: 'west0', purchase: { kind: 'upgrade', id: 'size' } }]);
   });
 });
@@ -144,7 +151,7 @@ describe('bot grapple', () => {
 
   it('stays to fight an enemy within chase range, and stays put without a ready grapple', () => {
     expect(grapples(withPlayer(stranded(), 'east0', { pos: at(1700, 675) }))).toEqual([]);
-    const cooling = withPlayer(stranded(), 'west0', { items: { grapple: { kind: 'owned', readyAt: 9 } } });
+    const cooling = withPlayer(stranded(), 'west0', { items: { grapple: { kind: 'owned', readyAt: 9 }, barb: { kind: 'unowned' } } });
     expect(grapples(withPlayer(cooling, 'east0', { pos: at(2300, 1250) }))).toEqual([]);
     expect(grapples(withPlayer(duel(), 'east0', { pos: at(2300, 1250) }))).toEqual([]);
   });

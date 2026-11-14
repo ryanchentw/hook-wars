@@ -50,6 +50,12 @@ export function armed(state: GameState, id: string): GameState {
   return withPlayer(state, id, { items: { ...p.items, grapple: { kind: 'owned', readyAt: 0 } } });
 }
 
+/** Gives the player the barb. */
+export function barbed(state: GameState, id: string): GameState {
+  const p = player(state, id);
+  return withPlayer(state, id, { items: { ...p.items, barb: { kind: 'owned' } } });
+}
+
 export function toward(target: Vec2) {
   return { kind: 'toward', target } as const;
 }

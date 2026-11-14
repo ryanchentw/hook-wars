@@ -14,6 +14,7 @@ type Decision = { readonly inputs: readonly PlayerInput[]; readonly rng: Rng };
 const THROW_REACH_SHARE = 0.95;
 
 const GRAPPLE_ITEM: Purchase = { kind: 'item', id: 'grapple' };
+const BARB_ITEM: Purchase = { kind: 'item', id: 'barb' };
 
 export function createBotBrain(seed: number): BotBrain {
   return { rng: createRng(seed), nextThinkAt: 0 };
@@ -30,11 +31,11 @@ function enemies(state: GameState, bot: Player): Player[] {
   return state.players.filter((p) => p.team !== bot.team);
 }
 
-/** The grapple first, saving up for it; then one random upgrade it can afford. */
+/** The grapple first, saving up for it; then one random upgrade or item it can afford. */
 function chooseBuy(bot: Player, rng: Rng): Decision {
   const buy = (purchase: Purchase): PlayerInput => ({ kind: 'buy', playerId: bot.id, purchase });
   if (bot.items.grapple.kind === 'unowned') return { inputs: canBuy(bot, GRAPPLE_ITEM) ? [buy(GRAPPLE_ITEM)] : [], rng };
-  const affordable = UPGRADE_IDS.map((id): Purchase => ({ kind: 'upgrade', id })).filter((p) => canBuy(bot, p));
+  const affordable = [...UPGRADE_IDS.map((id): Purchase => ({ kind: 'upgrade', id })), BARB_ITEM].filter((p) => canBuy(bot, p));
   if (affordable.length === 0) return { inputs: [], rng };
   const [roll, next] = nextRandom(rng);
   const pick = affordable[Math.floor(roll * affordable.length)];

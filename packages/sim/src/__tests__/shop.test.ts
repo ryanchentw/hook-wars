@@ -22,7 +22,7 @@ describe('starting kit', () => {
       gold: 150,
       assists: 0,
       upgrades: { damage: 0, range: 0, speed: 0, size: 0 },
-      items: { grapple: { kind: 'unowned' } },
+      items: { grapple: { kind: 'unowned' }, barb: { kind: 'unowned' } },
       recentDamage: [],
     });
   });
@@ -50,7 +50,7 @@ describe('prices', () => {
   it('the grapple costs 150 once, and has no price once owned', () => {
     const base = player(duel(), 'w');
     expect(priceOf(base, grappleItem)).toBe(150);
-    expect(priceOf({ ...base, items: { grapple: { kind: 'owned', readyAt: 0 } } }, grappleItem)).toBeNull();
+    expect(priceOf({ ...base, items: { ...base.items, grapple: { kind: 'owned', readyAt: 0 } } }, grappleItem)).toBeNull();
   });
 
   it('canBuy needs a price and enough gold', () => {
@@ -69,6 +69,7 @@ describe('hookStats', () => {
       speed: TUNING.hookSpeed,
       retractSpeed: TUNING.hookRetractSpeed,
       radius: TUNING.hookRadius,
+      barbed: false,
     });
   });
 
@@ -80,6 +81,7 @@ describe('hookStats', () => {
       speed: TUNING.hookSpeed + 450,
       retractSpeed: TUNING.hookRetractSpeed + 450,
       radius: TUNING.hookRadius + 20,
+      barbed: false,
     });
   });
 });
@@ -107,7 +109,7 @@ describe('buying', () => {
   it('ignores a purchase the player cannot afford, a maxed upgrade and an owned item', () => {
     const poor = withPlayer(duel(), 'w', { gold: 199 });
     const maxed = withPlayer(duel(), 'w', { gold: 5000, upgrades: { damage: 4, range: 0, speed: 0, size: 0 } });
-    const owned = withPlayer(duel(), 'w', { gold: 5000, items: { grapple: { kind: 'owned', readyAt: 0 } } });
+    const owned = withPlayer(duel(), 'w', { gold: 5000, items: { grapple: { kind: 'owned', readyAt: 0 }, barb: { kind: 'unowned' } } });
     [
       [poor, damage],
       [maxed, damage],
@@ -131,7 +133,7 @@ describe('buying', () => {
   });
 
   it('respawning keeps gold, upgrades and items', () => {
-    const kit = { gold: 777, upgrades: { damage: 2, range: 1, speed: 0, size: 3 }, items: { grapple: { kind: 'owned', readyAt: 0 } } } as const;
+    const kit = { gold: 777, upgrades: { damage: 2, range: 1, speed: 0, size: 3 }, items: { grapple: { kind: 'owned', readyAt: 0 }, barb: { kind: 'owned' } } } as const;
     const doomed = withPlayer(withPlayer(duel(), 'e', { ...kit, pos: at(950, 335), hp: 1 }), 'w', { pos: at(880, 335) });
     const back = runUntil(doomed, (s) => s.events.some((e) => e.kind === 'respawn'), 200).state;
     expect(player(back, 'e')).toMatchObject({ upgrades: kit.upgrades, items: kit.items });

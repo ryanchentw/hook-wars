@@ -70,8 +70,8 @@ describe('grapple', () => {
     const s0 = duel(at(420, 675), at(2300, 1250));
     const target = at(420, 100);
     const blocked: GameState[] = [
-      withPlayer(s0, 'w', { items: { grapple: { kind: 'unowned' } } }),
-      withPlayer(s0, 'w', { items: { grapple: { kind: 'owned', readyAt: 5 } } }),
+      withPlayer(s0, 'w', { items: { grapple: { kind: 'unowned' }, barb: { kind: 'unowned' } } }),
+      withPlayer(s0, 'w', { items: { grapple: { kind: 'owned', readyAt: 5 }, barb: { kind: 'unowned' } } }),
       withPlayer(s0, 'w', { status: { kind: 'dead', respawnAt: 5 } }),
       step(s0, [{ kind: 'hook', playerId: pid('w'), target: at(900, 675) }], TICK_DT),
       step(s0, [grapple('w', target)], TICK_DT),
@@ -136,7 +136,7 @@ describe('grapple', () => {
   });
 
   it('is used right after buying it', () => {
-    const s0 = withPlayer(duel(at(420, 1200), at(2300, 1250)), 'w', { items: { grapple: { kind: 'unowned' } } });
+    const s0 = withPlayer(duel(at(420, 1200), at(2300, 1250)), 'w', { items: { grapple: { kind: 'unowned' }, barb: { kind: 'unowned' } } });
     const after = step(s0, [{ kind: 'buy', playerId: pid('w'), purchase: { kind: 'item', id: 'grapple' } }, grapple('w', at(420, 100))], TICK_DT);
     expect(ofKind(after.events, 'grappleCast')).toHaveLength(1);
   });

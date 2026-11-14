@@ -40,7 +40,7 @@ function spawnPlayer(arena: Arena, cfg: MatchPlayerConfig, spawnIndex: number, g
     assists: 0,
     gold,
     upgrades: { damage: 0, range: 0, speed: 0, size: 0 },
-    items: { grapple: { kind: 'unowned' } },
+    items: { grapple: { kind: 'unowned' }, barb: { kind: 'unowned' } },
     recentDamage: [],
   };
 }

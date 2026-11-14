@@ -1,4 +1,4 @@
-import type { Arena, ItemId, UpgradeId } from './types';
+import type { ActiveItemId, Arena, ItemId, PassiveItemId, UpgradeId } from './types';
 
 export const TICK_RATE = 30;
 export const TICK_DT = 1 / TICK_RATE;
@@ -76,14 +76,16 @@ export const UPGRADES: Readonly<Record<UpgradeId, UpgradeSpec>> = {
 
 export const UPGRADE_IDS: readonly UpgradeId[] = ['damage', 'range', 'speed', 'size'];
 
-export type ItemSpec = { readonly cost: number; readonly cooldown: number };
+/** The cooldown counts from the moment the item's use ends. */
+export type ActiveItemSpec = { readonly cost: number; readonly cooldown: number };
+export type PassiveItemSpec = { readonly cost: number };
 
-/** An item's cooldown counts from the moment its use ends. */
-export const ITEMS: Readonly<Record<ItemId, ItemSpec>> = {
+export const ITEMS: { readonly [K in ActiveItemId]: ActiveItemSpec } & { readonly [K in PassiveItemId]: PassiveItemSpec } = {
   grapple: { cost: 150, cooldown: 10 },
+  barb: { cost: 450 },
 };
 
-export const ITEM_IDS: readonly ItemId[] = ['grapple'];
+export const ITEM_IDS: readonly ItemId[] = ['grapple', 'barb'];
 
 export const GRAPPLE = {
   range: 1500,

@@ -7,9 +7,15 @@ export type HookId = string & { readonly __brand: 'HookId' };
 export type GrappleId = string & { readonly __brand: 'GrappleId' };
 
 export type UpgradeId = 'damage' | 'range' | 'speed' | 'size';
-export type ItemId = 'grapple';
+/** Used on its own key, then cools down. */
+export type ActiveItemId = 'grapple';
+/** Always on once bought: no key, no cooldown. */
+export type PassiveItemId = 'barb';
+export type ItemId = ActiveItemId | PassiveItemId;
 /** `readyAt` is the sim time at which an owned item may be used again. */
-export type ItemState = { readonly kind: 'unowned' } | { readonly kind: 'owned'; readonly readyAt: number };
+export type ActiveItemState = { readonly kind: 'unowned' } | { readonly kind: 'owned'; readonly readyAt: number };
+export type PassiveItemState = { readonly kind: 'unowned' } | { readonly kind: 'owned' };
+export type Items = { readonly [K in ActiveItemId]: ActiveItemState } & { readonly [K in PassiveItemId]: PassiveItemState };
 export type Purchase = { readonly kind: 'upgrade'; readonly id: UpgradeId } | { readonly kind: 'item'; readonly id: ItemId };
 
 export type HookStats = {
@@ -18,6 +24,8 @@ export type HookStats = {
   readonly speed: number;
   readonly retractSpeed: number;
   readonly radius: number;
+  /** An empty hook on its way back catches the first enemy on its line. */
+  readonly barbed: boolean;
 };
 
 export type PlayerStatus =
@@ -57,7 +65,7 @@ export type Player = {
   readonly gold: number;
   /** Levels bought, starting at 0. */
   readonly upgrades: Readonly<Record<UpgradeId, number>>;
-  readonly items: Readonly<Record<ItemId, ItemState>>;
+  readonly items: Items;
   /** The latest damage from each enemy inside the assist window. Emptied on death. */
   readonly recentDamage: readonly { readonly from: PlayerId; readonly at: number }[];
 };

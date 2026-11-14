@@ -1,5 +1,5 @@
 import { ITEMS, TUNING, UPGRADES } from './config';
-import type { GameEvent, HookStats, Player, Purchase } from './types';
+import type { GameEvent, HookStats, ItemId, Items, Player, Purchase } from './types';
 
 export function hookStats(player: Player): HookStats {
   const { damage, range, speed, size } = player.upgrades;
@@ -10,6 +10,7 @@ export function hookStats(player: Player): HookStats {
     speed: TUNING.hookSpeed + faster,
     retractSpeed: TUNING.hookRetractSpeed + faster,
     radius: TUNING.hookRadius + size * UPGRADES.size.perLevel,
+    barbed: player.items.barb.kind === 'owned',
   };
 }
 
@@ -28,12 +29,22 @@ export function canBuy(player: Player, purchase: Purchase): boolean {
   return price !== null && player.gold >= price;
 }
 
+/** An active item is bought ready to use; a passive one has nothing to track. */
+function own(items: Items, id: ItemId, t: number): Items {
+  switch (id) {
+    case 'grapple':
+      return { ...items, grapple: { kind: 'owned', readyAt: t } };
+    case 'barb':
+      return { ...items, barb: { kind: 'owned' } };
+  }
+}
+
 function grant(player: Player, purchase: Purchase, t: number): Player {
   switch (purchase.kind) {
     case 'upgrade':
       return { ...player, upgrades: { ...player.upgrades, [purchase.id]: player.upgrades[purchase.id] + 1 } };
     case 'item':
-      return { ...player, items: { ...player.items, [purchase.id]: { kind: 'owned', readyAt: t } } };
+      return { ...player, items: own(player.items, purchase.id, t) };
   }
 }
 

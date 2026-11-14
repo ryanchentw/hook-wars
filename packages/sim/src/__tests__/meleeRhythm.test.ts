@@ -46,7 +46,7 @@ describe('melee rhythm', () => {
   it('makes a player who lands from a grapple wait before swinging at whoever stands there', () => {
     const invader = withPlayer(duel(), 'w', {
       pos: at(960, 335),
-      items: { grapple: { kind: 'owned', readyAt: 0 } },
+      items: { grapple: { kind: 'owned', readyAt: 0 }, barb: { kind: 'unowned' } },
     });
     const defended = withPlayer(invader, 'e', { pos: at(1440 + TUNING.bodySpacing, 335) });
     const swings = swingsOver(defended, 120, [{ kind: 'grapple', playerId: pid('w'), target: at(1440, 335) }]);
