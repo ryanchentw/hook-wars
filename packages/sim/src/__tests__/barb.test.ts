@@ -113,3 +113,36 @@ describe('a returning hook', () => {
     expect(player(state, 'e2').status.kind).toBe('alive');
   });
 });
+
+describe('only the hook head catches', () => {
+  const ON_CHAIN = at(800, 335);
+  const returning = (s: GameState): boolean => s.hooks[0]?.phase.kind === 'retracting';
+
+  /** A barbed hook thrown down the owner's row and already on its way back, its head still far east of `ON_CHAIN`. */
+  function hookComingHome(): GameState {
+    const start = barbed(lane([['e', 'east', OFF_LINE]]), 'w');
+    const { state } = runUntil(step(start, throwAt(THROW), TICK_DT), returning, 200);
+    expect(state.hooks[0]!.pos.x).toBeGreaterThan(ON_CHAIN.x + 4 * reach);
+    return state;
+  }
+
+  it('lets an enemy stand on the chain and walk off before the head arrives', () => {
+    const onChain = withPlayer(hookComingHome(), 'e', { pos: ON_CHAIN });
+    const touched = run(onChain, 2);
+    expect(ofKind(touched.events, 'hookHit')).toEqual([]);
+    expect(player(touched.state, 'e').status.kind).toBe('alive');
+
+    const steppedOff = withPlayer(touched.state, 'e', { pos: OFF_LINE });
+    const home = runUntil(steppedOff, noHooks, 200);
+    expect(ofKind(home.events, 'hookHit')).toEqual([]);
+    expect(player(home.state, 'e').hp).toBe(TUNING.maxHp);
+  });
+
+  it('catches that enemy only when the head reaches them', () => {
+    const onChain = withPlayer(hookComingHome(), 'e', { pos: ON_CHAIN });
+    const home = runUntil(onChain, noHooks, 200);
+    const [hit] = ofKind(home.events, 'hookHit');
+    expect(hit).toMatchObject({ targetId: 'e', ownerId: 'w' });
+    expect(hit!.at.x).toBeCloseTo(ON_CHAIN.x + reach, 6);
+  });
+});
