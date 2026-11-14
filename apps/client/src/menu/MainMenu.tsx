@@ -110,7 +110,7 @@ export function MainMenu({ name, notice, invite, connecting, onPlay, onCreate, o
     <main className="screen menu" aria-labelledby={ids.title}>
       <div className="screen-panel hud-plate menu-panel">
         <h1 id={ids.title} className="menu-title">
-          Hook Brawl
+          Hook Wars
         </h1>
         <p className="menu-tagline">A hook duel across the water</p>
         <form className="menu-form" onSubmit={submit} noValidate>

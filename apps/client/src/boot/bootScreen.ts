@@ -19,7 +19,7 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, className: string, te
 /** The panel shown instead of the match while models download, and when something stops the game from drawing. */
 export function createBootScreen(root: HTMLElement): BootScreen {
   const panel = el('div', 'boot-panel hud-plate');
-  const title = el('h1', 'boot-title', 'Hook Brawl');
+  const title = el('h1', 'boot-title', 'Hook Wars');
   const status = el('p', 'boot-status');
   status.setAttribute('role', 'status');
   const track = el('div', 'boot-track');

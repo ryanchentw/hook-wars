@@ -1,8 +1,8 @@
-# Hook Brawl on Fly.io: one small machine that serves the page and runs every room.
+# Hook Wars on Fly.io: one small machine that serves the page and runs every room.
 # Nothing here has been deployed. DEPLOY.md has the commands.
 
 # A placeholder. App names are global on Fly: pick your own, and put the same name here.
-app = "hook-brawl-change-me"
+app = "hook-wars-change-me"
 
 # Tokyo. Of Fly's regions it and Hong Kong (hkg) are the nearest to Taiwan; see DEPLOY.md for how to compare them.
 primary_region = "nrt"

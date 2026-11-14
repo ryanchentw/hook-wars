@@ -28,7 +28,7 @@ function createWebGL(): WebGLRenderer {
     return gl;
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`This browser could not start WebGL, which Hook Brawl needs to draw the match (${detail})`);
+    throw new Error(`This browser could not start WebGL, which Hook Wars needs to draw the match (${detail})`);
   }
 }
 

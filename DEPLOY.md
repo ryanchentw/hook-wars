@@ -1,4 +1,4 @@
-# How to deploy Hook Brawl to Fly.io
+# How to deploy Hook Wars to Fly.io
 
 One service serves the built page and runs every room. The steps below put it on one small machine in Tokyo. Nothing in this repository has been deployed, and `fly.toml` holds a placeholder app name.
 
@@ -9,13 +9,13 @@ You need the [Fly CLI](https://fly.io/docs/flyctl/install/) and, to try the imag
 1. Build the image from the repository root.
 
 	```sh
-	docker build -t hook-brawl .
+	docker build -t hook-wars .
 	```
 
 2. Run it.
 
 	```sh
-	docker run --rm -p 8080:8080 hook-brawl
+	docker run --rm -p 8080:8080 hook-wars
 	```
 
 3. Open `http://localhost:8080`, create a room, and open the link it gives you in a second browser window. `http://localhost:8080/healthz` answers `{"ok":true,"rooms":1,"matches":0,"connections":2}`.
@@ -30,7 +30,7 @@ To run the same service without Docker, use `pnpm build` and then `pnpm start`. 
 	fly auth login
 	```
 
-2. Pick an app name. App names are shared by everyone on Fly, so `hook-brawl` is taken. Create the app, and put the same name in the `app` line of `fly.toml`.
+2. Pick an app name. App names are shared by everyone on Fly, so a short name like `hook-wars` may already be taken. Create the app, and put the same name in the `app` line of `fly.toml`.
 
 	```sh
 	fly apps create your-app-name

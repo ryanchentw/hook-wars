@@ -19,7 +19,7 @@ export type CreditsContent = {
 
 export const CREDITS: CreditsContent = {
   title: '致敬',
-  subtitle: 'Hook Brawl 是一封寫給《勾肥大戰》的情書。',
+  subtitle: 'Hook Wars 是一封寫給《勾肥大戰》的情書。',
   intro:
     '這個遊戲的玩法不是我們發明的。隔著一條河、只靠一支鉤子決勝負的點子，來自魔獸爭霸 III 的自訂地圖 Pudge Wars。我們只是想讓它在瀏覽器裡再活一次。',
   sections: [
@@ -69,7 +69,7 @@ export const CREDITS: CreditsContent = {
   about: {
     heading: '關於這個專案',
     paragraphs: [
-      'Hook Brawl 是非官方的同人致敬作品，與上述任何作者或公司沒有關係，也沒有使用原地圖的任何圖像、模型、音效或程式碼。角色、美術和場地都是重新設計的。Warcraft、Dota 及相關名稱是其各自權利人的商標。',
+      'Hook Wars 是非官方的同人致敬作品，與上述任何作者或公司沒有關係，也沒有使用原地圖的任何圖像、模型、音效或程式碼。角色、美術和場地都是重新設計的。Warcraft、Dota 及相關名稱是其各自權利人的商標。',
       '如果你是上面任何一位作者，希望我們修改或移除關於你的內容，請跟我們說。',
     ],
   },
