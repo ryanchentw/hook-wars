@@ -12,6 +12,11 @@ const SHAPE = {
   bend: { radius: 0.42, fromDeg: -90, toDeg: 140, stepDeg: 10 },
   point: { length: 0.46, radius: 0.2 },
   barb: { length: 0.34, radius: 0.12, splayDeg: 150 },
+  /**
+   * The barb item's spurs, each leaning `rakeDeg` back toward the chain ring: out of the back of the shank at `shankX`,
+   * which reads in flight, and out of the bend at `bendDeg` (the bend's own angles), which still shows past a fist.
+   */
+  spurs: { length: 0.6, radius: 0.17, rakeDeg: 35, shankX: [-0.45, -0.05], bendDeg: [-60, -5, 50] },
   /** Shifts the outline so the circle it fits is centred on the origin. */
   centre: { x: 0.2, z: -0.27 },
 } as const;
@@ -26,6 +31,30 @@ function cone(length: number, radius: number, base: Vector3, direction: Vector3)
   geometry.translate(base.x, base.y, base.z);
   return geometry;
 }
+
+/** Spurs stand out from the bend, leaning back from straight out by the rake so they snag on the pull home. */
+function spurs(bendCentre: Vector3): BufferGeometry[] {
+  const { length, radius, rakeDeg, shankX, bendDeg } = SHAPE.spurs;
+  const spur = (base: Vector3, out: Vector3) => cone(length, radius, base, out.applyAxisAngle(UP, rakeDeg * DEG));
+  const back = new Vector3(0, 0, -1);
+  return [
+    ...shankX.map((x) => spur(new Vector3(x, 0, SHAPE.shank.z - SHAPE.thickness), back.clone())),
+    ...bendDeg.map((deg) => {
+      const out = new Vector3(Math.cos(deg * DEG), 0, Math.sin(deg * DEG));
+      return spur(bendCentre.clone().addScaledVector(out, SHAPE.bend.radius), out);
+    }),
+  ];
+}
+
+function merge(parts: readonly BufferGeometry[], useGroups = false): BufferGeometry {
+  const merged = mergeGeometries([...parts], useGroups);
+  parts.forEach((part) => part.dispose());
+  if (merged === null) throw new Error('Hook parts could not be merged into one mesh');
+  return merged;
+}
+
+/** The geometry's draw groups: a mesh hides the barb item's spurs by giving their group an invisible material. */
+export const HOOK_GROUPS = { plain: 0, spurs: 1 } as const;
 
 /** Radius-1 hook lying in the xz plane with its bend leading along +x and the chain ring trailing. */
 export function createHookGeometry(): BufferGeometry {
@@ -51,9 +80,7 @@ export function createHookGeometry(): BufferGeometry {
     cone(SHAPE.barb.length, SHAPE.barb.radius, barbBase, barbDirection),
     eye,
   ];
-  const merged = mergeGeometries(parts);
-  parts.forEach((part) => part.dispose());
-  if (merged === null) throw new Error('Hook parts could not be merged into one mesh');
+  const merged = merge([merge(parts), merge(spurs(bendCentre))], true);
   merged.translate(SHAPE.centre.x, 0, SHAPE.centre.z);
   return merged;
 }

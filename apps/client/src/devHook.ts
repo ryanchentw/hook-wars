@@ -10,6 +10,8 @@ export type DevHook = {
   /** Viewport (client) CSS pixels to the world point on the ground under them. */
   screenToWorld(p: Vec2): Vec2;
   renderStats(): RenderStats;
+  /** Holds the sim still, so a test can photograph a hook in flight where the state says it is. */
+  setPaused(paused: boolean): void;
 };
 
 declare global {
@@ -37,5 +39,6 @@ export function installDevHook(session: Session, renderer: Renderer): void {
       return renderer.screenToWorld({ x: p.x - o.x, y: p.y - o.y });
     },
     renderStats: () => renderer.stats(),
+    setPaused: (paused) => session.setPaused(paused),
   };
 }

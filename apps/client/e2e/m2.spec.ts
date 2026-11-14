@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { ECONOMY, hookStats, ITEMS, TUNING, UPGRADES } from '@hookbrawl/sim';
 import type { GameState, Player, Vec2 } from '@hookbrawl/sim';
+import { SHOP_SLOTS } from '../src/game/bindings';
 import type { RenderStats } from '../src/render/renderer';
 
 const SHOT_DIR = 'test-results';
@@ -217,6 +218,7 @@ test('a grapple across the canal and a brawl on the far dock both draw within bu
 const VIEWPORTS = [
   { width: 1280, height: 720 },
   { width: 1440, height: 900 },
+  { width: 800, height: 600 },
   { width: 390, height: 844 },
 ] as const;
 
@@ -235,6 +237,12 @@ async function checkLayout(page: Page, width: number, height: number): Promise<v
   expect(overlaps(shop, panel) || overlaps(shop, aside) || overlaps(panel, aside)).toBe(false);
   for (const box of [shop, panel, aside]) expect(box.x + box.width).toBeLessThanOrEqual(width);
   if (width >= 1280) for (const box of [shop, panel, aside]) expect(box.y).toBeGreaterThanOrEqual(height - HUD_BAND);
+  const slots = await page.locator('.hud-slot').all();
+  expect(slots).toHaveLength(SHOP_SLOTS.length);
+  for (const slot of slots) {
+    const box = await slot.boundingBox();
+    expect(box !== null && box.x >= shop.x && box.x + box.width <= shop.x + shop.width).toBe(true);
+  }
 }
 
 for (const { width, height } of VIEWPORTS) {

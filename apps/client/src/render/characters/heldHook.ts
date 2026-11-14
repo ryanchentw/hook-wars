@@ -1,12 +1,16 @@
 import { hookStats, TUNING } from '@hookbrawl/sim';
 import type { Player, TeamId } from '@hookbrawl/sim';
-import { Mesh, MeshStandardMaterial, type BufferGeometry, type Object3D } from 'three';
+import { Mesh, MeshStandardMaterial, type BufferGeometry, type Material, type Object3D } from 'three';
+import { createHiddenMaterial, facesFor } from '../hook/hookMaterials';
 import { COLORS, HELD_HOOK, SIZES, TEAM_COLORS } from '../theme';
 
 export type HeldHook = {
-  readonly mesh: Mesh<BufferGeometry, MeshStandardMaterial>;
-  /** Shows the hook unless it is out on its chain, at the size its owner would throw it. */
+  readonly mesh: Mesh<BufferGeometry, Material[]>;
+  /** Drawn on every face of the hook, so flashing or fading it covers the barb's spurs too. */
+  readonly material: MeshStandardMaterial;
+  /** Shows the hook unless it is out on its chain, at the size its owner would throw it, with spurs once barbed. */
   update(player: Player, hookOut: boolean): void;
+  dispose(): void;
 };
 
 /** Grows the carried hook in step with the one its owner would throw; `simRadius` is that hook's radius in sim units. */
@@ -29,7 +33,10 @@ export function createHeldHook(geometry: BufferGeometry, team: TeamId): HeldHook
     emissive: TEAM_COLORS[team].glow,
     emissiveIntensity: HELD_HOOK.glow,
   });
-  const mesh = new Mesh(geometry, material);
+  const hidden = createHiddenMaterial();
+  const plain = facesFor(material, hidden, false);
+  const barbed = facesFor(material, hidden, true);
+  const mesh = new Mesh(geometry, plain);
   mesh.rotation.z = Math.PI / 2;
   mesh.castShadow = true;
   sizeHeldHook(mesh, TUNING.hookRadius);
@@ -37,11 +44,14 @@ export function createHeldHook(geometry: BufferGeometry, team: TeamId): HeldHook
 
   return {
     mesh,
+    material,
     update(player, hookOut) {
       mesh.visible = !hookOut;
+      mesh.material = player.items.barb.kind === 'owned' ? barbed : plain;
       if (player.upgrades.size === sizeLevel) return;
       sizeLevel = player.upgrades.size;
       sizeHeldHook(mesh, hookStats(player).radius);
     },
+    dispose: () => hidden.dispose(),
   };
 }

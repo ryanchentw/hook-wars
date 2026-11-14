@@ -220,7 +220,7 @@ export function createCharacterView(asset: CharacterAsset, looks: SharedLooks, p
   const model = instantiateCharacter(asset, player.team);
   const heldHook = createHeldHook(looks.hookGeometry, player.team);
   model.hand.add(heldHook.mesh);
-  const materials = [...model.materials, heldHook.mesh.material];
+  const materials = [...model.materials, heldHook.material];
   const rig = createRig(model.root, player, isLocal, looks.softDot);
   const { group, pivot, body, rings, flourish } = rig;
   const mixer = new AnimationMixer(model.root);
@@ -262,6 +262,7 @@ export function createCharacterView(asset: CharacterAsset, looks: SharedLooks, p
       mixer.uncacheRoot(model.root);
       materials.forEach((m) => m.dispose());
       rig.dispose();
+      heldHook.dispose();
     },
   };
 }
