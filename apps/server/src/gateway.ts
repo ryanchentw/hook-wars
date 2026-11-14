@@ -126,7 +126,9 @@ export function attachGateway(server: Server, deps: Deps): Gateway {
   const accept = (ws: WebSocket, address: string): void => {
     const conn: Connection = { ws, address, sink: makeSink(ws, config.maxBufferedBytes), seat: null, bucket: fullBucket(rule, clock.now()), strikes: 0, alive: true };
     connections.add(conn);
-    const helloTimer = setTimeout(() => conn.seat === null && conn.sink.close('bad-message'), config.helloTimeoutMs);
+    const helloTimer = setTimeout(() => {
+      if (conn.seat === null) conn.sink.close('bad-message');
+    }, config.helloTimeoutMs);
     ws.on('pong', () => (conn.alive = true));
     ws.on('message', (data, isBinary) => receive(conn, data, isBinary, rule, deps, admission));
     ws.on('error', (error) => log.warn('socket.error', { reason: error.message.slice(0, 80) }));

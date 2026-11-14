@@ -75,13 +75,16 @@ export function createConnection(deps: ConnectionDeps, first: RoomRequest): Conn
   let received: readonly ServerMessage[] = [];
   let timer: unknown = null;
   let heartbeat: unknown = null;
+  let countdown: unknown = null;
 
   const setStatus = (next: ConnStatus): void => status.update(() => next);
-  const lose = (reason: LostReason): void => {
+  const stop = (): void => {
     closed = true;
-    timers.clearTimeout(timer);
-    timers.clearTimeout(heartbeat);
+    [timer, heartbeat, countdown].forEach((handle) => timers.clearTimeout(handle));
     transport?.close();
+  };
+  const lose = (reason: LostReason): void => {
+    stop();
     setStatus({ kind: 'lost', reason });
   };
 
@@ -153,7 +156,7 @@ export function createConnection(deps: ConnectionDeps, first: RoomRequest): Conn
   const ticker = (): void => {
     if (closed) return;
     if (status.getSnapshot().kind === 'reconnecting') countDown();
-    timers.setTimeout(ticker, COUNTDOWN_STEP_MS);
+    if (!closed) countdown = timers.setTimeout(ticker, COUNTDOWN_STEP_MS);
   };
 
   dial();
@@ -161,10 +164,7 @@ export function createConnection(deps: ConnectionDeps, first: RoomRequest): Conn
   ticker();
 
   const shut = (): void => {
-    closed = true;
-    timers.clearTimeout(timer);
-    timers.clearTimeout(heartbeat);
-    transport?.close();
+    stop();
     listeners.clear();
   };
 

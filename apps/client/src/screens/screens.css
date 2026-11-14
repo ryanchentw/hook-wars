@@ -72,7 +72,8 @@
   border-width: 2px;
 }
 
-.field-error {
+.field-error,
+.join-error {
   margin: 6px 0 0;
   color: var(--bad);
   font-size: 13px;

@@ -70,7 +70,7 @@ test.describe('trouble getting in', () => {
     await page.getByLabel('Your name').fill('Ada');
     await page.getByLabel('Room code').fill('abc');
     await page.getByRole('button', { name: 'Join room' }).click();
-    await expect(page.locator('.menu-join .field-error')).toHaveText(/six letters and digits/);
+    await expect(page.locator('.join-error')).toHaveText(/six letters and digits/);
     await expect(page.getByLabel('Room code')).toHaveAttribute('aria-invalid', 'true');
     await expect(page.getByLabel('Room code')).toBeFocused();
   });

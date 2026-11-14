@@ -69,7 +69,7 @@ function JoinForm({ invite, connecting, onJoin, button }: JoinProps) {
           Join room
         </button>
       </div>
-      <p id={ids.error} className="field-error" hidden={error === null}>
+      <p id={ids.error} className="join-error" hidden={error === null}>
         <span aria-hidden="true">✕ </span>
         {error}
       </p>

@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { COORD_LIMIT, MAX_ID_LENGTH } from './limits';
 
+// Zod otherwise tests whether it may compile parsers with `new Function`. The page's content policy forbids that,
+// and the test alone is reported as a violation in every player's console.
+z.config({ jitless: true });
+
 /** An identifier of one of the workspace's branded kinds. The brand is the schema's word that it was checked here. */
 export const idOf = <T extends string>(): z.ZodType<T> => z.string().min(1).max(MAX_ID_LENGTH).regex(/^[\w-]+$/) as unknown as z.ZodType<T>;
 

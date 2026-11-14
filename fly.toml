@@ -1,0 +1,50 @@
+# Hook Brawl on Fly.io: one small machine that serves the page and runs every room.
+# Nothing here has been deployed. DEPLOY.md has the commands.
+
+# A placeholder. App names are global on Fly: pick your own, and put the same name here.
+app = "hook-brawl-change-me"
+
+# Tokyo. Of Fly's regions it and Hong Kong (hkg) are the nearest to Taiwan; see DEPLOY.md for how to compare them.
+primary_region = "nrt"
+
+# Node closes every room with a word to its players on SIGTERM; give it a moment to say it.
+kill_signal = "SIGTERM"
+kill_timeout = "5s"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8080"
+  HOOKBRAWL_STATIC_DIR = "/app/public"
+  # Fly's proxy puts the player's address in this header; the per-address limits need it, or everyone looks like the proxy.
+  HOOKBRAWL_CLIENT_IP_HEADER = "fly-client-ip"
+  HOOKBRAWL_LOG_LEVEL = "info"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # The machine sleeps when nobody has the page open and wakes on the next visit. An open WebSocket counts as load,
+  # so a room with anyone connected keeps it awake. The cost is a cold start for the first visitor after a quiet spell.
+  # To rule sleeping out altogether, set auto_stop_machines = "off" and min_machines_running = 1.
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  # Counted in connections, not requests: a WebSocket is one long request. The hard limit matches the server's own cap.
+  [http_service.concurrency]
+    type = "connections"
+    soft_limit = 250
+    hard_limit = 300
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/healthz"
+    interval = "15s"
+    timeout = "2s"
+    grace_period = "10s"
+
+# The smallest machine Fly sells. Rooms live in its memory, so there is exactly one: see DEPLOY.md before adding another.
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
