@@ -1,23 +1,20 @@
 import type { GameEvent, Vec2 } from '@hookbrawl/sim';
-import { ACESFilmicToneMapping, PCFShadowMap, WebGLRenderer } from 'three';
+import type { WebGLRenderer } from 'three';
 import type { Session } from '../game/session';
-import type { Assets } from './assets/loadAssets';
 import { screenToGround, worldToScreen } from './camera/projection';
 import { createCameraRig, type CameraRig } from './camera/rig';
 import { createFrameLoop, type ContextEvents } from './frameLoop';
-import { createHookGeometry } from './hook/hookGeometry';
 import { CALM_IMPACTS, IMPACTS, impactsOf, type Fighter, type Impact } from './impact/impacts';
 import { interpolateFrame, type RenderFrame } from './interpolate';
-import { INTRO_TIMING, introHaze, introPose, playsIntro } from './intro/intro';
+import type { Graphics } from './graphics';
+import { INTRO_TIMING, introHaze, introPose } from './intro/intro';
 import { createOpening, type Opening } from './intro/opening';
 import { createWorldOverlay } from './overlay/worldOverlay';
-import type { ViewOptions } from './scenes/choice';
 import type { SceneId } from './scenes/types';
 import { createSceneShow, type SceneShow } from './sceneShow';
 import { simToWorld, worldToSim, type Vec3 } from './space';
 import type { StageShared } from './stage';
-import { createSurface, type Surface } from './surface';
-import { createSoftDot } from './textures';
+import type { Surface } from './surface';
 
 export type RenderStats = {
   /** Draw calls and triangles of the most recent frame. */
@@ -35,14 +32,22 @@ export type Renderer = {
   /** CSS pixels from the canvas's top-left corner to the sim ground point under them. */
   screenToWorld(p: Vec2): Vec2;
   stats(): RenderStats;
-  /** The scene the current match is drawn in. */
+  /** The scene the match is drawn in. */
   sceneId(): SceneId;
   /** True while a match's establishing shot is playing. */
   introActive(): boolean;
   skipIntro(): void;
   /** Stops the picture and the match on the frame now showing, for tooling that needs to look at one exact moment. */
   setFrozen(frozen: boolean): void;
+  /** Frees everything this match put on the GPU and in the overlay; the shared graphics stay. */
   destroy(): void;
+};
+
+/** How one match is drawn. */
+export type MatchView = {
+  readonly scene: SceneId;
+  /** Whether it opens on the scene's establishing shot. */
+  readonly intro: boolean;
 };
 
 export type RendererEvents = ContextEvents & {
@@ -52,19 +57,6 @@ export type RendererEvents = ContextEvents & {
 
 const WARM_UP_FRAMES = 3;
 const NO_IMPACTS: readonly Impact[] = [];
-
-function createWebGL(): WebGLRenderer {
-  try {
-    const gl = new WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    gl.toneMapping = ACESFilmicToneMapping;
-    gl.shadowMap.enabled = true;
-    gl.shadowMap.type = PCFShadowMap;
-    return gl;
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`This browser could not start WebGL, which Hook Brawl needs to draw the match (${detail})`);
-  }
-}
 
 function impactsIn(events: readonly GameEvent[], frame: RenderFrame, session: Session, calm: boolean): readonly Impact[] {
   if (events.length === 0) return NO_IMPACTS;
@@ -82,30 +74,20 @@ type PictureParts = {
   readonly show: SceneShow;
   readonly rig: CameraRig;
   readonly opening: Opening;
-  readonly view: ViewOptions;
+  readonly intro: boolean;
   /** People who ask their system for less motion get the hit without the jolt or the freeze. */
   readonly calm: boolean;
 };
 
-/** Keeps the picture in step with the session: collects each tick's events, re-dresses the stage for a new match, and draws. */
-function createPicture({ gl, session, surface, show, rig, opening, view, calm }: PictureParts) {
+/** Keeps the picture in step with the session: collects each tick's events and draws. */
+function createPicture({ gl, session, surface, show, rig, opening, intro, calm }: PictureParts) {
   const overlay = createWorldOverlay(surface.overlay);
   let pending: readonly GameEvent[] = [];
   let elapsed = 0;
   let stats: RenderStats = { calls: 0, triangles: 0, geometries: 0, textures: 0 };
 
-  const open = (previous: SceneId | null): void => {
-    if (playsIntro(view.intro, previous, show.id())) opening.begin(show.stage().theme.title);
-  };
-  const unsubscribe = session.subscribe((state, change) => {
-    if (change === 'tick') {
-      pending = [...pending, ...state.events];
-      return;
-    }
-    pending = [];
-    rig.reset();
-    overlay.clear();
-    open(show.nextMatch());
+  const unsubscribe = session.subscribe((state) => {
+    pending = [...pending, ...state.events];
   });
   const project = (world: Vec3): Vec2 => worldToScreen(rig.camera, surface.viewport(), world);
 
@@ -118,7 +100,7 @@ function createPicture({ gl, session, surface, show, rig, opening, view, calm }:
     rig.jolt(impacts, dt);
     const intro = opening.step(dt);
     const gameplay = rig.follow(frame, surface.viewport(), dt);
-    const stage = show.stage();
+    const stage = show.stage;
     rig.place(intro === null ? gameplay : introPose(stage.theme.intro, gameplay, intro));
     show.setHaze(introHaze(stage.theme.intro, intro));
     stage.update({ frame, events: tickEvents, impacts, dt, elapsed, camera: rig.camera });
@@ -145,7 +127,7 @@ function createPicture({ gl, session, surface, show, rig, opening, view, calm }:
      * waiting for the browser to hand back the next frame absorbs however long the GPU takes to catch up with it.
      */
     async warmUp(): Promise<void> {
-      open(null);
+      if (intro) opening.begin(show.stage.theme.title);
       update(0);
       await gl.compileAsync(show.scene, rig.camera);
       for (let i = 0; i < WARM_UP_FRAMES; i += 1) {
@@ -153,7 +135,11 @@ function createPicture({ gl, session, surface, show, rig, opening, view, calm }:
         await new Promise<number>((resolve) => requestAnimationFrame(resolve));
       }
     },
-    dispose: unsubscribe,
+    dispose() {
+      unsubscribe();
+      overlay.setVisible(true);
+      overlay.clear();
+    },
   };
 }
 
@@ -162,22 +148,15 @@ function createPicture({ gl, session, surface, show, rig, opening, view, calm }:
  * Resolves once every shader is compiled and frames are flowing, so the match never opens on a stalled picture;
  * the session is not advanced before then.
  */
-export async function createRenderer(
-  host: HTMLElement,
-  session: Session,
-  assets: Assets,
-  view: ViewOptions,
-  events: RendererEvents,
-): Promise<Renderer> {
-  const gl = createWebGL();
-  const surface = createSurface(host, gl);
+export async function createRenderer(graphics: Graphics, session: Session, view: MatchView, events: RendererEvents): Promise<Renderer> {
+  const { gl, surface, host, assets, softDot, hookGeometry } = graphics;
   const arena = session.getState().arena;
-  const shared: StageShared = { arena, assets, softDot: createSoftDot(), hookGeometry: createHookGeometry(), localPlayerId: session.localPlayerId };
+  const shared: StageShared = { arena, assets, softDot, hookGeometry, localPlayerId: session.localPlayerId };
   const show = createSceneShow(gl, host, shared, view.scene);
   const rig = createCameraRig(arena, session.localPlayerId);
   const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const opening = createOpening(surface.overlay, calm ? INTRO_TIMING.reduced : INTRO_TIMING.full, events.onIntro);
-  const picture = createPicture({ gl, session, surface, show, rig, opening, view, calm });
+  const picture = createPicture({ gl, session, surface, show, rig, opening, intro: view.intro, calm });
   const loop = createFrameLoop(surface.canvas, events, (dt) => {
     session.advance(dt);
     picture.draw(dt);
@@ -188,10 +167,6 @@ export async function createRenderer(
     picture.dispose();
     opening.dispose();
     show.dispose();
-    shared.softDot.dispose();
-    shared.hookGeometry.dispose();
-    gl.dispose();
-    surface.dispose();
   };
   try {
     await picture.warmUp();
@@ -206,7 +181,7 @@ export async function createRenderer(
     worldToScreen: (p) => picture.project(simToWorld(p)),
     screenToWorld: (p) => worldToSim(screenToGround(rig.camera, surface.viewport(), p)),
     stats: picture.stats,
-    sceneId: show.id,
+    sceneId: () => show.id,
     introActive: opening.active,
     skipIntro: opening.skip,
     setFrozen: loop.setHeld,

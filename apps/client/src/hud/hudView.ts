@@ -46,10 +46,15 @@ export type ScoreRow = {
   readonly kills: number;
   readonly deaths: number;
   readonly assists: number;
+  readonly gold: number;
   readonly isLocal: boolean;
+  readonly isBot: boolean;
 };
 
-export type EndView = { readonly winner: TeamId; readonly localWon: boolean; readonly rows: readonly ScoreRow[] };
+/** Every fighter, side by side, in roster order within each side. */
+export type Scoreboard = Readonly<Record<TeamId, readonly ScoreRow[]>>;
+
+export type EndView = { readonly winner: TeamId; readonly localWon: boolean };
 
 export type HudView = {
   readonly score: Readonly<Record<TeamId, number>>;
@@ -59,6 +64,7 @@ export type HudView = {
   readonly shop: readonly ShopSlotView[];
   readonly feedback: Feedback;
   readonly killFeed: readonly KillFeedEntry[];
+  readonly scoreboard: Scoreboard;
   readonly end: EndView | null;
 };
 
@@ -106,20 +112,28 @@ function localView(state: GameState, me: Player): LocalView {
   };
 }
 
+const scoreRow = (p: Player, localId: PlayerId): ScoreRow => ({
+  id: p.id,
+  name: p.name,
+  team: p.team,
+  kills: p.kills,
+  deaths: p.deaths,
+  assists: p.assists,
+  gold: p.gold,
+  isLocal: p.id === localId,
+  isBot: p.isBot,
+});
+
+function scoreboardOf(state: GameState, localId: PlayerId): Scoreboard {
+  const rows = state.players.map((p) => scoreRow(p, localId));
+  return { west: rows.filter((r) => r.team === 'west'), east: rows.filter((r) => r.team === 'east') };
+}
+
 function endView(state: GameState, localId: PlayerId): EndView | null {
   if (state.phase.kind !== 'ended') return null;
   const winner = state.phase.winner;
-  const rows = state.players.map((p) => ({
-    id: p.id,
-    name: p.name,
-    team: p.team,
-    kills: p.kills,
-    deaths: p.deaths,
-    assists: p.assists,
-    isLocal: p.id === localId,
-  }));
   const localTeam = state.players.find((p) => p.id === localId)?.team;
-  return { winner, localWon: localTeam === winner, rows };
+  return { winner, localWon: localTeam === winner };
 }
 
 export function deriveHud(
@@ -136,6 +150,7 @@ export function deriveHud(
     shop: me === undefined ? [] : shopSlots(me),
     feedback,
     killFeed,
+    scoreboard: scoreboardOf(state, localId),
     end: endView(state, localId),
   };
 }

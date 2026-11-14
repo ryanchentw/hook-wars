@@ -25,13 +25,25 @@ describe('deriveHud', () => {
     expect(view.local?.respawnIn).toBeCloseTo(2);
   });
 
-  it('builds the end panel with per-player kills, deaths and assists', () => {
-    const scored = [fakePlayer({ id: HUMAN, name: 'You', kills: 2, deaths: 1, assists: 3 }), players[1]!];
-    const ended = fakeState({ players: scored, phase: { kind: 'ended', winner: 'east' } });
-    const view = deriveHud(ended, HUMAN, []);
-    expect(view.end?.localWon).toBe(false);
-    expect(view.end?.rows.map((r) => r.name)).toEqual(['You', 'Bot']);
-    expect(view.end?.rows[0]).toMatchObject({ kills: 2, deaths: 1, assists: 3 });
+  it('says who won once the match is over', () => {
+    const ended = fakeState({ players, phase: { kind: 'ended', winner: 'east' } });
+    expect(deriveHud(ended, HUMAN, []).end).toEqual({ winner: 'east', localWon: false });
+    expect(deriveHud(fakeState({ players }), HUMAN, []).end).toBeNull();
+  });
+
+  it('lists every fighter by side with kills, deaths, assists and gold', () => {
+    const roster = [
+      fakePlayer({ id: HUMAN, name: 'You', kills: 2, deaths: 1, assists: 3, gold: 40 }),
+      fakePlayer({ id: BOT, name: 'Pike', team: 'east', isBot: true }),
+      fakePlayer({ id: 'ally' as PlayerId, name: 'Gull', isBot: true, assists: 4 }),
+    ];
+    const board = deriveHud(fakeState({ players: roster }), HUMAN, []).scoreboard;
+    expect(board.west.map((r) => [r.name, r.isLocal, r.isBot])).toEqual([
+      ['You', true, false],
+      ['Gull', false, true],
+    ]);
+    expect(board.west[0]).toMatchObject({ kills: 2, deaths: 1, assists: 3, gold: 40 });
+    expect(board.east.map((r) => r.name)).toEqual(['Pike']);
   });
 
   it('shows the local gold, the shop and the grapple slot', () => {

@@ -6,7 +6,6 @@ import { bountyEarned, describeOutcome, resolvePurchases, shopSlots, type Resolv
 export type HudStore = {
   subscribe(onChange: () => void): () => void;
   getSnapshot(): HudView;
-  playAgain(): void;
   /** Sends a buy for the local player; the next tick's view says whether it went through. */
   buy(purchase: Purchase): void;
 };
@@ -46,14 +45,9 @@ export function createHudStore(session: Session): HudStore {
   let tracked: Tracked = { feedback: NO_FEEDBACK, seq: 0 };
   let snapshot = deriveHud(session.getState(), localId, feed, tracked.feedback);
 
-  session.subscribe((state, change) => {
-    if (change === 'reset') {
-      feed = [];
-      tracked = { feedback: NO_FEEDBACK, seq: tracked.seq };
-    } else {
-      feed = appendKills(feed, state);
-      tracked = applyBounty(applyOutcomes(tracked, resolvePurchases(pending, state, localId), session), bountyEarned(state, localId));
-    }
+  session.subscribe((state) => {
+    feed = appendKills(feed, state);
+    tracked = applyBounty(applyOutcomes(tracked, resolvePurchases(pending, state, localId), session), bountyEarned(state, localId));
     pending = [];
     snapshot = deriveHud(state, localId, feed, tracked.feedback);
     listeners.forEach((l) => l());
@@ -67,7 +61,6 @@ export function createHudStore(session: Session): HudStore {
       };
     },
     getSnapshot: () => snapshot,
-    playAgain: () => session.restart(),
     buy(purchase) {
       pending = [...pending, purchase];
       session.queueInput({ kind: 'buy', playerId: localId, purchase });

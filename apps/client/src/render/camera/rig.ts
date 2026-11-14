@@ -9,11 +9,9 @@ import { shakeOffset } from './shake';
 
 export type CameraRig = {
   readonly camera: PerspectiveCamera;
-  /** Where the gameplay camera stands this frame: it trails the local player, easing unless it has just been reset. */
+  /** Where the gameplay camera stands this frame: it trails the local player, framed at once on the first frame, easing after. */
   follow(frame: RenderFrame, viewport: Viewport, dt: number): CameraPose;
   place(pose: CameraPose): void;
-  /** Forgets where it was looking, so the next match is framed at once instead of panned to. */
-  reset(): void;
   /** A blow the local player gives or takes jolts the camera, unless a harder jolt is still running. */
   jolt(impacts: readonly Impact[], dt: number): void;
   /** Runs `draw` with the jolt applied and puts the camera back after: aiming reads it between frames and must not see the shake. */
@@ -40,9 +38,6 @@ export function createCameraRig(arena: Arena, localPlayerId: PlayerId): CameraRi
       return poseFor(focus ?? { x: 0, z: 0 }, viewport);
     },
     place: (pose) => applyPose(camera, pose),
-    reset() {
-      focus = null;
-    },
     jolt(impacts, dt) {
       shakeAge += dt;
       const strength = impacts.reduce((most, impact) => (impact.involvesLocal ? Math.max(most, impact.spec.shake) : most), 0);

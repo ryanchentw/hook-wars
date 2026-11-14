@@ -15,8 +15,8 @@ export type DevHook = {
   setPaused(paused: boolean): void;
   sceneId(): SceneId;
   introActive(): boolean;
-  /** Starts the next match, as "Play again" does. */
-  restart(): void;
+  /** Starts the next match, as "Rematch" does. The hook comes back once that match is drawing. */
+  restart(): Promise<void>;
   /** Holds the match and the picture on the frame now showing, or lets them go. */
   freeze(frozen: boolean): void;
 };
@@ -27,13 +27,16 @@ declare global {
   }
 }
 
-/** Installed only once the scene is drawing, so its presence also tells a test that assets have loaded. */
-export function installDevHook(session: Session, renderer: Renderer): void {
+/**
+ * Installed only once a match is drawing and removed when it ends, so its presence also tells a test that a match is
+ * up and its assets have loaded.
+ */
+export function installDevHook(session: Session, renderer: Renderer, restart: () => Promise<void>): { uninstall(): void } {
   const origin = (): Vec2 => {
     const rect = renderer.canvas.getBoundingClientRect();
     return { x: rect.left, y: rect.top };
   };
-  window.__hookbrawl = {
+  const hook: DevHook = {
     getState: () => session.getState(),
     getLocalPlayerId: () => session.localPlayerId,
     worldToScreen(p) {
@@ -49,7 +52,13 @@ export function installDevHook(session: Session, renderer: Renderer): void {
     setPaused: (paused) => session.setPaused(paused),
     sceneId: () => renderer.sceneId(),
     introActive: () => renderer.introActive(),
-    restart: () => session.restart(),
+    restart,
     freeze: (frozen) => renderer.setFrozen(frozen),
+  };
+  window.__hookbrawl = hook;
+  return {
+    uninstall() {
+      if (window.__hookbrawl === hook) delete window.__hookbrawl;
+    },
   };
 }

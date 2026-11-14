@@ -13,10 +13,13 @@ export type SimApi = {
   ) => { readonly inputs: readonly PlayerInput[]; readonly brain: BotBrain };
 };
 
+export type BotSeat = { readonly id: PlayerId; readonly seed: number };
+
 export type SessionSetup = {
   readonly config: MatchConfig;
   readonly localPlayerId: PlayerId;
-  readonly botSeed: number;
+  /** The fighters a bot drives here, each with its own seed. */
+  readonly bots: readonly BotSeat[];
 };
 
 export type SessionOptions = {
@@ -26,8 +29,8 @@ export type SessionOptions = {
 
 export type Frame = { readonly previous: GameState; readonly current: GameState; readonly alpha: number };
 
-export type SessionChange = 'tick' | 'reset';
-export type SessionListener = (state: GameState, change: SessionChange) => void;
+/** Called once per sim tick. */
+export type SessionListener = (state: GameState) => void;
 
 export type Session = {
   readonly localPlayerId: PlayerId;
@@ -41,7 +44,6 @@ export type Session = {
   frame(): Frame;
   getState(): GameState;
   subscribe(listener: SessionListener): () => void;
-  restart(): void;
 };
 
 type Bot = { readonly id: PlayerId; readonly brain: BotBrain };
@@ -51,23 +53,18 @@ const STILL: Vec2 = { x: 0, y: 0 };
 // Absorbs float drift so e.g. 3 x (1/30) s of real time yields exactly 3 ticks.
 const TICK_EPSILON = 1e-9;
 
+/** One match, ticked from real time. A new match is a new session. */
 export function createSession(sim: SimApi, setup: SessionSetup, options: SessionOptions = {}): Session {
   const maxTicks = options.maxTicksPerAdvance ?? DEFAULT_MAX_TICKS;
   const listeners = new Set<SessionListener>();
-  let matchIndex = 0;
   let current = sim.createMatch(setup.config);
   let previous = current;
-  let bots = createBots(sim, setup, matchIndex);
+  let bots: readonly Bot[] = setup.bots.map((b) => ({ id: b.id, brain: sim.createBotBrain(b.seed) }));
   let queued: readonly PlayerInput[] = [];
   let accumulator = 0;
   let paused = false;
   let desiredSteer = STILL;
-  // A fresh match starts every player idle, so this is reset with it.
   let sentSteer = STILL;
-
-  const emit = (change: SessionChange): void => {
-    listeners.forEach((listener) => listener(current, change));
-  };
 
   const thinkBots = (): readonly PlayerInput[] => {
     const results = bots.map((bot) => ({ id: bot.id, ...sim.botThink(current, bot.id, bot.brain) }));
@@ -87,7 +84,7 @@ export function createSession(sim: SimApi, setup: SessionSetup, options: Session
     const inputs = [...takeSteer(), ...queued, ...thinkBots()];
     queued = [];
     current = sim.step(current, inputs, TICK_DT);
-    emit('tick');
+    listeners.forEach((listener) => listener(current));
   };
 
   return {
@@ -125,21 +122,5 @@ export function createSession(sim: SimApi, setup: SessionSetup, options: Session
         listeners.delete(listener);
       };
     },
-    restart() {
-      matchIndex += 1;
-      current = sim.createMatch(setup.config);
-      previous = current;
-      bots = createBots(sim, setup, matchIndex);
-      queued = [];
-      sentSteer = STILL;
-      accumulator = 0;
-      emit('reset');
-    },
   };
-}
-
-function createBots(sim: SimApi, setup: SessionSetup, matchIndex: number): readonly Bot[] {
-  return setup.config.players
-    .filter((p) => p.isBot)
-    .map((p, i) => ({ id: p.id, brain: sim.createBotBrain(setup.botSeed + matchIndex * 7919 + i) }));
 }

@@ -10,6 +10,9 @@ importers:
 
   apps/client:
     dependencies:
+      '@hookbrawl/room':
+        specifier: workspace:*
+        version: link:../../packages/room
       '@hookbrawl/sim':
         specifier: workspace:*
         version: link:../../packages/sim

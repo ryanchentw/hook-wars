@@ -30,7 +30,7 @@ function setup() {
       return { ...fake.step(state, inputs, dt), events: [...granted, ...extra.splice(0)] };
     },
   };
-  const session = createSession(sim, { config, localPlayerId: HUMAN, botSeed: 1 });
+  const session = createSession(sim, { config, localPlayerId: HUMAN, bots: [{ id: BOT, seed: 1 }] });
   return { session, store: createHudStore(session), extra, sent, tick: () => session.advance(TICK_DT) };
 }
 
@@ -59,16 +59,6 @@ describe('hud store purchases', () => {
     store.buy(DAMAGE);
     tick();
     expect(store.getSnapshot().feedback.slots.damage?.seq).not.toBe(first);
-  });
-
-  it('forgets presses and flashes when the match restarts', () => {
-    const { store, tick } = setup();
-    store.buy(SIZE);
-    tick();
-    store.buy(SIZE);
-    store.playAgain();
-    tick();
-    expect(store.getSnapshot().feedback.slots).toEqual({});
   });
 });
 

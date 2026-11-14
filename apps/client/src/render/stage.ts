@@ -39,8 +39,6 @@ export type Stage = {
   readonly group: Group;
   update(input: StageUpdate): void;
   handPosition(playerId: PlayerId): Vector3 | null;
-  /** Drops the fighters and effects of a match that is over; the scene stays. */
-  clear(): void;
   dispose(): void;
 };
 
@@ -80,10 +78,6 @@ export function createStage(theme: SceneTheme, shared: StageShared): Stage {
       effects.update(events, impacts, dt, camera, (id) => frameOf(id)?.player.facing ?? null);
     },
     handPosition: characters.handPosition,
-    clear() {
-      characters.clear();
-      effects.clear();
-    },
     dispose() {
       characters.clear();
       [...scenery, hooks, grapples, effects].forEach((part) => part.dispose());

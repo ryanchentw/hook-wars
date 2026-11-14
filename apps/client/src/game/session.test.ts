@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { TICK_DT } from '@hookbrawl/sim';
 import type { MatchConfig } from '@hookbrawl/sim';
 import { BOT, createFakeSim, HUMAN } from './fakeSim';
-import { createSession, type SessionChange } from './session';
+import { createSession } from './session';
 
 const config: MatchConfig = {
   killTarget: 5,
@@ -16,7 +16,7 @@ function setup(endAtTick?: number, maxTicksPerAdvance?: number) {
   const sim = createFakeSim(endAtTick);
   const session = createSession(
     sim,
-    { config, localPlayerId: HUMAN, botSeed: 1 },
+    { config, localPlayerId: HUMAN, bots: [{ id: BOT, seed: 1 }] },
     maxTicksPerAdvance === undefined ? {} : { maxTicksPerAdvance },
   );
   return { sim, session };
@@ -79,20 +79,18 @@ describe('session inputs', () => {
   });
 });
 
-describe('session subscribers and restart', () => {
-  it('notifies once per tick and on reset, and restart starts a fresh match', () => {
-    const { sim, session } = setup(1);
-    const changes: SessionChange[] = [];
-    const unsubscribe = session.subscribe((_s, change) => changes.push(change));
-    session.queueInput({ kind: 'stop', playerId: HUMAN });
+describe('session subscribers', () => {
+  it('notifies once per tick until unsubscribed', () => {
+    const { session } = setup();
+    let ticks = 0;
+    const unsubscribe = session.subscribe(() => {
+      ticks += 1;
+    });
     session.advance(TICK_DT * 2);
-    session.restart();
-    expect(changes).toEqual(['tick', 'reset']);
-    expect(sim.matches.count).toBe(2);
-    expect(session.getState().phase.kind).toBe('playing');
+    expect(ticks).toBe(2);
     unsubscribe();
     session.advance(TICK_DT);
-    expect(changes).toHaveLength(2);
+    expect(ticks).toBe(2);
   });
 });
 
@@ -199,14 +197,5 @@ describe('session steering', () => {
     session.setPaused(false);
     session.advance(TICK_DT);
     expect(steers(sim)).toEqual([[NORTH], [{ x: 0, y: 0 }]]);
-  });
-
-  it('re-sends a still-held direction to the fresh match after a restart', () => {
-    const { sim, session } = setup();
-    session.setSteer(NORTH);
-    session.advance(TICK_DT);
-    session.restart();
-    session.advance(TICK_DT * 2);
-    expect(steers(sim)).toEqual([[NORTH], [NORTH], []]);
   });
 });
