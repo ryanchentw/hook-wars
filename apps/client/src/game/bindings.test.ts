@@ -33,13 +33,14 @@ describe('shop and grapple keys', () => {
     expect(actionForKey('KeyE')).toEqual({ kind: 'grapple' });
   });
 
-  it('numbers the shop slots 1 to 5, upgrades in sim order then the items', () => {
+  it('numbers the shop slots 1 to 6, upgrades in sim order then the items', () => {
     const wanted = [...UPGRADE_IDS, ...ITEM_IDS];
     expect(SHOP_SLOTS.map((s) => s.purchase.id)).toEqual(wanted);
-    expect(SHOP_SLOTS.map((s) => s.digit)).toEqual(['1', '2', '3', '4', '5']);
+    expect(SHOP_SLOTS.map((s) => s.digit)).toEqual(['1', '2', '3', '4', '5', '6']);
     expect(actionForKey('Digit1')).toEqual({ kind: 'buy', purchase: { kind: 'upgrade', id: 'damage' } });
     expect(actionForKey('Digit5')).toEqual({ kind: 'buy', purchase: { kind: 'item', id: 'grapple' } });
-    expect(actionForKey('Digit6')).toBeNull();
+    expect(actionForKey('Digit6')).toEqual({ kind: 'buy', purchase: { kind: 'item', id: 'barb' } });
+    expect(actionForKey('Digit7')).toBeNull();
   });
 });
 

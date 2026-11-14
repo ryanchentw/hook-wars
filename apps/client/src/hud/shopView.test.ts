@@ -8,10 +8,10 @@ const DAMAGE: Purchase = { kind: 'upgrade', id: 'damage' };
 const RANGE: Purchase = { kind: 'upgrade', id: 'range' };
 const GRAPPLE: Purchase = { kind: 'item', id: 'grapple' };
 const MAX_LEVEL = UPGRADES.damage.costs.length;
-const owned = (readyAt: number): Player['items'] => ({ grapple: { kind: 'owned', readyAt } });
+const owned = (readyAt: number): Player['items'] => ({ grapple: { kind: 'owned', readyAt }, barb: { kind: 'unowned' } });
 
 describe('shopSlots', () => {
-  it('lists the four upgrades then the grapple, numbered 1 to 5, priced by the sim', () => {
+  it('lists the four upgrades then the grapple and the barb, numbered 1 to 6, priced by the sim', () => {
     const slots = shopSlots(fakePlayer({ id: HUMAN, gold: 0 }));
     expect(slots.map((s) => [s.digit, s.name])).toEqual([
       ['1', 'Damage'],
@@ -19,11 +19,14 @@ describe('shopSlots', () => {
       ['3', 'Speed'],
       ['4', 'Size'],
       ['5', 'Grapple'],
+      ['6', 'Barb'],
     ]);
     expect(slots[0]?.price).toBe(UPGRADES.damage.costs[0]);
     expect(slots[0]?.level).toEqual({ current: 0, max: MAX_LEVEL });
     expect(slots[4]?.price).toBe(ITEMS.grapple.cost);
     expect(slots[4]?.level).toBeNull();
+    expect(slots[5]?.price).toBe(ITEMS.barb.cost);
+    expect(slots[5]?.level).toBeNull();
   });
 
   it('marks each slot affordable, too expensive, maxed or owned', () => {
@@ -34,7 +37,7 @@ describe('shopSlots', () => {
       items: owned(0),
     });
     const slots = shopSlots(player);
-    expect(slots.map((s) => s.state)).toEqual(['maxed', 'expensive', 'affordable', 'affordable', 'owned']);
+    expect(slots.map((s) => s.state)).toEqual(['maxed', 'expensive', 'affordable', 'affordable', 'owned', 'expensive']);
     expect(slots[0]?.price).toBeNull();
     expect(slots[1]?.price).toBe(UPGRADES.range.costs[1]);
     expect(slots[4]?.price).toBeNull();
@@ -49,7 +52,7 @@ describe('grappleView', () => {
     dir: { x: 1, y: 0 },
     path: [],
     phase: { kind: 'extending' as const, remaining: 100 },
-    stats: { damage: 1, range: 1, speed: 1, retractSpeed: 1, radius: 1 },
+    stats: { damage: 1, range: 1, speed: 1, retractSpeed: 1, radius: 1, barbed: false },
   };
 
   it('is locked with its price and whether it is affordable until bought', () => {

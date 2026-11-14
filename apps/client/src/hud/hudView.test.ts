@@ -19,7 +19,7 @@ describe('deriveHud', () => {
 
   it('flags a hook in flight and a respawn countdown', () => {
     const dead = [fakePlayer({ id: HUMAN, status: { kind: 'dead', respawnAt: 12 } }), fakePlayer({ id: BOT, team: 'east' })];
-    const hooks = [{ id: 'h' as HookId, ownerId: HUMAN, pos: { x: 0, y: 0 }, dir: { x: 1, y: 0 }, path: [], phase: { kind: 'retracting' as const, cargo: null }, stats: { damage: 350, range: 1300, speed: 1100, retractSpeed: 1300, radius: 26 } }];
+    const hooks = [{ id: 'h' as HookId, ownerId: HUMAN, pos: { x: 0, y: 0 }, dir: { x: 1, y: 0 }, path: [], phase: { kind: 'retracting' as const, cargo: null }, stats: { damage: 350, range: 1300, speed: 1100, retractSpeed: 1300, radius: 26, barbed: false } }];
     const view = deriveHud(fakeState({ time: 10, players: dead, hooks }), HUMAN, []);
     expect(view.local?.hookInFlight).toBe(true);
     expect(view.local?.respawnIn).toBeCloseTo(2);
@@ -39,7 +39,14 @@ describe('deriveHud', () => {
     const view = deriveHud(fakeState({ players: rich }), HUMAN, []);
     expect(view.local?.gold).toBe(1234);
     expect(view.local?.grapple.kind).toBe('locked');
-    expect(view.shop).toHaveLength(5);
+    expect(view.shop).toHaveLength(6);
+  });
+
+  it('marks the hook barbed once the barb is owned', () => {
+    const plain = deriveHud(fakeState({ players }), HUMAN, []);
+    expect(plain.local?.hookBarbed).toBe(false);
+    const kitted = [fakePlayer({ id: HUMAN, items: { grapple: { kind: 'unowned' }, barb: { kind: 'owned' } } }), players[1]!];
+    expect(deriveHud(fakeState({ players: kitted }), HUMAN, []).local?.hookBarbed).toBe(true);
   });
 });
 

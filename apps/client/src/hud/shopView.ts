@@ -34,6 +34,7 @@ export const SLOT_NAMES: Readonly<Record<SlotId, string>> = {
   speed: 'Speed',
   size: 'Size',
   grapple: 'Grapple',
+  barb: 'Barb',
 };
 
 function levelOf(player: Player, purchase: Purchase): ShopSlotView['level'] {

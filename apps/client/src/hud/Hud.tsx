@@ -46,13 +46,16 @@ function KillFeed({ entries }: { readonly entries: readonly KillFeedEntry[] }) {
 const FIRST_DIGIT = SHOP_SLOTS[0]?.digit;
 const LAST_DIGIT = SHOP_SLOTS.at(-1)?.digit;
 
-/** Below 900px only the movement keys stay: every other key is printed on its own slot. */
+/**
+ * Below 900px only the movement keys stay: every other key is printed on its own slot.
+ * The grapple's E is already printed on its slot beside the hook's, so it is left out to keep six shop slots on one row.
+ */
 function Hint() {
   return (
     <div className="hud-hint hud-plate">
       <kbd>WASD</kbd> move
       <span className="hud-hint-more">
-        <kbd>Space</kbd> hook <kbd>E</kbd> grapple{' '}
+        <kbd>Space</kbd> hook{' '}
         <kbd>
           {FIRST_DIGIT}–{LAST_DIGIT}
         </kbd>{' '}

@@ -23,7 +23,7 @@ export function fakePlayer(overrides: Partial<Player> & Pick<Player, 'id'>): Pla
     assists: 0,
     gold: 150,
     upgrades: { damage: 0, range: 0, speed: 0, size: 0 },
-    items: { grapple: { kind: 'unowned' } },
+    items: { grapple: { kind: 'unowned' }, barb: { kind: 'unowned' } },
     recentDamage: [],
     ...overrides,
   };

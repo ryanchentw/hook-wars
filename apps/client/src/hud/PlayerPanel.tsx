@@ -38,10 +38,30 @@ function Purse({ gold, bounty }: { readonly gold: number; readonly bounty: Bount
   );
 }
 
-function ActionSlot(props: { readonly keyName: string; readonly label: string; readonly sweep: number; readonly ready: boolean }) {
+type ActionSlotProps = {
+  readonly keyName: string;
+  readonly label: string;
+  readonly sweep: number;
+  readonly ready: boolean;
+  readonly barbed?: boolean;
+};
+
+/** Two spurs off a shank, the shape the barbs take on the hook itself. */
+function BarbMark() {
+  return (
+    <span className="hud-barb-mark" role="img" aria-label="Barbed hook">
+      <svg viewBox="0 0 12 12" aria-hidden="true">
+        <path d="M3 11V1M3 4l6-3M3 8l6-3" />
+      </svg>
+    </span>
+  );
+}
+
+function ActionSlot(props: ActionSlotProps) {
   return (
     <div className={`hud-hook ${props.ready ? 'is-ready' : ''}`}>
       <div className="hud-hook-sweep" style={{ height: `${props.sweep}%` }} />
+      {props.barbed === true && <BarbMark />}
       <span className="hud-hook-key">{props.keyName}</span>
       <span className="hud-hook-label">{props.label}</span>
     </div>
@@ -93,7 +113,7 @@ export function PlayerPanel({ local, feedback, onBuy }: Props) {
         <HealthBar local={local} />
         <Purse gold={local.gold} bounty={feedback.bounty} />
       </div>
-      <ActionSlot keyName="Space" label={hookLabel} sweep={hookSweep} ready={ready} />
+      <ActionSlot keyName="Space" label={hookLabel} sweep={hookSweep} ready={ready} barbed={local.hookBarbed} />
       <GrappleSlot view={local.grapple} feedback={feedback} onBuy={onBuy} />
     </div>
   );

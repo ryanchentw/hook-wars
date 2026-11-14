@@ -32,6 +32,8 @@ export type LocalView = {
   readonly cooldownFraction: number;
   readonly cooldownSeconds: number;
   readonly hookInFlight: boolean;
+  /** Owns the barb, so the hook in hand catches on its way back too. */
+  readonly hookBarbed: boolean;
   readonly respawnIn: number | null;
   readonly gold: number;
   readonly grapple: GrappleView;
@@ -97,6 +99,7 @@ function localView(state: GameState, me: Player): LocalView {
     cooldownSeconds,
     cooldownFraction: Math.min(1, cooldownSeconds / TUNING.hookCooldown),
     hookInFlight: state.hooks.some((h) => h.ownerId === localId),
+    hookBarbed: me.items.barb.kind === 'owned',
     respawnIn: me.status.kind === 'dead' ? Math.max(0, me.status.respawnAt - state.time) : null,
     gold: me.gold,
     grapple: grappleView(state, me),
