@@ -67,6 +67,7 @@ type Handlers = { readonly [K in RoomAction['kind']]: (state: RoomState, action:
 const HANDLERS: Handlers = {
   join: (s, a) => join(s, a.by, a.name),
   leave: (s, a) => leave(s, a.by),
+  passHost: (s, a) => (s.host === a.by && a.to !== a.by && seatOf(s, a.to) !== null ? { ...s, host: a.to } : s),
   rename: (s, a) => rename(s, a.by, a.name),
   moveTo: (s, a) => moveTo(s, a.by, a.slot),
   addBot: (s, a) => (hostInLobby(s, a.by) && isEmptyAt(s, a.slot) ? withSlot(s, a.slot, BOT) : s),

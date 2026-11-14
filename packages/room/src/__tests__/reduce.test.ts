@@ -200,3 +200,13 @@ describe('starting and ending', () => {
     expect(reduce(room, { kind: 'kick', by: HOST } as unknown as RoomAction)).toBe(room);
   });
 });
+
+describe('passing the host', () => {
+  it('lets the host hand the room to a seated member, and nobody else', () => {
+    const room = play(hosted(), { kind: 'join', by: GUEST, name: 'Bo' });
+    expect(reduce(room, { kind: 'passHost', by: HOST, to: GUEST }).host).toBe(GUEST);
+    expect(reduce(room, { kind: 'passHost', by: GUEST, to: GUEST })).toBe(room);
+    expect(reduce(room, { kind: 'passHost', by: HOST, to: STRANGER })).toBe(room);
+    expect(reduce(room, { kind: 'passHost', by: HOST, to: HOST })).toBe(room);
+  });
+});

@@ -51,7 +51,8 @@ function walkSteer(arena: Arena, p: Player, dir: Vec2, stride: number): Player {
   return { ...p, pos, facing: Math.atan2(dir.y, dir.x) };
 }
 
-function walk(arena: Arena, p: Player, dt: number): Player {
+/** One fighter's walk for one step, alone: what a client runs ahead of the server for its own fighter. */
+export function walkPlayer(arena: Arena, p: Player, dt: number): Player {
   if (p.status.kind !== 'alive') return p;
   const stride = TUNING.moveSpeed * dt;
   switch (p.move.kind) {
@@ -65,6 +66,6 @@ function walk(arena: Arena, p: Player, dt: number): Player {
 }
 
 export const movePlayers: Stage = (state, { dt }) => ({
-  state: { ...state, players: state.players.map((p) => walk(state.arena, p, dt)) },
+  state: { ...state, players: state.players.map((p) => walkPlayer(state.arena, p, dt)) },
   events: [],
 });

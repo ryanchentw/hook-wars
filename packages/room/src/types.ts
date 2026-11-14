@@ -47,6 +47,8 @@ export type RoomState = {
 export type RoomAction =
   | { readonly kind: 'join'; readonly by: MemberId; readonly name: string }
   | { readonly kind: 'leave'; readonly by: MemberId }
+  /** The host hands the room to another seated member. A server sends it for a host who has dropped. */
+  | { readonly kind: 'passHost'; readonly by: MemberId; readonly to: MemberId }
   | { readonly kind: 'rename'; readonly by: MemberId; readonly name: string }
   | { readonly kind: 'moveTo'; readonly by: MemberId; readonly slot: SlotRef }
   | { readonly kind: 'addBot'; readonly by: MemberId; readonly slot: SlotRef }
