@@ -3,24 +3,24 @@ import { TUNING } from './config';
 import { along, distance, normalize, sub } from './geometry';
 import { IDLE, interrupt } from './intent';
 import type { Arena, GameEvent, GameState, Player, Vec2 } from './types';
-import type { Stage } from './world';
+import { landed, type Stage } from './world';
 
-function respawn(state: GameState, p: Player): Player {
-  return {
+function respawn(state: GameState, p: Player, t: number): Player {
+  const revived = {
     ...p,
     pos: spawnPoint(state.arena, p.team, p.spawnIndex),
     facing: facingCanal(p.team),
     hp: TUNING.maxHp,
-    status: { kind: 'alive' },
     move: interrupt(p.move),
   };
+  return landed(revived, t);
 }
 
 export const respawnPlayers: Stage = (state, { t }) => {
   const due = (p: Player) => p.status.kind === 'dead' && p.status.respawnAt <= t;
   const events: GameEvent[] = state.players.filter(due).map((p) => ({ kind: 'respawn', playerId: p.id }));
   return {
-    state: { ...state, players: state.players.map((p) => (due(p) ? respawn(state, p) : p)) },
+    state: { ...state, players: state.players.map((p) => (due(p) ? respawn(state, p, t) : p)) },
     events,
   };
 };

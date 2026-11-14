@@ -1,5 +1,5 @@
 import { TUNING } from '@hookbrawl/sim';
-import type { GameEvent, Vec2 } from '@hookbrawl/sim';
+import type { GameEvent, PlayerId, Vec2 } from '@hookbrawl/sim';
 import { ACESFilmicToneMapping, Color, FogExp2, PCFShadowMap, PerspectiveCamera, Scene, Vector3, WebGLRenderer } from 'three';
 import type { Session } from '../game/session';
 import type { Assets } from './assets/loadAssets';
@@ -8,8 +8,10 @@ import { applyPose, screenToGround, worldToScreen } from './camera/projection';
 import { shakeOffset } from './camera/shake';
 import { createCharactersView } from './characters/charactersView';
 import { createEffectsView } from './effects/effectsView';
+import { createHookGeometry } from './hook/hookGeometry';
 import { createHooksView } from './hook/hooksView';
-import { interpolateFrame, type RenderFrame } from './interpolate';
+import { CALM_IMPACTS, IMPACTS, impactsOf, type Fighter, type Impact } from './impact/impacts';
+import { interpolateFrame, type PlayerFrame, type RenderFrame } from './interpolate';
 import { createDamageNumbers } from './overlay/damageNumbers';
 import { createLabels, type LabelView } from './overlay/labels';
 import { spreadLabels } from './overlay/spreadLabels';
@@ -17,7 +19,7 @@ import './overlay/overlay.css';
 import { createArenaView } from './scene/arenaView';
 import { simToWorld, worldToSim, type Vec3 } from './space';
 import { createSoftDot } from './textures';
-import { COLORS, LIGHTS, SIZES } from './theme';
+import { COLORS, LIGHTS, SHAKE, SIZES } from './theme';
 
 export type RenderStats = { readonly calls: number; readonly triangles: number };
 
@@ -41,6 +43,7 @@ const MAX_PIXEL_RATIO = 2;
 const WARM_UP_FRAMES = 3;
 /** Screen room one name-and-bar block needs before the next must be stacked clear of it. */
 const LABEL_BOX = { width: 72, height: SIZES.labelBlockPx };
+const NO_IMPACTS: readonly Impact[] = [];
 
 function createWebGL(): WebGLRenderer {
   try {
@@ -49,6 +52,10 @@ function createWebGL(): WebGLRenderer {
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(`This browser could not start WebGL, which Hook Brawl needs to draw the harbour (${detail})`);
   }
+}
+
+function fighterOf(pf: PlayerFrame | undefined): Fighter | null {
+  return pf === undefined ? null : { pos: pf.pos, team: pf.player.team };
 }
 
 function labelsFor(frame: RenderFrame, project: (world: Vec3) => Vec2): readonly LabelView[] {
@@ -93,19 +100,21 @@ export async function createRenderer(
   const arena = session.getState().arena;
   const softDot = createSoftDot();
   const arenaView = createArenaView(arena, assets, softDot);
-  const characters = createCharactersView(assets, session.localPlayerId);
-  const hooks = createHooksView(softDot);
+  const hookGeometry = createHookGeometry();
+  const characters = createCharactersView(assets, hookGeometry, session.localPlayerId);
+  const hooks = createHooksView(hookGeometry, softDot);
   const effects = createEffectsView(softDot);
   const labels = createLabels(overlay);
   const damage = createDamageNumbers(overlay);
   scene.add(arenaView.group, characters.group, hooks.group, effects.group);
 
-  // People who ask their system for less motion get the hit without the jolt.
-  const shakes = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // People who ask their system for less motion get the hit without the jolt or the freeze.
+  const impactSpecs = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? CALM_IMPACTS : IMPACTS;
   let viewport: Viewport = { width: 1, height: 1 };
   let focus: Focus | null = null;
   let pending: readonly GameEvent[] = [];
   let shakeAge = Number.POSITIVE_INFINITY;
+  let shakeStrength = 0;
   let elapsed = 0;
   let last: number | null = null;
   let contextLost = false;
@@ -146,27 +155,39 @@ export async function createRenderer(
     applyPose(camera, poseFor(focus ?? { x: 0, z: 0 }, viewport));
   };
 
+  /** A blow the local player gives or takes jolts the camera, unless a harder jolt is still running. */
+  const jolt = (impacts: readonly Impact[], dt: number): void => {
+    shakeAge += dt;
+    const strength = impacts.reduce((most, impact) => (impact.involvesLocal ? Math.max(most, impact.spec.shake) : most), 0);
+    if (strength > 0 && (strength >= shakeStrength || shakeAge >= SHAKE.duration)) {
+      shakeAge = 0;
+      shakeStrength = strength;
+    }
+  };
+
   /** Brings every view in line with the session's current frame; draws nothing. */
   const update = (dt: number): void => {
     const frame = interpolateFrame(session.frame());
     const tickEvents = pending;
     pending = [];
-    if (shakes && tickEvents.some((e) => e.kind === 'hookHit' && e.damage > 0)) shakeAge = 0;
-    shakeAge += dt;
+    const frameOf = (id: PlayerId): PlayerFrame | undefined => frame.players.find((p) => p.player.id === id);
+    const positionOf = (id: PlayerId): Vec2 | null => frameOf(id)?.pos ?? null;
+    const impacts = tickEvents.length === 0 ? NO_IMPACTS : impactsOf(tickEvents, (id) => fighterOf(frameOf(id)), session.localPlayerId, impactSpecs);
+    jolt(impacts, dt);
 
     aimCamera(frame, dt);
     arenaView.update(elapsed);
-    characters.update(frame, tickEvents, dt);
+    characters.update(frame, tickEvents, impacts, dt);
     hooks.update(frame, characters.handPosition);
-    effects.update(tickEvents, dt, camera);
-    labels.update(labelsFor(frame, project));
-    damage.spawn(tickEvents);
-    damage.update(dt, project, (id) => frame.players.find((p) => p.player.id === id)?.pos ?? null);
+    effects.update(tickEvents, impacts, dt, camera);
+    labels.update(labelsFor(frame, project), dt);
+    damage.spawn(impacts);
+    damage.update(dt, project, positionOf);
   };
 
   const present = (): void => {
     const unshaken = camera.position.clone();
-    const offset = shakeOffset(shakeAge);
+    const offset = shakeOffset(shakeAge, shakeStrength);
     camera.matrixWorld.extractBasis(right, up, new Vector3());
     camera.position.addScaledVector(right, offset.right).addScaledVector(up, offset.up);
     camera.updateMatrixWorld(true);
@@ -211,6 +232,7 @@ export async function createRenderer(
     characters.clear();
     [arenaView, hooks, effects].forEach((view) => view.dispose());
     softDot.dispose();
+    hookGeometry.dispose();
     gl.dispose();
     canvas.remove();
     overlay.remove();

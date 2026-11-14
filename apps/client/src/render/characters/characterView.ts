@@ -1,10 +1,27 @@
 import { TUNING } from '@hookbrawl/sim';
 import type { Player, Vec2 } from '@hookbrawl/sim';
-import { AnimationMixer, Group, LoopOnce, LoopRepeat, Mesh, MeshBasicMaterial, RingGeometry, Vector3, type AnimationAction } from 'three';
+import {
+  AnimationMixer,
+  Group,
+  LoopOnce,
+  LoopRepeat,
+  Mesh,
+  MeshBasicMaterial,
+  RingGeometry,
+  Vector3,
+  type AnimationAction,
+  type BufferGeometry,
+  type MeshStandardMaterial,
+  type Object3D,
+} from 'three';
 import type { CharacterAsset } from '../assets/loadAssets';
+import type { Impact } from '../impact/impacts';
 import { facingToYaw, simToWorld, toWorldLength } from '../space';
 import { SIZES, TEAM_COLORS } from '../theme';
 import { ANIMATIONS, fadeDuration, nextAnimState, type AnimFacts, type AnimState, type AnimTrigger } from './animation';
+import { createFlash } from './flash';
+import { createHeldHook } from './heldHook';
+import { createHitReaction } from './hitReaction';
 import { instantiateCharacter } from './model';
 
 export type CharacterUpdate = {
@@ -12,6 +29,9 @@ export type CharacterUpdate = {
   readonly pos: Vec2;
   readonly facts: AnimFacts;
   readonly triggers: readonly AnimTrigger[];
+  /** The blow this player landed and the blow they took since the last update, if any. */
+  readonly dealt: Impact | null;
+  readonly taken: Impact | null;
   /** Sim facing the body should take instead of the player's own, while a chain is hauling it. */
   readonly pulledTowards: number | null;
   readonly simTime: number;
@@ -53,20 +73,8 @@ function createRing(radius: number, color: number, opacity: number): Mesh<RingGe
   return ring;
 }
 
-export function createCharacterView(asset: CharacterAsset, player: Player, isLocal: boolean): CharacterView {
-  const model = instantiateCharacter(asset, player.team);
-  const group = new Group();
-  const body = new Group();
-  body.add(model.root);
-  const radius = toWorldLength(TUNING.playerRadius);
-  const rings = [
-    createRing(radius, TEAM_COLORS[player.team].signal, 0.95),
-    ...(isLocal ? [createRing(radius - SIZES.ringWidth - LOCAL_RING_GAP, TEAM_COLORS[player.team].glow, 0.55)] : []),
-  ];
-  group.add(body, ...rings);
-
-  const mixer = new AnimationMixer(model.root);
-  const actions = Object.fromEntries(
+function createActions(mixer: AnimationMixer, asset: CharacterAsset): Record<AnimState, AnimationAction> {
+  return Object.fromEntries(
     (Object.keys(ANIMATIONS) as AnimState[]).map((state) => {
       const spec = ANIMATIONS[state];
       const clip = asset.clips.get(spec.clip);
@@ -78,11 +86,12 @@ export function createCharacterView(asset: CharacterAsset, player: Player, isLoc
       return [state, action];
     }),
   ) as Record<AnimState, AnimationAction>;
+}
 
+/** Plays the animation table on one figure: which clip is running, and the cut or blend into the next. */
+function createAnimator(mixer: AnimationMixer, actions: Record<AnimState, AnimationAction>) {
   let state: AnimState = 'idle';
-  let yaw = facingToYaw(player.facing);
-  let faded = false;
-  const hand = new Vector3();
+  actions.idle.play();
 
   const enter = (next: AnimState): void => {
     const spec = ANIMATIONS[next];
@@ -93,7 +102,7 @@ export function createCharacterView(asset: CharacterAsset, player: Player, isLoc
     action.setEffectiveTimeScale(spec.timeScale);
     action.setEffectiveWeight(1);
     if (fade > 0) action.crossFadeFrom(actions[state], fade, false);
-    else actions[state].stop();
+    else if (next !== state) actions[state].stop();
     action.play();
     state = next;
   };
@@ -103,38 +112,103 @@ export function createCharacterView(asset: CharacterAsset, player: Player, isLoc
     return action.time >= ANIMATIONS[state].endAt * action.getClip().duration - 1e-3;
   };
 
-  const setOpacity = (opacity: number): void => {
+  return {
+    state: (): AnimState => state,
+    /** `frozen` holds the pose where it is, as a blow that has just landed does. */
+    advance(facts: AnimFacts, triggers: readonly AnimTrigger[], frozen: boolean, dt: number): void {
+      const next = nextAnimState(state, facts, triggers, clipFinished());
+      const retrigger = next === state && ANIMATIONS[next].playback === 'once' && triggers.length > 0;
+      if (next !== state || retrigger) enter(next);
+      mixer.update(frozen ? 0 : dt);
+    },
+  };
+}
+
+/** Fades a whole figure as one, switching its materials to blended only while it is part-way gone. */
+function createFade(materials: readonly MeshStandardMaterial[], body: Group): (opacity: number) => void {
+  let faded = false;
+  return (opacity) => {
     const fading = opacity < 1;
     if (fading !== faded) {
-      model.materials.forEach((m) => {
+      materials.forEach((m) => {
         m.transparent = fading;
         m.needsUpdate = true;
       });
       faded = fading;
     }
-    if (fading) model.materials.forEach((m) => (m.opacity = opacity));
+    if (fading) materials.forEach((m) => (m.opacity = opacity));
     body.visible = opacity > 0.01;
   };
+}
 
-  actions.idle.play();
+type Turn = { readonly facing: number; readonly snap: boolean; readonly dragged: boolean; readonly dt: number };
+
+/** Turns the body towards a sim facing, quickly but not at once unless told to snap. */
+function createFacing(body: Group, root: Object3D, facing: number): (turn: Turn) => void {
+  let yaw = facingToYaw(facing);
+  return ({ facing: wanted, snap, dragged, dt }) => {
+    const target = facingToYaw(wanted);
+    yaw = snap ? target : yaw + shortestTurn(yaw, target) * (1 - 0.5 ** (dt / TURN_HALF_LIFE));
+    body.rotation.set(0, yaw, 0);
+    // Hauled bodies pitch forward off their feet, towards whoever is reeling them in.
+    root.rotation.x = dragged ? DRAG.pitch : 0;
+    root.position.y = dragged ? DRAG.lift : 0;
+  };
+}
+
+type Rig = { readonly group: Group; readonly pivot: Group; readonly body: Group; readonly rings: readonly Mesh<RingGeometry, MeshBasicMaterial>[] };
+
+/**
+ * The figure's scene nodes. `group` is always the true sim position and carries the rings;
+ * `pivot` takes the lunge and the recoil, and `body` the turn, so neither moves the rings.
+ */
+function createRig(root: Object3D, player: Player, isLocal: boolean): Rig {
+  const group = new Group();
+  const pivot = new Group();
+  const body = new Group();
+  body.add(root);
+  pivot.add(body);
+  const radius = toWorldLength(TUNING.playerRadius);
+  const rings = [
+    createRing(radius, TEAM_COLORS[player.team].signal, 0.95),
+    ...(isLocal ? [createRing(radius - SIZES.ringWidth - LOCAL_RING_GAP, TEAM_COLORS[player.team].glow, 0.55)] : []),
+  ];
+  group.add(pivot, ...rings);
+  return { group, pivot, body, rings };
+}
+
+export function createCharacterView(asset: CharacterAsset, hookGeometry: BufferGeometry, player: Player, isLocal: boolean): CharacterView {
+  const model = instantiateCharacter(asset, player.team);
+  const heldHook = createHeldHook(hookGeometry, player.team);
+  model.hand.add(heldHook);
+  const materials = [...model.materials, heldHook.material];
+  const { group, pivot, body, rings } = createRig(model.root, player, isLocal);
+
+  const mixer = new AnimationMixer(model.root);
+  const animator = createAnimator(mixer, createActions(mixer, asset));
+  const reaction = createHitReaction();
+  const flash = createFlash(materials);
+  const setOpacity = createFade(materials, body);
+  const face = createFacing(body, model.root, player.facing);
+  const hand = new Vector3();
 
   return {
     group,
-    update({ player: p, pos, facts, triggers, pulledTowards, simTime, dt }) {
-      const next = nextAnimState(state, facts, triggers, clipFinished());
-      const retrigger = next === state && ANIMATIONS[next].playback === 'once' && triggers.length > 0;
-      if (next !== state || retrigger) enter(next);
-      mixer.update(dt);
+    update({ player: p, pos, facts, triggers, dealt, taken, pulledTowards, simTime, dt }) {
+      reaction.step(dealt, taken, dt);
+      animator.advance(facts, triggers, reaction.frozen(), dt);
 
       const at = simToWorld(pos);
       group.position.set(at.x, 0, at.z);
+      reaction.pose(pivot);
       const dragged = p.status.kind === 'dragged';
-      const targetYaw = facingToYaw(dragged && pulledTowards !== null ? pulledTowards : p.facing);
-      yaw += shortestTurn(yaw, targetYaw) * (1 - 0.5 ** (dt / TURN_HALF_LIFE));
-      body.rotation.set(0, yaw, 0);
-      // Hauled bodies pitch forward off their feet, towards whoever is reeling them in.
-      model.root.rotation.x = dragged ? DRAG.pitch : 0;
-      model.root.position.y = dragged ? DRAG.lift : 0;
+      // The sim's facing follows the movement keys, so a brawler may be looking away from the enemy they swing at.
+      const swingAt = animator.state() === 'swing' ? reaction.swingHeading() : null;
+      const facing = dragged && pulledTowards !== null ? pulledTowards : (swingAt ?? p.facing);
+      // The blow has already landed, so the body squares up to it at once: the frozen frame must show it.
+      face({ facing, snap: dealt !== null && swingAt !== null, dragged, dt });
+      flash(reaction.flash());
+      heldHook.visible = !facts.hookOut;
 
       const dead = p.status.kind === 'dead';
       setOpacity(deathOpacity(p, simTime));
@@ -146,7 +220,7 @@ export function createCharacterView(asset: CharacterAsset, player: Player, isLoc
     dispose() {
       mixer.stopAllAction();
       mixer.uncacheRoot(model.root);
-      model.materials.forEach((m) => m.dispose());
+      materials.forEach((m) => m.dispose());
       rings.forEach((ring) => {
         ring.geometry.dispose();
         ring.material.dispose();

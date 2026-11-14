@@ -25,8 +25,8 @@ export const COLORS = {
   /** What shows through a helm's visor: nothing. */
   visorVoid: 0x0b0b0d,
   spark: 0xffc46b,
-  blood: 0x6b0f0f,
-  dust: 0x6f675c,
+  flare: 0xfff0d2,
+  blood: 0x9c1512,
   wisp: 0x4f9c8e,
 } as const;
 
@@ -94,6 +94,36 @@ export const CAMERA = {
 export const HUD_INSETS = { top: 60, bottom: 84 } as const;
 
 export const SHAKE = { duration: 0.28, amplitude: 0.22, hz: 34 } as const;
+
+/** The hook while it is carried. A fighter is about 45 px tall on a laptop, so it is as big as the one in flight. */
+export const HELD_HOOK = {
+  /** World units, like the thrown hook's radius. */
+  radius: 0.95,
+  /** How far up the shank from the hook's centre the fist closes, in hook radii. */
+  grip: 0.55,
+  glow: 0.06,
+} as const;
+
+/** The arc of light a swung hook leaves. Angles are measured from straight ahead of the attacker, positive to their right. */
+export const SLASH = {
+  /** Seconds the arc takes to sweep on and die, once the hit-stop lets go. */
+  life: 0.2,
+  /** World units: the arc's outer edge from the attacker's centre, and its thickness at the widest. */
+  radius: 2.2,
+  width: 0.8,
+  height: 1.45,
+  /** How much of a circle the arc covers, trailing back to the attacker's left where the swing began. */
+  spanDeg: 135,
+  /** Where the arc's leading end is at contact, and how much further it carries during the follow-through. */
+  leadDeg: 30,
+  sweepDeg: 55,
+  opacity: 0.95,
+  /** Brightness of the leading end of the blade edge, as a multiple of the team colour: past 1 it burns towards white. */
+  heat: 2.6,
+} as const;
+
+/** How a struck fighter is lit for the few frames after a blow. */
+export const HIT_FLASH = { color: 0xffffff, intensity: 2.6 } as const;
 
 export const LIGHTS = {
   moonIntensity: 3.4,

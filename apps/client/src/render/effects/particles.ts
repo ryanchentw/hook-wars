@@ -1,8 +1,10 @@
+import { TUNING } from '@hookbrawl/sim';
 import type { GameEvent } from '@hookbrawl/sim';
+import { contactPoint, type Impact } from '../impact/impacts';
 import { simToWorld, type Vec3 } from '../space';
 import { COLORS, SIZES } from '../theme';
 
-export type ParticleKind = 'blood' | 'spark' | 'dust' | 'wisp';
+export type ParticleKind = 'blood' | 'spark' | 'flare' | 'wisp';
 
 export type Particle = {
   readonly kind: ParticleKind;
@@ -30,7 +32,8 @@ export type ParticleStyle = {
 export const PARTICLE_STYLES: Readonly<Record<ParticleKind, ParticleStyle>> = {
   blood: { color: COLORS.blood, glows: false, intensity: 1, gravity: 16, drag: 1.2, endScale: 0.25 },
   spark: { color: COLORS.spark, glows: true, intensity: 3, gravity: 20, drag: 2.5, endScale: 0.25 },
-  dust: { color: COLORS.dust, glows: false, intensity: 1, gravity: -0.6, drag: 3, endScale: 2.4 },
+  // One still, swelling dot at the point of contact: the white of the blow itself.
+  flare: { color: COLORS.flare, glows: true, intensity: 2.2, gravity: 0, drag: 0, endScale: 1.7 },
   wisp: { color: COLORS.wisp, glows: true, intensity: 1, gravity: -2.6, drag: 0.8, endScale: 0.35 },
 };
 
@@ -47,14 +50,27 @@ type Burst = {
   readonly life: Range;
   readonly size: Range;
   readonly spread: number;
+  /** Extra speed along the blow's heading, so the spray carries on the way the weapon was going. */
+  readonly along: Range;
 };
 
+const STILL: Range = [0, 0];
+const CHEST = SIZES.chainHeight;
+
 const BURSTS = {
-  hookHit: { kind: 'blood', count: 14, height: SIZES.chainHeight, speed: [2.5, 7], lift: [0.2, 1], life: [0.45, 0.8], size: [0.5, 0.9], spread: 0.4 },
-  hookBounce: { kind: 'spark', count: 14, height: SIZES.chainHeight, speed: [4, 11], lift: [0.1, 0.9], life: [0.25, 0.5], size: [0.55, 1], spread: 0.15 },
-  melee: { kind: 'dust', count: 6, height: 1.9, speed: [0.8, 2.2], lift: [0, 0.5], life: [0.3, 0.5], size: [0.9, 1.4], spread: 0.5 },
-  kill: { kind: 'wisp', count: 16, height: 0.8, speed: [0.3, 1.1], lift: [0.75, 1], life: [1.3, 2.3], size: [1.1, 1.9], spread: 1.3 },
+  hookHit: { kind: 'blood', count: 14, height: CHEST, speed: [2.5, 7], lift: [0.2, 1], life: [0.45, 0.8], size: [0.5, 0.9], spread: 0.4, along: STILL },
+  hookFlare: { kind: 'flare', count: 1, height: CHEST, speed: STILL, lift: STILL, life: [0.12, 0.12], size: [3.2, 3.2], spread: 0, along: STILL },
+  hookBounce: { kind: 'spark', count: 14, height: CHEST, speed: [4, 11], lift: [0.1, 0.9], life: [0.25, 0.5], size: [0.55, 1], spread: 0.15, along: STILL },
+  meleeFlare: { kind: 'flare', count: 1, height: CHEST, speed: STILL, lift: STILL, life: [0.1, 0.1], size: [2.3, 2.3], spread: 0, along: STILL },
+  meleeSparks: { kind: 'spark', count: 10, height: CHEST, speed: [2, 6], lift: [0.2, 0.9], life: [0.22, 0.42], size: [0.9, 1.5], spread: 0.2, along: [4, 9] },
+  meleeBlood: { kind: 'blood', count: 7, height: CHEST, speed: [1.5, 4], lift: [0.3, 1], life: [0.35, 0.6], size: [0.8, 1.3], spread: 0.3, along: [3, 6] },
+  kill: { kind: 'wisp', count: 16, height: 0.8, speed: [0.3, 1.1], lift: [0.75, 1], life: [1.3, 2.3], size: [1.1, 1.9], spread: 1.3, along: STILL },
 } as const satisfies Record<string, Burst>;
+
+export type BurstName = keyof typeof BURSTS;
+
+/** Sim units from the victim's centre, towards the attacker, at which a blow lands: just inside the rim of the body. */
+const CONTACT_INSET = TUNING.playerRadius * 0.75;
 
 /** Small seeded generator (mulberry32) so effects are repeatable in tests. */
 export function createRandom(seed: number): () => number {
@@ -67,13 +83,14 @@ export function createRandom(seed: number): () => number {
   };
 }
 
-function emit(burst: Burst, origin: Vec3, random: () => number): readonly Particle[] {
+function emit(burst: Burst, origin: Vec3, heading: number, random: () => number): readonly Particle[] {
   const pick = ([lo, hi]: Range): number => lo + (hi - lo) * random();
   return Array.from({ length: burst.count }, () => {
-    const heading = random() * Math.PI * 2;
+    const scatter = random() * Math.PI * 2;
     const speed = pick(burst.speed);
     const lift = pick(burst.lift);
     const flat = Math.sqrt(Math.max(0, 1 - lift * lift));
+    const along = pick(burst.along);
     return {
       kind: burst.kind,
       position: {
@@ -81,7 +98,11 @@ function emit(burst: Burst, origin: Vec3, random: () => number): readonly Partic
         y: origin.y + (random() - 0.5) * burst.spread,
         z: origin.z + (random() - 0.5) * burst.spread,
       },
-      velocity: { x: Math.cos(heading) * flat * speed, y: lift * speed, z: Math.sin(heading) * flat * speed },
+      velocity: {
+        x: Math.cos(scatter) * flat * speed + Math.cos(heading) * along,
+        y: lift * speed,
+        z: Math.sin(scatter) * flat * speed + Math.sin(heading) * along,
+      },
       age: 0,
       life: pick(burst.life),
       size: pick(burst.size),
@@ -91,14 +112,13 @@ function emit(burst: Burst, origin: Vec3, random: () => number): readonly Partic
 
 function burstOf(event: GameEvent): Burst | null {
   switch (event.kind) {
-    case 'hookHit':
-      return event.damage > 0 ? BURSTS.hookHit : null;
     case 'hookBounce':
       return BURSTS.hookBounce;
-    case 'melee':
-      return BURSTS.melee;
     case 'kill':
       return BURSTS.kill;
+    // Blows are drawn from their impact, which knows where the fighters stood.
+    case 'hookHit':
+    case 'melee':
     case 'hookCast':
     case 'respawn':
     case 'matchEnd':
@@ -113,7 +133,13 @@ function burstOf(event: GameEvent): Burst | null {
 export function burstFor(event: GameEvent, random: () => number): readonly Particle[] {
   const burst = burstOf(event);
   if (burst === null || !('at' in event)) return [];
-  return emit(burst, simToWorld(event.at, burst.height), random);
+  return emit(burst, simToWorld(event.at, burst.height), 0, random);
+}
+
+/** Everything a blow throws off, from the point where the weapon met the body. */
+export function impactBursts(impact: Impact, random: () => number): readonly Particle[] {
+  const contact = contactPoint(impact, CONTACT_INSET);
+  return impact.spec.bursts.flatMap((name) => emit(BURSTS[name], simToWorld(contact, BURSTS[name].height), impact.heading, random));
 }
 
 export function stepParticles(particles: readonly Particle[], dt: number): readonly Particle[] {

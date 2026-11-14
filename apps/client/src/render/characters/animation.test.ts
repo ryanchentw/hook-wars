@@ -30,27 +30,27 @@ describe('animation state table', () => {
     expect(nextAnimState('hold', standing, [], false)).toBe('idle');
   });
 
-  it('punches once as the attacker and flinches once as the target', () => {
-    expect(nextAnimState('idle', standing, ['strike'], false)).toBe('punch');
-    expect(nextAnimState('punch', standing, [], false)).toBe('punch');
-    expect(nextAnimState('punch', standing, [], true)).toBe('idle');
+  it('swings once as the attacker and flinches once as the target', () => {
+    expect(nextAnimState('idle', standing, ['strike'], false)).toBe('swing');
+    expect(nextAnimState('swing', standing, [], false)).toBe('swing');
+    expect(nextAnimState('swing', standing, [], true)).toBe('idle');
     expect(nextAnimState('run', running, ['hurt'], false)).toBe('flinch');
     expect(nextAnimState('flinch', running, [], true)).toBe('run');
   });
 
   it('lets a fresh trigger cut a one-shot short', () => {
-    expect(nextAnimState('punch', standing, ['hurt'], false)).toBe('flinch');
-    expect(nextAnimState('flinch', standing, ['strike'], false)).toBe('punch');
+    expect(nextAnimState('swing', standing, ['hurt'], false)).toBe('flinch');
+    expect(nextAnimState('flinch', standing, ['strike'], false)).toBe('swing');
   });
 
   it('prefers the player\'s own action when it lands in the same tick as a blow taken', () => {
-    expect(nextAnimState('idle', standing, ['hurt', 'strike'], false)).toBe('punch');
+    expect(nextAnimState('idle', standing, ['hurt', 'strike'], false)).toBe('swing');
     expect(nextAnimState('idle', hookOut, ['hurt', 'cast'], false)).toBe('throw');
   });
 
   it('lets being dragged or dying override everything else', () => {
     expect(nextAnimState('throw', dragged, [], false)).toBe('dragged');
-    expect(nextAnimState('punch', dead, [], false)).toBe('death');
+    expect(nextAnimState('swing', dead, [], false)).toBe('death');
     expect(nextAnimState('idle', dragged, ['hurt', 'strike'], false)).toBe('dragged');
     expect(nextAnimState('idle', dead, ['hurt'], false)).toBe('death');
   });
@@ -62,14 +62,28 @@ describe('animation state table', () => {
     expect(fadeDuration('idle', 'run')).toBeGreaterThan(0);
   });
 
+  it('cuts straight to the swing\'s contact pose, which is the frame the hit-stop holds', () => {
+    expect(fadeDuration('idle', 'swing')).toBe(0);
+    expect(fadeDuration('run', 'swing')).toBe(0);
+    expect(ANIMATIONS.swing.startAt).toBeGreaterThan(0);
+    expect(ANIMATIONS.swing.clip).not.toMatch(/Unarmed|Punch/);
+  });
+
+  it('is done swinging, and blended back to rest, before the next blow can land', () => {
+    const clipSeconds = 1.0667;
+    const { startAt, endAt, timeScale } = ANIMATIONS.swing;
+    const swinging = ((endAt - startAt) * clipSeconds) / timeScale;
+    expect(swinging + ANIMATIONS.idle.fadeIn).toBeLessThan(0.7);
+  });
+
   it('maps every state to a clip with the right playback', () => {
     const states = Object.keys(ANIMATIONS) as AnimState[];
-    expect(states.sort()).toEqual(['death', 'dragged', 'flinch', 'hold', 'idle', 'punch', 'run', 'throw']);
+    expect(states.sort()).toEqual(['death', 'dragged', 'flinch', 'hold', 'idle', 'run', 'swing', 'throw']);
     states.forEach((s) => expect(ANIMATIONS[s].clip.length).toBeGreaterThan(0));
     expect(ANIMATIONS.idle.playback).toBe('loop');
     expect(ANIMATIONS.run.playback).toBe('loop');
     expect(ANIMATIONS.throw.playback).toBe('once');
-    expect(ANIMATIONS.punch.playback).toBe('once');
+    expect(ANIMATIONS.swing.playback).toBe('once');
     expect(ANIMATIONS.flinch.playback).toBe('once');
     expect(ANIMATIONS.death).toMatchObject({ clip: 'Death_A', playback: 'clamp' });
   });

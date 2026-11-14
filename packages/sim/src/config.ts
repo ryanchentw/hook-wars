@@ -23,6 +23,8 @@ export const TUNING = {
   meleeRange: 110,
   meleeDamage: 110,
   meleeInterval: 0.7,
+  /** A player set down by a hook, a grapple or a respawn needs this long before swinging, so brawlers alternate. */
+  meleeRecovery: 0.35,
 
   botThinkInterval: 0.25,
   botAimNoise: 0.1,

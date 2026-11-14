@@ -6,7 +6,7 @@ import { endGrapple } from './grapple';
 import { fly } from './hookFlight';
 import { interrupt } from './intent';
 import type { GameEvent, GameState, Hook, Player, Vec2 } from './types';
-import { findPlayer, replaceHook, updatePlayer, type Outcome, type Stage, type StepContext } from './world';
+import { findPlayer, landed, replaceHook, updatePlayer, type Outcome, type Stage, type StepContext } from './world';
 
 /** Below this the hook has spent its range; float residue must not keep it extending. */
 const SPENT = 1e-9;
@@ -38,9 +38,9 @@ function extend(state: GameState, hook: Hook, remaining: number, ctx: StepContex
   };
 }
 
-function release(cargo: Player, hook: Hook, state: GameState, at: Vec2): Player {
+function release(cargo: Player, hook: Hook, state: GameState, at: Vec2, t: number): Player {
   const draggedHere = cargo.status.kind === 'dragged' && cargo.status.hookId === hook.id;
-  return draggedHere ? { ...cargo, status: { kind: 'alive' }, pos: clampToNearestDock(state.arena, at) } : cargo;
+  return draggedHere ? landed({ ...cargo, pos: clampToNearestDock(state.arena, at) }, t) : cargo;
 }
 
 function retract(state: GameState, hook: Hook, cargo: Player['id'] | null, ctx: StepContext): GameState {
@@ -59,7 +59,7 @@ function retract(state: GameState, hook: Hook, cargo: Player['id'] | null, ctx: 
     ...p,
     hookReadyAt: ctx.t + TUNING.hookCooldown,
   }));
-  return cargo === null ? ready : updatePlayer(ready, cargo, (p) => release(p, hook, ready, at));
+  return cargo === null ? ready : updatePlayer(ready, cargo, (p) => release(p, hook, ready, at, ctx.t));
 }
 
 function advance(state: GameState, hook: Hook, ctx: StepContext): Outcome {

@@ -1,5 +1,6 @@
 import type { PlayerId, TeamId, Vec2 } from '@hookbrawl/sim';
 import { hpLevel } from '../../game/health';
+import { startLoss, stepLoss, type HpLoss } from './hpLoss';
 
 export type LabelView = {
   readonly id: PlayerId;
@@ -10,9 +11,12 @@ export type LabelView = {
   readonly anchor: Vec2 | null;
 };
 
-export type Labels = { update(views: readonly LabelView[]): void; clear(): void };
+export type Labels = { update(views: readonly LabelView[], dt: number): void; clear(): void };
 
-type Entry = { readonly root: HTMLElement; readonly fill: HTMLElement };
+type Entry = { readonly root: HTMLElement; readonly fill: HTMLElement; readonly lost: HTMLElement; readonly loss: HpLoss };
+
+const percent = (fraction: number): string => `${(fraction * 100).toFixed(1)}%`;
+const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
 
 function createEntry(parent: HTMLElement, view: LabelView): Entry {
   const root = document.createElement('div');
@@ -22,12 +26,15 @@ function createEntry(parent: HTMLElement, view: LabelView): Entry {
   name.textContent = view.name;
   const bar = document.createElement('div');
   bar.className = 'unit-hp';
+  // Behind the fill: the part of it that sticks out is the chunk a blow has just taken.
+  const lost = document.createElement('div');
+  lost.className = 'unit-hp-lost';
   const fill = document.createElement('div');
   fill.className = 'unit-hp-fill';
-  bar.append(fill);
+  bar.append(lost, fill);
   root.append(name, bar);
   parent.append(root);
-  return { root, fill };
+  return { root, fill, lost, loss: startLoss(clamp01(view.hpFraction)) };
 }
 
 /** Name and hp bar floating over each character, as DOM so the text stays crisp at any zoom. */
@@ -35,18 +42,20 @@ export function createLabels(parent: HTMLElement): Labels {
   let entries = new Map<PlayerId, Entry>();
 
   return {
-    update(views) {
+    update(views, dt) {
       const next = new Map<PlayerId, Entry>();
       for (const view of views) {
         const entry = entries.get(view.id) ?? createEntry(parent, view);
-        const fraction = Math.min(1, Math.max(0, view.hpFraction));
+        const fraction = clamp01(view.hpFraction);
+        const loss = stepLoss(entry.loss, fraction, dt);
         entry.root.hidden = view.anchor === null;
         if (view.anchor !== null) {
           entry.root.style.transform = `translate(${view.anchor.x.toFixed(1)}px, ${view.anchor.y.toFixed(1)}px) translate(-50%, -100%)`;
         }
-        entry.fill.style.width = `${(fraction * 100).toFixed(1)}%`;
+        entry.fill.style.width = percent(fraction);
         entry.fill.dataset.level = hpLevel(fraction);
-        next.set(view.id, entry);
+        if (loss !== entry.loss) entry.lost.style.width = percent(loss.shown);
+        next.set(view.id, loss === entry.loss ? entry : { ...entry, loss });
       }
       entries.forEach((entry, id) => {
         if (!next.has(id)) entry.root.remove();

@@ -1,11 +1,24 @@
 import { TUNING } from '@hookbrawl/sim';
 import type { HookId, PlayerId, TeamId } from '@hookbrawl/sim';
-import { AdditiveBlending, Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, Sprite, SpriteMaterial, TorusGeometry, Vector3, type Texture } from 'three';
+import {
+  AdditiveBlending,
+  Group,
+  InstancedMesh,
+  Matrix4,
+  Mesh,
+  MeshStandardMaterial,
+  Sprite,
+  SpriteMaterial,
+  TorusGeometry,
+  Vector3,
+  type BufferGeometry,
+  type Texture,
+} from 'three';
 import type { HookFrame, RenderFrame } from '../interpolate';
 import { simToWorld, toWorldLength, type Vec3 } from '../space';
 import { CHAIN, COLORS, SIZES, TEAM_COLORS } from '../theme';
 import { layOutChain, type LinkPlacement } from './chainLinks';
-import { createHookGeometry, HOOK_EYE_OFFSET } from './hookGeometry';
+import { HOOK_EYE_OFFSET } from './hookGeometry';
 
 export type HooksView = {
   readonly group: Group;
@@ -58,7 +71,8 @@ function linkMatrix(link: LinkPlacement, stretch: number, out: Matrix4): Matrix4
 /** Each hook carries a faint halo in its thrower's colour, so it is clear at a glance whose iron is in the air. */
 const HALO_SIZE = HOOK_RADIUS * 4.2;
 
-export function createHooksView(softDot: Texture): HooksView {
+/** `hookGeometry` is shared with the hooks the fighters carry; whoever made it disposes of it. */
+export function createHooksView(hookGeometry: BufferGeometry, softDot: Texture): HooksView {
   const group = new Group();
   const linkGeometry = new TorusGeometry((LINK.width - LINK.thickness) / 2, LINK.thickness / 2, 6, 12);
   linkGeometry.scale(LINK.length / LINK.width, 1, 1);
@@ -76,7 +90,6 @@ export function createHooksView(softDot: Texture): HooksView {
   links.count = 0;
   group.add(links);
 
-  const hookGeometry = createHookGeometry();
   const hookMaterials = Object.fromEntries(
     (Object.keys(TEAM_COLORS) as TeamId[]).map((team) => [
       team,
@@ -145,7 +158,6 @@ export function createHooksView(softDot: Texture): HooksView {
     dispose() {
       linkGeometry.dispose();
       linkMaterial.dispose();
-      hookGeometry.dispose();
       Object.values(hookMaterials).forEach((m) => m.dispose());
       Object.values(haloMaterials).forEach((m) => m.dispose());
       links.dispose();

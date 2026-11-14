@@ -1,26 +1,32 @@
 import type { GameEvent, HookId, PlayerId } from '@hookbrawl/sim';
 import { describe, expect, it } from 'vitest';
-import { MAX_PARTICLES, burstFor, createRandom, stepParticles, type Particle } from './particles';
+import { IMPACTS, impactsOf, type Fighter, type Impact } from '../impact/impacts';
+import { simToWorld } from '../space';
+import { MAX_PARTICLES, burstFor, createRandom, impactBursts, stepParticles, type Particle } from './particles';
 
 const at = { x: 1200, y: 600 };
 const hookId = 'h1' as HookId;
 const a = 'a' as PlayerId;
 const b = 'b' as PlayerId;
 const hit = (damage: number): GameEvent => ({ kind: 'hookHit', hookId, ownerId: a, targetId: b, damage, ally: damage === 0, at });
+const swing: GameEvent = { kind: 'melee', attackerId: a, targetId: b, damage: 110, at };
+/** `a` stands west of `b`, so a blow from `a` travels along +x. */
+const positionOf = (id: PlayerId): { x: number; y: number } => (id === a ? { x: at.x - 80, y: at.y } : at);
+const fighterOf = (id: PlayerId): Fighter => ({ pos: positionOf(id), team: id === a ? 'west' : 'east' });
+const impactOf = (event: GameEvent): Impact => impactsOf([event], fighterOf, a, IMPACTS)[0]!;
 
 describe('burstFor', () => {
   it('answers each kind of event with its own kind of particle', () => {
     const random = createRandom(1);
     const kinds = (event: GameEvent): readonly string[] => [...new Set(burstFor(event, random).map((p) => p.kind))];
-    expect(kinds(hit(350))).toEqual(['blood']);
     expect(kinds({ kind: 'hookBounce', hookId, at })).toEqual(['spark']);
-    expect(kinds({ kind: 'melee', attackerId: a, targetId: b, damage: 110, at })).toEqual(['dust']);
     expect(kinds({ kind: 'kill', killerId: a, victimId: b, assistIds: [], at })).toEqual(['wisp']);
   });
 
-  it('draws no blood for a harmless hook on an ally, and nothing for bookkeeping events', () => {
+  it('leaves blows to their impacts, and draws nothing for bookkeeping events', () => {
     const random = createRandom(1);
-    expect(burstFor(hit(0), random)).toEqual([]);
+    expect(burstFor(hit(350), random)).toEqual([]);
+    expect(burstFor(swing, random)).toEqual([]);
     expect(burstFor({ kind: 'hookCast', hookId, ownerId: a }, random)).toEqual([]);
     expect(burstFor({ kind: 'respawn', playerId: a }, random)).toEqual([]);
     expect(burstFor({ kind: 'matchEnd', winner: 'west' }, random)).toEqual([]);
@@ -29,16 +35,50 @@ describe('burstFor', () => {
   it('keeps every burst modest', () => {
     const random = createRandom(7);
     const events: readonly GameEvent[] = [
-      hit(350),
       { kind: 'hookBounce', hookId, at },
-      { kind: 'melee', attackerId: a, targetId: b, damage: 110, at },
       { kind: 'kill', killerId: a, victimId: b, assistIds: [], at },
     ];
     events.forEach((e) => expect(burstFor(e, random).length).toBeLessThanOrEqual(20));
   });
 
   it('is repeatable for a given seed', () => {
-    expect(burstFor(hit(350), createRandom(3))).toEqual(burstFor(hit(350), createRandom(3)));
+    const bounce: GameEvent = { kind: 'hookBounce', hookId, at };
+    expect(burstFor(bounce, createRandom(3))).toEqual(burstFor(bounce, createRandom(3)));
+  });
+});
+
+describe('impactBursts', () => {
+  const kinds = (particles: readonly Particle[]): readonly string[] => [...new Set(particles.map((p) => p.kind))].sort();
+
+  it('answers a melee blow with a flare, sparks and blood, and a hook with a flare and blood', () => {
+    expect(kinds(impactBursts(impactOf(swing), createRandom(1)))).toEqual(['blood', 'flare', 'spark']);
+    expect(kinds(impactBursts(impactOf(hit(350)), createRandom(1)))).toEqual(['blood', 'flare']);
+  });
+
+  it('starts a melee burst between the fighters, on the victim\'s near side', () => {
+    const victim = simToWorld(at);
+    const attacker = simToWorld(positionOf(a));
+    const [flare] = impactBursts(impactOf(swing), createRandom(1)).filter((p) => p.kind === 'flare');
+    expect(flare!.position.x).toBeLessThan(victim.x);
+    expect(flare!.position.x).toBeGreaterThan(attacker.x);
+    expect(flare!.velocity).toEqual({ x: 0, y: 0, z: 0 });
+  });
+
+  it('throws the sparks of a melee blow onwards, the way the swing was going', () => {
+    const sparks = impactBursts(impactOf(swing), createRandom(5)).filter((p) => p.kind === 'spark');
+    const mean = sparks.reduce((sum, p) => sum + p.velocity.x, 0) / sparks.length;
+    expect(mean).toBeGreaterThan(1);
+  });
+
+  it('stays modest enough that two brawlers trading blows never hit the particle cap', () => {
+    const perBlow = impactBursts(impactOf(swing), createRandom(2));
+    const longest = Math.max(...perBlow.map((p) => p.life));
+    const blowsAlive = 2 * Math.ceil(longest / 0.7);
+    expect(perBlow.length * blowsAlive).toBeLessThan(MAX_PARTICLES / 2);
+  });
+
+  it('is repeatable for a given seed', () => {
+    expect(impactBursts(impactOf(swing), createRandom(3))).toEqual(impactBursts(impactOf(swing), createRandom(3)));
   });
 });
 

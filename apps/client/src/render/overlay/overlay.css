@@ -57,6 +57,7 @@
 }
 
 .unit-hp {
+  position: relative;
   width: 62px;
   height: 7px;
   background: #0b0908;
@@ -66,7 +67,15 @@
   overflow: hidden;
 }
 
+.unit-hp-lost {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 100%;
+  background: #f4e6c8;
+}
+
 .unit-hp-fill {
+  position: relative;
   height: 100%;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.18), transparent 60%), var(--unit-hp);
 }

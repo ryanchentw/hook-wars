@@ -1,6 +1,6 @@
 import type { GameEvent, Hook, Player, PlayerId } from '@hookbrawl/sim';
 
-export type AnimState = 'idle' | 'run' | 'throw' | 'hold' | 'punch' | 'flinch' | 'dragged' | 'death';
+export type AnimState = 'idle' | 'run' | 'throw' | 'hold' | 'swing' | 'flinch' | 'dragged' | 'death';
 
 /** `once` returns to a resting state when the clip ends; `clamp` stays on the clip's last frame. */
 export type Playback = 'loop' | 'once' | 'clamp';
@@ -19,12 +19,14 @@ export type AnimSpec = {
 
 /** The one table that decides which clip a character plays in each state. */
 export const ANIMATIONS: Readonly<Record<AnimState, AnimSpec>> = {
-  idle: { clip: 'Unarmed_Idle', playback: 'loop', fadeIn: 0.22, timeScale: 1, startAt: 0, endAt: 1 },
+  idle: { clip: 'Idle', playback: 'loop', fadeIn: 0.22, timeScale: 1, startAt: 0, endAt: 1 },
   run: { clip: 'Running_A', playback: 'loop', fadeIn: 0.14, timeScale: 1.15, startAt: 0, endAt: 1 },
   // The hook is already in the air on the cast tick, so the clip opens just before its release.
   throw: { clip: 'Throw', playback: 'once', fadeIn: 0.05, timeScale: 1.25, startAt: 0.28, endAt: 0.62 },
   hold: { clip: '1H_Ranged_Aiming', playback: 'loop', fadeIn: 0.12, timeScale: 1, startAt: 0, endAt: 1 },
-  punch: { clip: 'Unarmed_Melee_Attack_Punch_A', playback: 'once', fadeIn: 0.06, timeScale: 1.7, startAt: 0.12, endAt: 0.6 },
+  // A melee event is the moment of contact, so the clip opens with the hook already across the body and in front,
+  // and with no cross-fade: the hit-stop freezes this first frame, and a blend would freeze a half-raised arm.
+  swing: { clip: '1H_Melee_Attack_Slice_Horizontal', playback: 'once', fadeIn: 0, timeScale: 1, startAt: 0.235, endAt: 0.5 },
   flinch: { clip: 'Hit_A', playback: 'once', fadeIn: 0.05, timeScale: 1.4, startAt: 0, endAt: 0.8 },
   dragged: { clip: 'Jump_Idle', playback: 'loop', fadeIn: 0.08, timeScale: 1.6, startAt: 0, endAt: 1 },
   death: { clip: 'Death_A', playback: 'clamp', fadeIn: 0.08, timeScale: 1, startAt: 0, endAt: 1 },
@@ -52,7 +54,7 @@ const RESTING: readonly { readonly when: (f: AnimFacts) => boolean; readonly sta
 /** Highest priority first: what the player did beats what was done to them in the same tick. */
 const TRIGGERED: readonly { readonly trigger: AnimTrigger; readonly state: AnimState }[] = [
   { trigger: 'cast', state: 'throw' },
-  { trigger: 'strike', state: 'punch' },
+  { trigger: 'strike', state: 'swing' },
   { trigger: 'hurt', state: 'flinch' },
 ];
 

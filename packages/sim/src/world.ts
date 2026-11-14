@@ -1,3 +1,4 @@
+import { TUNING } from './config';
 import type { GameEvent, GameState, Hook, HookId, Player, PlayerId } from './types';
 
 /** What one stage of a step produces: the next state and the events it emitted. */
@@ -24,6 +25,14 @@ export function replaceHook(state: GameState, id: HookId, next: Hook | null): Ga
 }
 
 export const isAlive = (p: Player): boolean => p.status.kind === 'alive';
+
+/**
+ * Enemies only ever meet because one of them was just put there. Making the arrival wait half an
+ * interval turns a brawl into alternating blows instead of two swings landing on the same tick.
+ */
+export function landed(p: Player, t: number): Player {
+  return { ...p, status: { kind: 'alive' }, meleeReadyAt: Math.max(p.meleeReadyAt, t + TUNING.meleeRecovery) };
+}
 
 export function ownsHook(state: GameState, id: PlayerId): boolean {
   return state.hooks.some((h) => h.ownerId === id);

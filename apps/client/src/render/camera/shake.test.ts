@@ -19,6 +19,14 @@ describe('shakeOffset', () => {
     expect(shakeOffset(10)).toEqual({ right: 0, up: 0 });
   });
 
+  it('scales with the strength of the blow, down to nothing', () => {
+    const full = shakeOffset(0.01);
+    const light = shakeOffset(0.01, 0.3);
+    expect(light.right).toBeCloseTo(full.right * 0.3);
+    expect(light.up).toBeCloseTo(full.up * 0.3);
+    expect(shakeOffset(0.01, 0)).toEqual({ right: 0, up: 0 });
+  });
+
   it('is still when there has been no hit', () => {
     expect(shakeOffset(Number.POSITIVE_INFINITY)).toEqual({ right: 0, up: 0 });
     expect(shakeOffset(Number.NaN)).toEqual({ right: 0, up: 0 });

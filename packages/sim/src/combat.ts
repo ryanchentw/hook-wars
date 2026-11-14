@@ -9,11 +9,14 @@ import { ownsHook, type Stage } from './world';
 
 type Blow = { readonly attacker: Player; readonly target: Player };
 
+/** Step times are summed floats, so a swing due at exactly this step can read a hair late and slip a tick. */
+const READY_SLACK = 1e-9;
+
 const hittable = (p: Player): boolean => p.status.kind !== 'dead';
 
 /** Melee is a swing of the hook, so it needs the hook in hand and the owner on their feet. */
 const canSwing = (state: GameState, p: Player, t: number): boolean =>
-  p.status.kind === 'alive' && t >= p.meleeReadyAt && !ownsHook(state, p.id);
+  p.status.kind === 'alive' && t + READY_SLACK >= p.meleeReadyAt && !ownsHook(state, p.id);
 
 function chooseTarget(state: GameState, attacker: Player): Player | null {
   return state.players
