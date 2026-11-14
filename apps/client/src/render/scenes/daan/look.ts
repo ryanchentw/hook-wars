@@ -101,7 +101,7 @@ export const DAAN_LOOK: SceneLook = {
     fill: { sky: C.skyFill, ground: C.lawnBounce, intensity: 1.5 },
   },
   water: { level: DAAN_SIZES.waterLevel, color: C.pond, roughness: 0.22, metalness: 0.05, swellSize: 12, ripple: 0.45, drift: { x: 0.003, y: 0.005 } },
-  fogOfWar: { color: 0x1b2630, opacity: 0.62, edge: 120 },
+  fogOfWar: { color: 0x22304a, opacity: 0.86, edge: 140 },
   tints: {
     // Bright steel and bleached rope: both cross the dark pond, the mid-green lawns and the grey paving, and pale holds on all three.
     iron: 0xe4e8ec,

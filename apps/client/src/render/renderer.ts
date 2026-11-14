@@ -1,4 +1,4 @@
-import type { SeenEvent, Vec2 } from '@hookbrawl/sim';
+import type { PlayerId, SeenEvent, Vec2 } from '@hookbrawl/sim';
 import type { WebGLRenderer } from 'three';
 import type { SessionView } from '../game/session';
 import { screenToGround, worldToScreen } from './camera/projection';
@@ -33,6 +33,8 @@ export type Renderer = {
   /** CSS pixels from the canvas's top-left corner to the sim ground point under them. */
   screenToWorld(p: Vec2): Vec2;
   stats(): RenderStats;
+  /** The fighters in the frame last drawn, including any still fading out of sight. */
+  drawnPlayers(): readonly PlayerId[];
   /** The scene the match is drawn in. */
   sceneId(): SceneId;
   /** True while a match's establishing shot is playing. */
@@ -89,6 +91,7 @@ function createPicture({ gl, session, surface, show, rig, opening, intro, calm }
   let elapsed = 0;
   let stats: RenderStats = { calls: 0, triangles: 0, geometries: 0, textures: 0 };
   let presence: PresenceTrack | null = null;
+  let drawn: readonly PlayerId[] = [];
 
   const unsubscribe = session.subscribe((state) => {
     pending = [...pending, ...state.events];
@@ -101,6 +104,7 @@ function createPicture({ gl, session, surface, show, rig, opening, intro, calm }
     const seen = trackPresence(presence, interpolated.players, dt, calm ? 0 : SIGHT_FADE);
     presence = seen.track;
     const frame: RenderFrame = { ...interpolated, players: seen.players };
+    drawn = frame.players.map((pf) => pf.player.id);
     const tickEvents = pending;
     pending = [];
     const impacts = impactsIn(tickEvents, frame, session, calm);
@@ -123,6 +127,7 @@ function createPicture({ gl, session, surface, show, rig, opening, intro, calm }
   return {
     project,
     stats: (): RenderStats => stats,
+    drawnPlayers: (): readonly PlayerId[] => drawn,
     draw(dt: number): void {
       elapsed += dt;
       update(dt);
@@ -190,6 +195,7 @@ export async function createRenderer(graphics: Graphics, session: SessionView, v
     worldToScreen: (p) => picture.project(simToWorld(p)),
     screenToWorld: (p) => worldToSim(screenToGround(rig.camera, surface.viewport(), p)),
     stats: picture.stats,
+    drawnPlayers: picture.drawnPlayers,
     sceneId: () => show.id,
     introActive: opening.active,
     skipIntro: opening.skip,

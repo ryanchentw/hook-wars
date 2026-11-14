@@ -78,7 +78,7 @@ export const HARBOUR_LOOK: SceneLook = {
     ripple: 0.9,
     drift: { x: 0.004, y: 0.011 },
   },
-  fogOfWar: { color: 0x05070c, opacity: 0.62, edge: 120 },
+  fogOfWar: { color: 0x101626, opacity: 0.68, edge: 140 },
   tints: {
     iron: COLORS.iron,
     chainGlow: 0.16,

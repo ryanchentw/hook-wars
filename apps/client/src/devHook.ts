@@ -1,11 +1,16 @@
 import { TICK_DT } from '@hookbrawl/sim';
-import type { GameState, PlayerId, Vec2 } from '@hookbrawl/sim';
+import type { GameState, PlayerId, TeamView, Vec2 } from '@hookbrawl/sim';
 import type { Session } from './game/session';
 import type { Renderer, RenderStats } from './render/renderer';
 import type { SceneId } from './render/scenes/types';
 
 export type DevHook = {
+  /** The whole match, as the authority knows it. */
   getState(): GameState;
+  /** What the local team is entitled to see: what the picture and the HUD are given. */
+  getView(): TeamView;
+  /** The fighters the renderer drew in its last frame. */
+  drawnPlayers(): readonly PlayerId[];
   getLocalPlayerId(): PlayerId;
   /** World point to viewport (client) CSS pixels. */
   worldToScreen(p: Vec2): Vec2;
@@ -41,6 +46,8 @@ export function installDevHook(session: Session, renderer: Renderer, restart: ()
   };
   const hook: DevHook = {
     getState: () => session.getState(),
+    getView: () => session.getView(),
+    drawnPlayers: () => renderer.drawnPlayers(),
     getLocalPlayerId: () => session.localPlayerId,
     worldToScreen(p) {
       const local = renderer.worldToScreen(p);

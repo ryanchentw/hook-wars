@@ -95,7 +95,7 @@ export const GATE_LOOK: SceneLook = {
     fill: { sky: C.skyFill, ground: C.bounce, intensity: 1.35 },
   },
   water: { level: GATE_SIZES.waterLevel, color: C.water, roughness: 0.34, metalness: 0.1, swellSize: 16, ripple: 1.3, drift: { x: 0.01, y: 0.016 } },
-  fogOfWar: { color: 0x141b26, opacity: 0.6, edge: 120 },
+  fogOfWar: { color: 0x1c2740, opacity: 0.84, edge: 140 },
   tints: {
     iron: 0xc3c8d0,
     chainGlow: 0.2,

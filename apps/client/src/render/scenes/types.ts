@@ -132,7 +132,7 @@ export type SceneLayout = {
   readonly water: WaterSheet;
 };
 
-/** How ground out of the team's sight is dimmed under fog of war: a veil of `color` at `opacity`, its edge softened over `edge` sim units. */
+/** How ground out of the team's sight is shaded under fog of war: multiplied towards `color` by `opacity`, its edge softened over `edge` sim units. */
 export type FogOfWarLook = { readonly color: number; readonly opacity: number; readonly edge: number };
 
 export type SceneLook = {

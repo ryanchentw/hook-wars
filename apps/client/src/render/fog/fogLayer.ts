@@ -1,5 +1,5 @@
 import type { Arena, PlayerId, TeamId } from '@hookbrawl/sim';
-import { Color, Mesh, PlaneGeometry, ShaderMaterial, Vector3 } from 'three';
+import { AddEquation, Color, CustomBlending, DstColorFactor, Mesh, PlaneGeometry, ShaderMaterial, Vector3, ZeroFactor } from 'three';
 import type { RenderFrame } from '../interpolate';
 import type { FogOfWarLook } from '../scenes/types';
 import { toWorldLength } from '../space';
@@ -47,8 +47,7 @@ void main() {
     float d = distance(vGround, circles[i].xy);
     seen = max(seen, circles[i].z * (1.0 - smoothstep(radius - edge, radius + edge, d)));
   }
-  gl_FragColor = vec4(color, opacity * (1.0 - seen));
-  #include <colorspace_fragment>
+  gl_FragColor = vec4(mix(vec3(1.0), color, opacity * (1.0 - seen)), 1.0);
 }`;
 
 const step = (from: number, towards: number, by: number): number =>
@@ -73,7 +72,18 @@ export function createFogLayer({ arena, viewer, radius, look, fadeSeconds }: Fog
     opacity: { value: look.opacity },
     color: { value: new Color(look.color) },
   };
-  const material = new ShaderMaterial({ uniforms, vertexShader: VERTEX, fragmentShader: fragment(count), transparent: true, depthWrite: false });
+  // Multiplies what is already drawn, so the veil darkens a sunlit lawn as much as a night quay, whatever the exposure.
+  const material = new ShaderMaterial({
+    uniforms,
+    vertexShader: VERTEX,
+    fragmentShader: fragment(count),
+    transparent: true,
+    depthWrite: false,
+    blending: CustomBlending,
+    blendEquation: AddEquation,
+    blendSrc: DstColorFactor,
+    blendDst: ZeroFactor,
+  });
   const mesh = new Mesh(geometry, material);
   // First of the see-through things, so rings, halos and sparks above it are never veiled.
   mesh.renderOrder = -1;
