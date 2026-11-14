@@ -92,8 +92,11 @@ async function run(server: ChildProcess, fog: boolean, compress: boolean): Promi
       serverCpuMsPerTick: +((cpu * 1000) / (elapsed * 30)).toFixed(3),
     })}\n`,
   );
-  clients.forEach((c) => c.ws.close());
+  // Leaving, not just closing: a dropped member's seat is held and the match played on by bots, which the next run would be billed for.
+  clients.forEach((c) => send(c.ws, { t: 'leave' }));
   await wait(500);
+  const health = (await (await fetch(`http://127.0.0.1:${PORT}/healthz`)).json()) as { rooms: number };
+  if (health.rooms !== 0) throw new Error(`the room was not closed: ${health.rooms} left`);
 }
 
 const server = spawn('node', ['dist/server.js'], {

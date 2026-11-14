@@ -1,4 +1,5 @@
 export * from './limits';
+export { parseWithoutCodeGeneration } from './common';
 export { roomCodeSchema, stampLobbyAction, type Act, type ClientMessage, type ClientMessageInput, type ClientMessageOf, type LobbyAction, type RoomRequest } from './clientMessages';
 export { ERROR_CODES, type ErrorCode, type MatchStart, type RoomView, type ServerMessage, type ServerMessageOf } from './serverMessages';
 export { toSnapView, toTeamView, type SnapView } from './view';

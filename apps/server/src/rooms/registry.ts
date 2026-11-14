@@ -39,7 +39,8 @@ export type Registry = {
   shutdown(code: ErrorCode): void;
 };
 
-type Live = { room: Room; readonly id: number; readonly sinks: Map<MemberId, Sink>; timer: unknown };
+/** `wake` is the time the pending timer was set for, or null when none is pending. */
+type Live = { room: Room; readonly id: number; readonly sinks: Map<MemberId, Sink>; timer: unknown; wake: number | null };
 
 const CODE_ATTEMPTS = 8;
 
@@ -57,15 +58,24 @@ export function createRegistry(deps: RegistryDeps): Registry {
     });
   };
 
+  const wakeUp = (live: Live): void => {
+    live.wake = null;
+    apply(live, (room, now) => advance(room, now, rules));
+  };
+
   const schedule = (live: Live): void => {
-    clock.clearTimeout(live.timer);
     if (isAbandoned(live.room, clock.now(), rules)) {
+      clock.clearTimeout(live.timer);
       rooms.delete(live.room.code);
       log.info('room.closed', { room: live.id, rooms: rooms.size });
       return;
     }
     const wake = wakeAt(live.room, rules);
-    live.timer = wake === null ? null : clock.setTimeout(() => apply(live, (room, now) => advance(room, now, rules)), Math.max(0, wake - clock.now()));
+    // Most changes, every input among them, leave the next tick where it was: the timer already set is the right one.
+    if (wake === live.wake) return;
+    clock.clearTimeout(live.timer);
+    live.wake = wake;
+    live.timer = wake === null ? null : clock.setTimeout(() => wakeUp(live), Math.max(0, wake - clock.now()));
   };
 
   /** The one way a room changes: a core function is run, what it sent is delivered, and the clock is set for what comes next. */
@@ -97,7 +107,7 @@ export function createRegistry(deps: RegistryDeps): Registry {
       if (rooms.size >= deps.maxRooms) return null;
       const code = Array.from({ length: CODE_ATTEMPTS }, deps.newCode).find((candidate) => !rooms.has(candidate));
       if (code === undefined) return null;
-      const live: Live = { room: createRoomCore(code, clock.now()), id: (roomSeq += 1), sinks: new Map(), timer: null };
+      const live: Live = { room: createRoomCore(code, clock.now()), id: (roomSeq += 1), sinks: new Map(), timer: null, wake: null };
       rooms.set(code, live);
       schedule(live);
       log.info('room.opened', { room: live.id, rooms: rooms.size });

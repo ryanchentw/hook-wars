@@ -3,14 +3,19 @@ import { close, createRoom, DESKTOP, EAST, joinByLink, matchUp, player, posOf, S
 
 test.use({ viewport: DESKTOP });
 
+const GRAPPLE_KEY = 'Digit5';
+const STARTING_GOLD = 150;
+
 const goldOf = (page: Page, id: string): Promise<number | null> => page.evaluate((playerId) => window.__hookbrawl!.getView().players.find((p) => p.id === playerId)?.gold ?? null, id);
 
 test('a dropped player sees a countdown, is played by a bot, and gets the fighter back on reconnecting', async ({ browser }) => {
   const { host, guest } = await startDuel(browser);
   await guest.locator('#stage').focus();
-  await guest.keyboard.press('Digit1');
-  await guest.waitForTimeout(500);
+  // A purchase is the server's to grant: the HUD says so only once the server has.
+  await guest.keyboard.press(GRAPPLE_KEY);
+  await expect(guest.locator('.hud-announcer')).toHaveText(/Bought Grapple/);
   const gold = (await goldOf(guest, EAST))!;
+  expect(gold).toBeLessThan(STARTING_GOLD);
 
   await guest.evaluate(() => {
     window.__hookbrawlNet!.block(true);
@@ -27,7 +32,10 @@ test('a dropped player sees a countdown, is played by a bot, and gets the fighte
   await guest.evaluate(() => window.__hookbrawlNet!.block(false));
   await expect(status).toContainText('Online', { timeout: 15_000 });
   await expect(guest.locator('.hud-score')).toBeVisible();
+  // The bot that stood in spent nothing: the purse has only grown, and the grapple bought before the drop is still owned.
   expect(await goldOf(guest, EAST)).toBeGreaterThanOrEqual(gold);
+  expect(await guest.evaluate((id) => window.__hookbrawl!.getView().players.find((p) => p.id === id)!.items.grapple.kind, EAST)).toBe('owned');
+  expect(await guest.evaluate((id) => window.__hookbrawl!.getView().players.find((p) => p.id === id)!.upgrades, EAST)).toEqual({ damage: 0, range: 0, speed: 0, size: 0 });
 
   // The keys are the player's again, and the other page sees it.
   const back = (await posOf(guest, EAST))!;
