@@ -63,6 +63,15 @@ function wanderArea(view: TeamView, bot: Player, dock: Player['team']): Rect {
   return dock === 'west' ? { ...rect, x0: rect.x1 - depth } : { ...rect, x1: rect.x0 + depth };
 }
 
+/**
+ * Still on its way somewhere. Within a body's width of the target counts as there: teammates who chased the same enemy
+ * share one target, and their bodies keep each other off it for good.
+ */
+function walking(bot: Player): boolean {
+  if (bot.move.kind === 'toward') return distance(bot.pos, bot.move.target) > TUNING.bodySpacing;
+  return bot.move.kind !== 'idle';
+}
+
 function chooseMove(view: TeamView, bot: Player, rng: Rng): Decision {
   const dock = dockAt(view.arena, bot.pos);
   const prey = nearest(
@@ -75,7 +84,7 @@ function chooseMove(view: TeamView, bot: Player, rng: Rng): Decision {
     ),
   );
   if (prey) return { inputs: [{ kind: 'move', playerId: bot.id, target: prey.pos }], rng };
-  if (bot.move.kind !== 'idle') return { inputs: [], rng };
+  if (walking(bot)) return { inputs: [], rng };
   const rect = wanderArea(view, bot, dock);
   const [u, afterU] = nextRandom(rng);
   const [v, afterV] = nextRandom(afterU);

@@ -75,6 +75,15 @@ describe('bots under fog', () => {
     expect(new Set(moves.map((m) => (m.kind === 'move' ? Math.round(m.target.y) : 0))).size).toBeGreaterThan(10);
   });
 
+  it('gives up a walk to a point a teammate is already standing on, so a pack never jostles in place forever', () => {
+    const point = at(431, 759);
+    const crowded = withPlayer(duel(), 'west0', { pos: at(446, 707), move: { kind: 'toward', target: point } });
+    const moves = thoughts(crowded).filter((i) => i.kind === 'move');
+    expect(moves.length).toBe(40);
+    const far = withPlayer(duel(), 'west0', { pos: at(200, 300), move: { kind: 'toward', target: point } });
+    expect(thoughts(far).filter((i) => i.kind === 'move')).toEqual([]);
+  });
+
   it('keeps wandering its whole dock with open vision', () => {
     const rect = walkableRect(duel().arena, 'west');
     const front = rect.x1 - (rect.x1 - rect.x0) * TUNING.botScoutDepth;
