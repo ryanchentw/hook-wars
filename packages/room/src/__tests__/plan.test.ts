@@ -25,6 +25,7 @@ describe('toMatchConfig', () => {
   it('turns a 1v1 into the sim config, west first, with the bot seeded from the seed', () => {
     const plan = planOf(start(duel()), 42);
     expect(plan.config.killTarget).toBe(10);
+    expect(plan.config.fog).toBe(false);
     expect(plan.config.players).toEqual([
       { id: 'west-0', name: 'Ryan', team: 'west', isBot: false },
       { id: 'east-0', name: expect.any(String), team: 'east', isBot: true },
@@ -33,6 +34,12 @@ describe('toMatchConfig', () => {
       { kind: 'human', playerId: 'west-0', slot: { team: 'west', index: 0 }, memberId: HOST },
       { kind: 'bot', playerId: 'east-0', slot: { team: 'east', index: 0 }, seed: 42 },
     ]);
+  });
+
+  it('carries fog of war into the match', () => {
+    const fogged = play(duel(), { kind: 'setFog', by: HOST, fog: true });
+    expect(planOf(start(fogged), 1).config.fog).toBe(true);
+    expect(createMatch(planOf(start(fogged), 1).config).vision.kind).toBe('fog');
   });
 
   it('gives a full room six fighters with distinct names and seeds, and the sim accepts it', () => {

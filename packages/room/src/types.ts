@@ -23,7 +23,12 @@ export type Slot =
   | { readonly kind: 'human'; readonly memberId: MemberId; readonly name: PlayerName }
   | { readonly kind: 'bot' };
 
-export type RoomSettings = { readonly scene: SceneChoice; readonly killTarget: KillTarget };
+export type RoomSettings = {
+  readonly scene: SceneChoice;
+  readonly killTarget: KillTarget;
+  /** Fog of war over the enemy: each side sees only what its own fighters can see. */
+  readonly fog: boolean;
+};
 
 export type RoomPhase = { readonly kind: 'lobby' } | { readonly kind: 'in-match' };
 
@@ -49,6 +54,7 @@ export type RoomAction =
   | { readonly kind: 'fillWithBots'; readonly by: MemberId }
   | { readonly kind: 'setScene'; readonly by: MemberId; readonly scene: string }
   | { readonly kind: 'setKillTarget'; readonly by: MemberId; readonly killTarget: number }
+  | { readonly kind: 'setFog'; readonly by: MemberId; readonly fog: boolean }
   | { readonly kind: 'startMatch'; readonly by: MemberId }
   | { readonly kind: 'endMatch'; readonly by: MemberId };
 

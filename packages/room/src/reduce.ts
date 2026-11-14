@@ -10,7 +10,7 @@ export function createRoom(): RoomState {
   return {
     host: null,
     slots: { west: empty, east: empty },
-    settings: { scene: 'rotate', killTarget: 10 },
+    settings: { scene: 'rotate', killTarget: 10, fog: false },
     phase: { kind: 'lobby' },
     matchesStarted: 0,
   };
@@ -80,6 +80,9 @@ const HANDLERS: Handlers = {
   setKillTarget(s, a) {
     const killTarget = parseKillTarget(a.killTarget);
     return hostInLobby(s, a.by) && killTarget !== null && killTarget !== s.settings.killTarget ? { ...s, settings: { ...s.settings, killTarget } } : s;
+  },
+  setFog(s, a) {
+    return hostInLobby(s, a.by) && typeof a.fog === 'boolean' && a.fog !== s.settings.fog ? { ...s, settings: { ...s.settings, fog: a.fog } } : s;
   },
   startMatch: (s, a) => (s.host === a.by && canStart(s) ? { ...s, phase: { kind: 'in-match' }, matchesStarted: s.matchesStarted + 1 } : s),
   endMatch: (s, a) => (s.host === a.by && s.phase.kind === 'in-match' ? { ...s, phase: { kind: 'lobby' } } : s),
