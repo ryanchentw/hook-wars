@@ -3,7 +3,7 @@ import type { SlotRef } from '@hookbrawl/room';
 import type { TeamId } from '@hookbrawl/sim';
 import { useEffect, useId, useRef } from 'react';
 import type { App, AppView, LocalAction } from '../app/controller';
-import { TEAM_LABEL } from '../hud/labels';
+import { CreditsLink, TEAM_LABEL } from '../hud/labels';
 import { SCENES } from '../render/scenes/registry';
 import { Notice } from '../screens/Notice';
 import { SlotRow } from './SlotRow';
@@ -106,8 +106,10 @@ export function Lobby({ view, app }: Props) {
         <h1 ref={heading} id={titleId} tabIndex={-1} className="lobby-title">
           Lobby
         </h1>
-        {/* Room for the room code and share link once a server can answer them. */}
-        <div className="lobby-share" />
+        {/* The room code and share link go beside the credits once a server can answer them. */}
+        <div className="lobby-share">
+          <CreditsLink />
+        </div>
       </header>
       <div className="lobby-teams">
         {TEAMS.map((team) => (

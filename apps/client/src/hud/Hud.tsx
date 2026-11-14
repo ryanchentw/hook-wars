@@ -60,7 +60,7 @@ function Hint() {
         <kbd>
           {FIRST_DIGIT}–{LAST_DIGIT}
         </kbd>{' '}
-        buy <kbd>Tab</kbd> scores
+        buy
       </span>
     </div>
   );
@@ -85,11 +85,11 @@ export function Hud({ match, onRematch, onLobby }: HudProps) {
         <ShopStrip slots={view.shop} feedback={view.feedback} onBuy={match.hud.buy} />
         <div className="hud-aside">
           <Hint />
-          <button type="button" className="hud-button" aria-pressed={ui.scores} onClick={() => match.setScores(!ui.scores)}>
-            Scores
+          <button type="button" className="hud-button" aria-pressed={ui.scores} aria-keyshortcuts="Tab" onClick={() => match.setScores(!ui.scores)}>
+            Scores <kbd className="hud-key" aria-hidden="true">Tab</kbd>
           </button>
-          <button type="button" className="hud-button" onClick={() => match.setPaused(true)} disabled={view.end !== null}>
-            Pause
+          <button type="button" className="hud-button" aria-keyshortcuts="Escape" onClick={() => match.setPaused(true)} disabled={view.end !== null}>
+            Pause <kbd className="hud-key" aria-hidden="true">Esc</kbd>
           </button>
           <CreditsLink />
         </div>

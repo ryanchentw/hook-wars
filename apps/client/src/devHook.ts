@@ -1,3 +1,4 @@
+import { TICK_DT } from '@hookbrawl/sim';
 import type { GameState, PlayerId, Vec2 } from '@hookbrawl/sim';
 import type { Session } from './game/session';
 import type { Renderer, RenderStats } from './render/renderer';
@@ -19,6 +20,8 @@ export type DevHook = {
   restart(): Promise<void>;
   /** Holds the match and the picture on the frame now showing, or lets them go. */
   freeze(frozen: boolean): void;
+  /** Runs the match ahead by up to `seconds` of sim time at once, stopping when it ends; a test reaches the end panel without waiting a match out. */
+  fastForward(seconds: number): void;
 };
 
 declare global {
@@ -54,6 +57,9 @@ export function installDevHook(session: Session, renderer: Renderer, restart: ()
     introActive: () => renderer.introActive(),
     restart,
     freeze: (frozen) => renderer.setFrozen(frozen),
+    fastForward(seconds) {
+      for (let t = 0; t < seconds && session.getState().phase.kind === 'playing'; t += TICK_DT) session.advance(TICK_DT);
+    },
   };
   window.__hookbrawl = hook;
   return {

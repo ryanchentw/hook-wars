@@ -138,3 +138,25 @@
 .pause-actions > * {
   text-align: center;
 }
+
+.hud-key {
+  margin-left: 4px;
+  padding: 0 4px;
+  border: 1px solid var(--iron);
+  border-radius: 2px;
+  background: #0e0c0a;
+  color: var(--muted);
+  font: 400 10px var(--font);
+  letter-spacing: 0;
+  vertical-align: 1px;
+}
+
+@media (max-width: 900px) {
+  .hud-key {
+    display: none;
+  }
+}
+
+.hud-aside .hud-button {
+  white-space: nowrap;
+}
