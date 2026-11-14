@@ -120,6 +120,7 @@ export const VICTORIA_LOOK: SceneLook = {
     fill: { sky: C.skyFill, ground: C.waterFill, intensity: 1.5 },
   },
   water: { level: VICTORIA_SIZES.waterLevel, color: C.water, roughness: 0.36, metalness: 0.15, swellSize: 20, ripple: 1, drift: { x: 0.006, y: 0.012 } },
+  fogOfWar: { color: 0x080b14, opacity: 0.6, edge: 120 },
   tints: {
     iron: 0xb9c0ca,
     chainGlow: 0.22,

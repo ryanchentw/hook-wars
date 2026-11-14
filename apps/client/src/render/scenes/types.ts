@@ -132,6 +132,9 @@ export type SceneLayout = {
   readonly water: WaterSheet;
 };
 
+/** How ground out of the team's sight is dimmed under fog of war: a veil of `color` at `opacity`, its edge softened over `edge` sim units. */
+export type FogOfWarLook = { readonly color: number; readonly opacity: number; readonly edge: number };
+
 export type SceneLook = {
   readonly id: SceneId;
   readonly title: { readonly name: string; readonly caption: string };
@@ -142,6 +145,7 @@ export type SceneLook = {
   readonly intro: IntroShot;
   /** Things adrift in the air: fog banks, motes. */
   readonly ambient: readonly Drift[];
+  readonly fogOfWar: FogOfWarLook;
 };
 
 export type SetContext = { readonly arena: Arena; readonly assets: Assets; readonly softDot: Texture };

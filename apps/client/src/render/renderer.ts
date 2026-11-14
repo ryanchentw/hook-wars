@@ -9,6 +9,7 @@ import { interpolateFrame, type RenderFrame } from './interpolate';
 import type { Graphics } from './graphics';
 import { INTRO_TIMING, introHaze, introPose } from './intro/intro';
 import { createOpening, type Opening } from './intro/opening';
+import { trackPresence, type PresenceTrack } from './fog/presence';
 import { createWorldOverlay } from './overlay/worldOverlay';
 import type { SceneId } from './scenes/types';
 import { createSceneShow, type SceneShow } from './sceneShow';
@@ -56,6 +57,8 @@ export type RendererEvents = ContextEvents & {
 };
 
 const WARM_UP_FRAMES = 3;
+/** Seconds a fighter takes to fade into or out of sight. */
+const SIGHT_FADE = 0.25;
 const NO_IMPACTS: readonly Impact[] = [];
 
 function impactsIn(events: readonly SeenEvent[], frame: RenderFrame, session: SessionView, calm: boolean): readonly Impact[] {
@@ -85,6 +88,7 @@ function createPicture({ gl, session, surface, show, rig, opening, intro, calm }
   let pending: readonly SeenEvent[] = [];
   let elapsed = 0;
   let stats: RenderStats = { calls: 0, triangles: 0, geometries: 0, textures: 0 };
+  let presence: PresenceTrack | null = null;
 
   const unsubscribe = session.subscribe((state) => {
     pending = [...pending, ...state.events];
@@ -93,7 +97,10 @@ function createPicture({ gl, session, surface, show, rig, opening, intro, calm }
 
   /** Brings every view in line with the session's current frame; draws nothing. */
   const update = (dt: number): void => {
-    const frame = interpolateFrame(session.frame());
+    const interpolated = interpolateFrame(session.frame());
+    const seen = trackPresence(presence, interpolated.players, dt, calm ? 0 : SIGHT_FADE);
+    presence = seen.track;
+    const frame: RenderFrame = { ...interpolated, players: seen.players };
     const tickEvents = pending;
     pending = [];
     const impacts = impactsIn(tickEvents, frame, session, calm);
@@ -151,10 +158,12 @@ function createPicture({ gl, session, surface, show, rig, opening, intro, calm }
 export async function createRenderer(graphics: Graphics, session: SessionView, view: MatchView, events: RendererEvents): Promise<Renderer> {
   const { gl, surface, host, assets, softDot, hookGeometry } = graphics;
   const arena = session.getView().arena;
-  const shared: StageShared = { arena, assets, softDot, hookGeometry, localPlayerId: session.localPlayerId };
+  const { vision } = session.getView();
+  const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fog = vision.kind === 'fog' ? { viewer: session.localTeam, radius: vision.radius, fadeSeconds: calm ? 0 : SIGHT_FADE } : null;
+  const shared: StageShared = { arena, assets, softDot, hookGeometry, localPlayerId: session.localPlayerId, fog };
   const show = createSceneShow(gl, host, shared, view.scene);
   const rig = createCameraRig(arena, session.localPlayerId);
-  const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const opening = createOpening(surface.overlay, calm ? INTRO_TIMING.reduced : INTRO_TIMING.full, events.onIntro);
   const picture = createPicture({ gl, session, surface, show, rig, opening, intro: view.intro, calm });
   const loop = createFrameLoop(surface.canvas, events, (dt) => {

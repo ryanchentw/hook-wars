@@ -1,18 +1,21 @@
-import type { TeamView, Grapple, Hook, SeenPlayer, Vec2 } from '@hookbrawl/sim';
+import type { Hook, PlayerId, SeenGrapple, SeenPlayer, TeamId, TeamView, Vec2 } from '@hookbrawl/sim';
 import type { Frame } from '../game/session';
 
-export type PlayerFrame = { readonly player: SeenPlayer; readonly pos: Vec2 };
+/** `presence` runs from 0 to 1 as a fighter comes into sight, and back down as one leaves it. */
+export type PlayerFrame = { readonly player: SeenPlayer; readonly pos: Vec2; readonly presence: number };
 export type HookFrame = {
   readonly hook: Hook;
-  readonly team: SeenPlayer['team'] | null;
+  readonly team: TeamId | null;
   readonly head: Vec2;
-  /** Polyline from the owner's hand, through any bounce points, to the head. */
+  /** Polyline from the owner's hand, or from the edge of sight, through any bounce points, to the head. */
   readonly chain: readonly Vec2[];
+  /** The thrower is out of sight, so the chain comes out of the dark at its first point. */
+  readonly cut: boolean;
 };
-/** The rope runs from the owner's hand to `head`, so a pulling grapple's rope shortens as the owner is hauled in. */
+/** The rope runs from the owner's hand, or from `ropeFrom` at the edge of sight, to `head`. */
 export type GrappleFrame = {
-  readonly grapple: Grapple;
-  readonly team: SeenPlayer['team'] | null;
+  readonly grapple: SeenGrapple;
+  readonly team: TeamId | null;
   readonly head: Vec2;
 };
 export type RenderFrame = {
@@ -36,31 +39,34 @@ function shouldSnap(before: SeenPlayer, after: SeenPlayer): boolean {
 
 function playerFrame(previous: TeamView, player: SeenPlayer, alpha: number): PlayerFrame {
   const before = previous.players.find((p) => p.id === player.id);
-  if (before === undefined || shouldSnap(before, player)) return { player, pos: player.pos };
-  return { player, pos: lerp(before.pos, player.pos, alpha) };
+  if (before === undefined || shouldSnap(before, player)) return { player, pos: player.pos, presence: 1 };
+  return { player, pos: lerp(before.pos, player.pos, alpha), presence: 1 };
 }
 
-function hookFrame(previous: TeamView, hook: Hook, players: readonly PlayerFrame[], alpha: number): HookFrame {
+type TeamOf = (id: PlayerId) => TeamId | null;
+
+function hookFrame(previous: TeamView, hook: Hook, players: readonly PlayerFrame[], alpha: number, teamOf: TeamOf): HookFrame {
   const before = previous.hooks.find((h) => h.id === hook.id);
   const head = before === undefined ? hook.pos : lerp(before.pos, hook.pos, alpha);
   const owner = players.find((p) => p.player.id === hook.ownerId);
-  const team = owner?.player.team ?? null;
+  const team = teamOf(hook.ownerId);
   const hand = owner?.pos ?? hook.path[0] ?? head;
-  if (hook.phase.kind === 'retracting') return { hook, team, head, chain: [hand, head] };
+  const cut = owner === undefined;
+  if (hook.phase.kind === 'retracting') return { hook, team, head, chain: [hand, head], cut };
   // The sim records the cast origin, but the thrower keeps walking, so the chain starts at the live hand.
-  return { hook, team, head, chain: [hand, ...hook.path.slice(1), head] };
+  return { hook, team, head, chain: [hand, ...hook.path.slice(1), head], cut };
 }
 
-function grappleFrame(previous: TeamView, grapple: Grapple, players: readonly PlayerFrame[], alpha: number): GrappleFrame {
+function grappleFrame(previous: TeamView, grapple: SeenGrapple, alpha: number, teamOf: TeamOf): GrappleFrame {
   const before = previous.grapples.find((g) => g.id === grapple.id);
-  const team = players.find((p) => p.player.id === grapple.ownerId)?.player.team ?? null;
-  return { grapple, team, head: before === undefined ? grapple.pos : lerp(before.pos, grapple.pos, alpha) };
+  return { grapple, team: teamOf(grapple.ownerId), head: before === undefined ? grapple.pos : lerp(before.pos, grapple.pos, alpha) };
 }
 
 export function interpolateFrame(frame: Frame): RenderFrame {
   const { previous, current, alpha } = frame;
   const players = current.players.map((p) => playerFrame(previous, p, alpha));
-  const hooks = current.hooks.map((h) => hookFrame(previous, h, players, alpha));
-  const grapples = current.grapples.map((g) => grappleFrame(previous, g, players, alpha));
+  const teamOf: TeamOf = (id) => current.roster.find((c) => c.id === id)?.team ?? null;
+  const hooks = current.hooks.map((h) => hookFrame(previous, h, players, alpha, teamOf));
+  const grapples = current.grapples.map((g) => grappleFrame(previous, g, alpha, teamOf));
   return { state: current, players, hooks, grapples };
 }

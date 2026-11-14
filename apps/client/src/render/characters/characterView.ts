@@ -39,6 +39,8 @@ export type CharacterUpdate = {
   readonly pulledTowards: number | null;
   /** Whether a purchase should light this player up on this update. */
   readonly bought: boolean;
+  /** 0..1: how far into sight the fighter is, under fog. */
+  readonly presence: number;
   readonly simTime: number;
   readonly dt: number;
 };
@@ -63,6 +65,8 @@ const HAUL: Tilt = { pitch: GRAPPLE_LOOK.haulPitch, lift: GRAPPLE_LOOK.haulLift 
 /** Fraction of the respawn wait a body lies whole before it starts to fade. */
 const FADE_FROM = 0.3;
 const LOCAL_RING_GAP = 0.2;
+/** The team ring, then the local player's inner ring. */
+const RING_OPACITY = [0.95, 0.55] as const;
 
 function shortestTurn(from: number, to: number): number {
   const tau = Math.PI * 2;
@@ -197,8 +201,8 @@ function createRig(root: Object3D, player: SeenPlayer, isLocal: boolean, { softD
   pivot.add(body);
   const radius = toWorldLength(TUNING.playerRadius);
   const rings = [
-    createRing(radius, tints.teams[player.team].signal, 0.95),
-    ...(isLocal ? [createRing(radius - SIZES.ringWidth - LOCAL_RING_GAP, tints.teams[player.team].glow, 0.55)] : []),
+    createRing(radius, tints.teams[player.team].signal, RING_OPACITY[0]),
+    ...(isLocal ? [createRing(radius - SIZES.ringWidth - LOCAL_RING_GAP, tints.teams[player.team].glow, RING_OPACITY[1])] : []),
   ];
   const flourish = createFlourishView(softDot);
   group.add(pivot, ...rings, flourish.group);
@@ -234,7 +238,7 @@ export function createCharacterView(asset: CharacterAsset, looks: SharedLooks, p
 
   return {
     group,
-    update({ player: p, pos, facts, triggers, dealt, taken, pulledTowards, bought, simTime, dt }) {
+    update({ player: p, pos, facts, triggers, dealt, taken, pulledTowards, bought, presence, simTime, dt }) {
       reaction.step(dealt, taken, dt);
       animator.advance(facts, triggers, reaction.frozen(), dt);
       const at = simToWorld(pos);
@@ -250,8 +254,11 @@ export function createCharacterView(asset: CharacterAsset, looks: SharedLooks, p
       heldHook.update(p, facts.hookOut);
       flourish.step(bought, dt);
 
-      setOpacity(deathOpacity(p, simTime));
-      rings.forEach((ring) => (ring.visible = p.status.kind !== 'dead'));
+      setOpacity(deathOpacity(p, simTime) * presence);
+      rings.forEach((ring, i) => {
+        ring.visible = p.status.kind !== 'dead' && presence > 0;
+        ring.material.opacity = (RING_OPACITY[i] ?? 1) * presence;
+      });
       group.updateMatrixWorld(true);
       model.hand.getWorldPosition(hand);
       model.offHand.getWorldPosition(offHand);

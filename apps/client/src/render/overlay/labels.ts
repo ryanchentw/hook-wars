@@ -7,6 +7,8 @@ export type LabelView = {
   readonly name: string;
   readonly team: TeamId;
   readonly hpFraction: number;
+  /** 0..1: fades the label with its fighter as they come into or leave sight. */
+  readonly presence: number;
   /** CSS pixels from the overlay's top-left corner, or null to hide the label. */
   readonly anchor: Vec2 | null;
 };
@@ -48,7 +50,8 @@ export function createLabels(parent: HTMLElement): Labels {
         const entry = entries.get(view.id) ?? createEntry(parent, view);
         const fraction = clamp01(view.hpFraction);
         const loss = stepLoss(entry.loss, fraction, dt);
-        entry.root.hidden = view.anchor === null;
+        entry.root.hidden = view.anchor === null || view.presence <= 0;
+        entry.root.style.opacity = view.presence < 1 ? view.presence.toFixed(2) : '';
         if (view.anchor !== null) {
           entry.root.style.transform = `translate(${view.anchor.x.toFixed(1)}px, ${view.anchor.y.toFixed(1)}px) translate(-50%, -100%)`;
         }

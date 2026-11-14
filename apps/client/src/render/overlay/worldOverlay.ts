@@ -26,11 +26,12 @@ function labelsFor(frame: RenderFrame, project: (world: Vec3) => Vec2, viewport:
     LABEL_BOX,
   );
   const anchors = spread.map((anchor) => (anchor === null ? null : keepInView(anchor, LABEL_BOX, viewport)));
-  return frame.players.map(({ player }, i) => ({
+  return frame.players.map(({ player, presence }, i) => ({
     id: player.id,
     name: player.name,
     team: player.team,
     hpFraction: player.hp / TUNING.maxHp,
+    presence,
     anchor: anchors[i] ?? null,
   }));
 }

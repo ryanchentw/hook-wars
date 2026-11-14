@@ -54,6 +54,7 @@ export function createCharactersView(assets: Assets, looks: SharedLooks, localId
           taken: impacts.length === 0 ? null : (impacts.find((impact) => impact.targetId === player.id) ?? null),
           pulledTowards: pullDirection(frame, pf),
           bought: events.length > 0 && startsFlourish(player, events),
+          presence: pf.presence,
           simTime: frame.state.time,
           dt,
         });

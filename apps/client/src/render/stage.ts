@@ -1,8 +1,9 @@
-import type { Arena, SeenEvent, PlayerId } from '@hookbrawl/sim';
+import type { Arena, PlayerId, SeenEvent, TeamId } from '@hookbrawl/sim';
 import { Color, FogExp2, Group, type BufferGeometry, type Camera, type Scene, type Texture, type Vector3, type WebGLRenderer } from 'three';
 import type { Assets } from './assets/loadAssets';
 import { createCharactersView } from './characters/charactersView';
 import { createEffectsView } from './effects/effectsView';
+import { createFogLayer } from './fog/fogLayer';
 import { createGrapplesView } from './grapple/grapplesView';
 import { createHooksView } from './hook/hooksView';
 import type { Impact } from './impact/impacts';
@@ -21,6 +22,8 @@ export type StageShared = {
   readonly softDot: Texture;
   readonly hookGeometry: BufferGeometry;
   readonly localPlayerId: PlayerId;
+  /** Fog of war over the enemy, seen from the viewer's side; null draws no veil. */
+  readonly fog: { readonly viewer: TeamId; readonly radius: number; readonly fadeSeconds: number } | null;
 };
 
 export type StageUpdate = {
@@ -60,11 +63,13 @@ export function createStage(theme: SceneTheme, shared: StageShared): Stage {
   const { assets, softDot, hookGeometry, localPlayerId } = shared;
   const scenery = backdrop(theme, shared);
   const characters = createCharactersView(assets, { hookGeometry, softDot, tints: theme.tints }, localPlayerId);
-  const hooks = createHooksView(hookGeometry, softDot, theme.tints);
+  const hooks = createHooksView(hookGeometry, softDot, theme.tints, shared.fog?.fadeSeconds ?? 0);
   const grapples = createGrapplesView(softDot, theme.tints);
   const effects = createEffectsView(softDot);
+  const fog = shared.fog === null ? null : createFogLayer({ ...shared.fog, arena: shared.arena, look: theme.fogOfWar });
   const group = new Group();
   group.add(...scenery.map((part) => part.group), characters.group, hooks.group, grapples.group, effects.group);
+  if (fog !== null) group.add(fog.mesh);
 
   return {
     theme,
@@ -72,8 +77,9 @@ export function createStage(theme: SceneTheme, shared: StageShared): Stage {
     update({ frame, events, impacts, dt, elapsed, camera }) {
       const frameOf = (id: PlayerId): PlayerFrame | undefined => frame.players.find((p) => p.player.id === id);
       scenery.forEach((part) => part.update(elapsed, camera));
+      fog?.update(frame, dt);
       characters.update(frame, events, impacts, dt);
-      hooks.update(frame, characters.handPosition);
+      hooks.update(frame, characters.handPosition, dt);
       grapples.update(frame, characters.offHandPosition);
       effects.update(events, impacts, dt, camera, (id) => frameOf(id)?.player.facing ?? null);
     },
@@ -81,6 +87,7 @@ export function createStage(theme: SceneTheme, shared: StageShared): Stage {
     dispose() {
       characters.clear();
       [...scenery, hooks, grapples, effects].forEach((part) => part.dispose());
+      fog?.dispose();
     },
   };
 }

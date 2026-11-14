@@ -88,6 +88,13 @@ function createSlot(looks: Looks): Slot {
   return { rope, head, halo };
 }
 
+/** The owner's off hand, or the point where the rope comes out of the dark when the owner is out of sight. */
+function ropeStart(gf: GrappleFrame, handOf: (playerId: PlayerId) => Vector3 | null): Vector3 | null {
+  const from = gf.grapple.ropeFrom;
+  if (from === null) return handOf(gf.grapple.ownerId);
+  return new Vector3(toWorldLength(from.x), GRAPPLE_LOOK.headHeight, toWorldLength(from.y));
+}
+
 /** Draws each grapple as a pale rope from the owner's off hand to a small claw; a fixed pool, so a frame allocates nothing. */
 export function createGrapplesView(softDot: Texture, tints: Tints): GrapplesView {
   const group = new Group();
@@ -126,7 +133,7 @@ export function createGrapplesView(softDot: Texture, tints: Tints): GrapplesView
         const gf = frame.grapples[i];
         slot.rope.visible = gf !== undefined;
         slot.head.visible = gf !== undefined;
-        if (gf !== undefined) place(slot, gf, handOf(gf.grapple.ownerId));
+        if (gf !== undefined) place(slot, gf, ropeStart(gf, handOf));
       }
     },
     dispose: () => disposeLooks(looks),

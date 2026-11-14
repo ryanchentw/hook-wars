@@ -11,7 +11,7 @@ import { HOOK_EYE_OFFSET } from './hookGeometry';
 
 export type HooksView = {
   readonly group: Group;
-  update(frame: RenderFrame, handOf: (playerId: PlayerId) => Vector3 | null): void;
+  update(frame: RenderFrame, handOf: (playerId: PlayerId) => Vector3 | null, dt: number): void;
   dispose(): void;
 };
 
@@ -56,7 +56,15 @@ function linkMatrix(link: LinkPlacement, stretch: number, out: Matrix4): Matrix4
   return out.setPosition(link.position.x, link.position.y, link.position.z);
 }
 
-type Head = { readonly mesh: Mesh; readonly halo: Sprite };
+/** `shown` grows from 0 to 1 for a head that came out of the dark, and is 1 for every other. */
+type Head = { readonly mesh: Mesh; readonly halo: Sprite; shown: number };
+
+/** Links over which a chain that comes out of the dark thins to nothing, so it fades into the veil rather than stopping dead. */
+const TAPER_LINKS = 6;
+
+function taper(index: number, cut: boolean): number {
+  return cut && index < TAPER_LINKS ? (index + 1) / (TAPER_LINKS + 1) : 1;
+}
 
 /** Draws every group, so the warm-up heads compile all a head can show. */
 const LIVE_BARBED: HookLook = { menace: 'live', barbed: true };
@@ -65,7 +73,8 @@ const LIVE_BARBED: HookLook = { menace: 'live', barbed: true };
 const HALO_SIZE = 4.2;
 
 /** `hookGeometry` is shared with the hooks the fighters carry; whoever made it disposes of it. */
-export function createHooksView(hookGeometry: BufferGeometry, softDot: Texture, tints: Tints): HooksView {
+/** `emergeSeconds` is how long a head that comes out of the dark takes to grow to full size; 0 shows it at once. */
+export function createHooksView(hookGeometry: BufferGeometry, softDot: Texture, tints: Tints, emergeSeconds = 0): HooksView {
   const teams = Object.keys(tints.teams) as TeamId[];
   const group = new Group();
   const linkGeometry = new TorusGeometry((LINK.width - LINK.thickness) / 2, LINK.thickness / 2, 6, 12);
@@ -87,6 +96,7 @@ export function createHooksView(hookGeometry: BufferGeometry, softDot: Texture, 
   const materials = createHookMaterials(softDot, tints);
   let heads = new Map<HookId, Head>();
   const matrix = new Matrix4();
+  const thin = new Vector3();
 
   const createHead = (team: TeamId): Head => {
     const live = materials.dress(team, LIVE_BARBED);
@@ -96,7 +106,7 @@ export function createHooksView(hookGeometry: BufferGeometry, softDot: Texture, 
     // A child of the head, so it grows with whatever size the hook was bought up to.
     halo.scale.setScalar(HALO_SIZE);
     mesh.add(halo);
-    return { mesh, halo };
+    return { mesh, halo, shown: 1 };
   };
   /** Truthful about what the hook can still do: a spent hook dims and loses its halo, a hot barb glows. */
   const dress = (head: Head, team: TeamId, look: HookLook): void => {
@@ -114,26 +124,32 @@ export function createHooksView(hookGeometry: BufferGeometry, softDot: Texture, 
 
   return {
     group,
-    update(frame, handOf) {
+    update(frame, handOf, dt) {
       const next = new Map<HookId, Head>();
       let used = 0;
       for (const hf of frame.hooks) {
         const direction = headDirection(hf);
         const team = hf.team ?? 'west';
-        const head = heads.get(hf.hook.id) ?? createHead(team);
-        if (!heads.has(hf.hook.id)) group.add(head.mesh);
+        const known = heads.get(hf.hook.id);
+        const head = known ?? createHead(team);
+        if (known === undefined) {
+          group.add(head.mesh);
+          head.shown = hf.cut && emergeSeconds > 0 ? 0 : 1;
+        }
+        head.shown = Math.min(1, head.shown + (emergeSeconds > 0 ? dt / emergeSeconds : 1));
         dress(head, team, hookLook(hf.hook));
         const at = simToWorld(hf.head, SIZES.chainHeight);
         head.mesh.position.set(at.x, at.y, at.z);
-        head.mesh.scale.setScalar(toWorldLength(hf.hook.stats.radius));
+        head.mesh.scale.setScalar(toWorldLength(hf.hook.stats.radius) * head.shown);
         head.mesh.rotation.set(0, -Math.atan2(direction.z, direction.x), 0);
         next.set(hf.hook.id, head);
 
-        const layout = layOutChain(chainPath(hf, handOf(hf.hook.ownerId), direction), LINK.spacing, Math.min(CHAIN.maxLinks, capacity - used));
-        for (const link of layout.links) {
-          links.setMatrixAt(used, linkMatrix(link, layout.stretch, matrix));
+        const layout = layOutChain(chainPath(hf, hf.cut ? null : handOf(hf.hook.ownerId), direction), LINK.spacing, Math.min(CHAIN.maxLinks, capacity - used));
+        layout.links.forEach((link, i) => {
+          const k = taper(i, hf.cut);
+          links.setMatrixAt(used, linkMatrix(link, layout.stretch, matrix).scale(thin.set(k, k, k)));
           used += 1;
-        }
+        });
       }
       heads.forEach((head, id) => {
         if (!next.has(id)) group.remove(head.mesh);
