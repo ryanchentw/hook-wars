@@ -3,7 +3,7 @@ import { GRAPPLE, ITEMS, TUNING } from './config';
 import { along, distance, normalize, sub } from './geometry';
 import { interrupt } from './intent';
 import type { Arena, GameEvent, GameState, Grapple, GrappleId, Player, PlayerId, Vec2 } from './types';
-import { findPlayer, isAlive, landed, ownsHook, updatePlayer, type Outcome, type Stage, type StepContext } from './world';
+import { findPlayer, isAlive, setDown, ownsHook, updatePlayer, type Outcome, type Stage, type StepContext } from './world';
 
 /** Alive, owns a grapple that is off cooldown. A grappling player is not alive, so this also rules out a second grapple. */
 export function grappleReady(player: Player, t: number): boolean {
@@ -73,7 +73,7 @@ function pull(state: GameState, g: Grapple, owner: Player, ctx: StepContext): Ou
     return { state: updatePlayer(state, owner.id, (p) => ({ ...p, pos })), events: [] };
   }
   const arrived = updatePlayer(withoutGrapple(state, g.id), owner.id, (p) =>
-    startCooldown(landed({ ...p, pos: g.anchor }, ctx.t), ctx.t),
+    startCooldown(setDown({ ...p, pos: g.anchor }, ctx.t), ctx.t),
   );
   return { state: arrived, events: [{ kind: 'grappleArrive', playerId: owner.id, at: g.anchor }] };
 }

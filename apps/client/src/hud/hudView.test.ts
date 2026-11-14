@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { TUNING } from '@hookbrawl/sim';
 import type { HookId, PlayerId } from '@hookbrawl/sim';
 import { BOT, fakePlayer, fakeState, HUMAN } from '../game/fakeSim';
-import { appendKills, deriveHud, KILL_FEED_SIZE } from './hudView';
+import { appendKills, cooldownLabel, deriveHud, KILL_FEED_SIZE } from './hudView';
 
 const players = [
   fakePlayer({ id: HUMAN, name: 'You', hookReadyAt: 10.6 }),
@@ -54,6 +54,12 @@ describe('appendKills', () => {
     expect(feed[0]?.killer.name).toBe('You');
   });
 
+  it('lists a kill once even when the same state is seen twice', () => {
+    const state = fakeState({ tick: 7, players, events: [{ kind: 'kill', killerId: HUMAN, victimId: BOT, assistIds: [], at: { x: 0, y: 0 } }] });
+    const once = appendKills([], state);
+    expect(appendKills(once, state)).toEqual(once);
+  });
+
   it('names everyone who assisted', () => {
     const ally = fakePlayer({ id: 'ally' as PlayerId, name: 'Ally' });
     const state = fakeState({
@@ -61,5 +67,13 @@ describe('appendKills', () => {
       events: [{ kind: 'kill', killerId: HUMAN, victimId: BOT, assistIds: [ally.id], at: { x: 0, y: 0 } }],
     });
     expect(appendKills([], state)[0]?.assisters).toEqual([{ name: 'Ally', team: 'west' }]);
+  });
+});
+
+describe('cooldownLabel', () => {
+  it('never shows zero while time is still left', () => {
+    expect(cooldownLabel(0.6)).toBe('0.6s');
+    expect(cooldownLabel(0.04)).toBe('0.1s');
+    expect(cooldownLabel(1.01)).toBe('1.1s');
   });
 });

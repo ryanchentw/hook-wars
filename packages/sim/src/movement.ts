@@ -3,27 +3,38 @@ import { TUNING } from './config';
 import { along, distance, normalize, sub } from './geometry';
 import { IDLE, interrupt } from './intent';
 import type { Arena, GameEvent, GameState, Player, Vec2 } from './types';
-import { landed, type Stage } from './world';
+import type { Stage } from './world';
 
-function respawn(state: GameState, p: Player, t: number): Player {
-  const revived = {
+function respawn(state: GameState, p: Player): Player {
+  return {
     ...p,
     pos: spawnPoint(state.arena, p.team, p.spawnIndex),
     facing: facingCanal(p.team),
     hp: TUNING.maxHp,
+    status: { kind: 'alive' },
     move: interrupt(p.move),
   };
-  return landed(revived, t);
 }
 
 export const respawnPlayers: Stage = (state, { t }) => {
   const due = (p: Player) => p.status.kind === 'dead' && p.status.respawnAt <= t;
   const events: GameEvent[] = state.players.filter(due).map((p) => ({ kind: 'respawn', playerId: p.id }));
   return {
-    state: { ...state, players: state.players.map((p) => (due(p) ? respawn(state, p, t) : p)) },
+    state: { ...state, players: state.players.map((p) => (due(p) ? respawn(state, p) : p)) },
     events,
   };
 };
+
+/** A stagger that has run out puts the player back on their feet before anyone moves this step. */
+export const recoverPlayers: Stage = (state, { t }) => ({
+  state: {
+    ...state,
+    players: state.players.map((p) =>
+      p.status.kind === 'staggered' && p.status.until <= t ? { ...p, status: { kind: 'alive' } } : p,
+    ),
+  },
+  events: [],
+});
 
 function walkToward(p: Player, target: Vec2, stride: number): Player {
   const remaining = distance(p.pos, target);

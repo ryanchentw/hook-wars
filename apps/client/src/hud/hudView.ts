@@ -74,7 +74,17 @@ export function appendKills(feed: readonly KillFeedEntry[], state: GameState): r
     const assisters = e.assistIds.flatMap((id) => byId(id) ?? []).map(named);
     return [{ key: `${state.tick}-${e.killerId}-${e.victimId}`, killer: named(killer), victim: named(victim), assisters }];
   });
-  return fresh.length === 0 ? feed : [...fresh.reverse(), ...feed].slice(0, KILL_FEED_SIZE);
+  // The store can be handed the same state more than once; a kill already listed must not be listed again.
+  const seen = new Set(feed.map((entry) => entry.key));
+  const unseen = fresh.filter((entry) => !seen.has(entry.key));
+  return unseen.length === 0 ? feed : [...unseen.reverse(), ...feed].slice(0, KILL_FEED_SIZE);
+}
+
+const TENTHS = 10;
+
+/** Rounds up, so the label reads 0.1s until the moment the action is ready and never a misleading 0.0s. */
+export function cooldownLabel(seconds: number): string {
+  return `${(Math.ceil(seconds * TENTHS) / TENTHS).toFixed(1)}s`;
 }
 
 function localView(state: GameState, me: Player): LocalView {

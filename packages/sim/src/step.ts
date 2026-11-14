@@ -3,7 +3,7 @@ import { settleEconomy } from './economy';
 import { advanceGrapples } from './grapple';
 import { advanceHooks } from './hooks';
 import { applyInputs } from './inputs';
-import { movePlayers, respawnPlayers } from './movement';
+import { movePlayers, recoverPlayers, respawnPlayers } from './movement';
 import { separatePlayers } from './separation';
 import type { GameEvent, GameState, PlayerInput } from './types';
 import type { Outcome, Stage } from './world';
@@ -11,6 +11,7 @@ import type { Outcome, Stage } from './world';
 const STAGES: readonly Stage[] = [
   settleEconomy,
   respawnPlayers,
+  recoverPlayers,
   movePlayers,
   advanceHooks,
   advanceGrapples,

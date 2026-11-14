@@ -215,18 +215,19 @@
   font: 700 11px var(--font-display);
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  z-index: 1;
   pointer-events: none;
   animation: hud-fade var(--flash-time) ease-out forwards;
 }
 
 .hud-slot-flash.is-good {
-  background: rgba(30, 44, 16, 0.92);
+  background: rgb(30, 44, 16);
   color: var(--good);
   box-shadow: inset 0 0 0 1px var(--good);
 }
 
 .hud-slot-flash.is-bad {
-  background: rgba(48, 16, 12, 0.92);
+  background: rgb(48, 16, 12);
   color: var(--bad);
   box-shadow: inset 0 0 0 1px var(--bad);
 

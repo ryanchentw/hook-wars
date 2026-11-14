@@ -6,7 +6,7 @@ import { endGrapple } from './grapple';
 import { fly } from './hookFlight';
 import { interrupt } from './intent';
 import type { GameEvent, GameState, Hook, Player, Vec2 } from './types';
-import { findPlayer, landed, replaceHook, updatePlayer, type Outcome, type Stage, type StepContext } from './world';
+import { findPlayer, setDown, replaceHook, updatePlayer, type Outcome, type Stage, type StepContext } from './world';
 
 /** Below this the hook has spent its range; float residue must not keep it extending. */
 const SPENT = 1e-9;
@@ -40,7 +40,7 @@ function extend(state: GameState, hook: Hook, remaining: number, ctx: StepContex
 
 function release(cargo: Player, hook: Hook, state: GameState, at: Vec2, t: number): Player {
   const draggedHere = cargo.status.kind === 'dragged' && cargo.status.hookId === hook.id;
-  return draggedHere ? landed({ ...cargo, pos: clampToNearestDock(state.arena, at) }, t) : cargo;
+  return draggedHere ? setDown({ ...cargo, pos: clampToNearestDock(state.arena, at) }, t) : cargo;
 }
 
 function retract(state: GameState, hook: Hook, cargo: Player['id'] | null, ctx: StepContext): GameState {
@@ -55,9 +55,13 @@ function retract(state: GameState, hook: Hook, cargo: Player['id'] | null, ctx: 
     return cargo === null ? moved : updatePlayer(moved, cargo, (p) => ({ ...p, pos }));
   }
   const at = gap > reach ? along(owner.pos, normalize(sub(hook.pos, owner.pos)), reach) : hook.pos;
+  const caught = cargo === null ? undefined : findPlayer(state, cargo);
+  // Landing a catch must always pay off, so the thrower's swing is ready however recently they last swung.
+  const swingNow = caught !== undefined && caught.team !== owner.team;
   const ready = updatePlayer(replaceHook(state, hook.id, null), owner.id, (p) => ({
     ...p,
     hookReadyAt: ctx.t + TUNING.hookCooldown,
+    meleeReadyAt: swingNow ? Math.min(p.meleeReadyAt, ctx.t) : p.meleeReadyAt,
   }));
   return cargo === null ? ready : updatePlayer(ready, cargo, (p) => release(p, hook, ready, at, ctx.t));
 }

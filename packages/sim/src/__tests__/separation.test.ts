@@ -52,7 +52,7 @@ describe('body separation', () => {
     const thrown = step(s, [{ kind: 'hook', playerId: pid('w'), target: at(1600, 500) }], TICK_DT);
     const { state } = runUntil(thrown, (g) => g.hooks.length === 0, 300);
     const settled = step(state, [], TICK_DT);
-    expect(player(settled, 'e').status.kind).toBe('alive');
+    expect(player(settled, 'e').status.kind).toBe('staggered');
     expect(gap(player(settled, 'w').pos, player(settled, 'e').pos)).toBeGreaterThanOrEqual(BODY - 1e-6);
   });
 });

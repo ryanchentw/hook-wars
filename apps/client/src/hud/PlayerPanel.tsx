@@ -1,6 +1,6 @@
 import type { Purchase } from '@hookbrawl/sim';
 import { CRITICAL_HP_FRACTION, LOW_HP_FRACTION } from '../game/health';
-import type { Bounty, Feedback, LocalView } from './hudView';
+import { cooldownLabel, type Bounty, type Feedback, type LocalView } from './hudView';
 import type { GrappleView } from './shopView';
 import { keepFocus, SlotFlash } from './ShopStrip';
 
@@ -53,7 +53,7 @@ function grappleStatus(view: Exclude<GrappleView, { kind: 'locked' }>): { label:
     case 'ready':
       return { label: 'ready', sweep: 0 };
     case 'cooldown':
-      return { label: `${view.seconds.toFixed(1)}s`, sweep: view.fraction * FULL_SWEEP };
+      return { label: cooldownLabel(view.seconds), sweep: view.fraction * FULL_SWEEP };
     case 'busy':
       return { label: 'busy', sweep: FULL_SWEEP };
   }
@@ -85,7 +85,7 @@ type Props = { readonly local: LocalView; readonly feedback: Feedback; readonly 
 
 export function PlayerPanel({ local, feedback, onBuy }: Props) {
   const ready = !local.hookInFlight && local.cooldownSeconds <= 0;
-  const hookLabel = local.hookInFlight ? 'in flight' : ready ? 'ready' : `${local.cooldownSeconds.toFixed(1)}s`;
+  const hookLabel = local.hookInFlight ? 'in flight' : ready ? 'ready' : cooldownLabel(local.cooldownSeconds);
   const hookSweep = local.hookInFlight ? FULL_SWEEP : local.cooldownFraction * FULL_SWEEP;
   return (
     <div className="hud-panel hud-plate">

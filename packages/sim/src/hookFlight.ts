@@ -45,7 +45,8 @@ function firstSurface(arena: Arena, p: Vec2, dir: Vec2, maxT: number, hookRadius
 }
 
 /** Only a player standing or grappling can be latched; a dragged player already rides a hook. */
-const hookable = (p: Player): boolean => p.status.kind === 'alive' || p.status.kind === 'grappling';
+const HOOKABLE: ReadonlySet<Player['status']['kind']> = new Set(['alive', 'grappling', 'staggered']);
+const hookable = (p: Player): boolean => HOOKABLE.has(p.status.kind);
 
 function firstPlayer(state: GameState, hook: Hook, p: Vec2, dir: Vec2, maxT: number) {
   const reach = TUNING.playerRadius + hook.stats.radius;

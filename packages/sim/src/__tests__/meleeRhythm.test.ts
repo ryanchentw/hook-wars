@@ -55,3 +55,46 @@ describe('melee rhythm', () => {
     expect(swings[1]!.tick).toBeGreaterThan(swings[0]!.tick);
   });
 });
+
+function dropped(): GameState {
+  let state = step(duel(), [{ kind: 'hook', playerId: pid('w'), target: at(1500, 335) }], TICK_DT);
+  for (let i = 0; i < 240 && state.players.find((p) => p.id === 'e')!.status.kind !== 'staggered'; i++) {
+    state = step(state, [], TICK_DT);
+  }
+  return state;
+}
+
+const east = (s: GameState) => s.players.find((p) => p.id === 'e')!;
+const STAGGER_TICKS = Math.ceil(TUNING.landingStagger * TICK_RATE);
+
+describe('landing stagger', () => {
+  it('leaves a player set down by a hook unable to walk, throw or swing until it passes', () => {
+    const start = dropped();
+    expect(east(start).status.kind).toBe('staggered');
+    const orders: readonly PlayerInput[] = [
+      { kind: 'steer', playerId: pid('e'), dir: { x: 0, y: 1 } },
+      { kind: 'hook', playerId: pid('e'), target: at(0, 0) },
+    ];
+    let state = step(start, orders, TICK_DT);
+    const held = east(state).pos;
+    for (let i = 1; i < STAGGER_TICKS - 1; i++) state = step(state, [], TICK_DT);
+    expect(east(state).status.kind).toBe('staggered');
+    expect(east(state).pos).toEqual(held);
+    expect(state.hooks).toEqual([]);
+
+    for (let i = 0; i < 3; i++) state = step(state, [], TICK_DT);
+    expect(east(state).status.kind).toBe('alive');
+    expect(east(state).pos.y).toBeGreaterThan(held.y);
+  });
+
+  it('readies the thrower the moment the catch is set down, even if they swung a moment ago', () => {
+    const tired = withPlayer(duel(), 'w', { meleeReadyAt: 1e6 });
+    const swings = swingsOver(tired, 240, [{ kind: 'hook', playerId: pid('w'), target: at(1500, 335) }]);
+    expect(swings[0]!.attackerId).toBe('w');
+  });
+
+  it('does not stagger a player who respawns', () => {
+    const dead = withPlayer(duel(), 'e', { status: { kind: 'dead', respawnAt: 0 } });
+    expect(east(step(dead, [], TICK_DT)).status.kind).toBe('alive');
+  });
+});

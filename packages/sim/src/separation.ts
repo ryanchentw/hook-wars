@@ -8,7 +8,7 @@ const BODY = TUNING.bodySpacing;
 
 const solid = (p: Player): boolean => p.status.kind !== 'dead';
 /** A dragged or grappling player is carried by a line, so only a free player gives way. */
-const yields = (p: Player): boolean => p.status.kind === 'alive';
+const yields = (p: Player): boolean => p.status.kind === 'alive' || p.status.kind === 'staggered';
 
 function nudge(arena: Arena, p: Player, by: { readonly x: number; readonly y: number }): Player {
   return { ...p, pos: clampToDock(arena, add(p.pos, by), dockAt(arena, p.pos)) };

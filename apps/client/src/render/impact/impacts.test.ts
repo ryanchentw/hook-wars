@@ -87,8 +87,8 @@ describe('a melee blow at the brawling distance and rhythm', () => {
 
   it('has both bodies back in place before the answering blow, which comes the recovery time later', () => {
     const { hitStop, lunge, recoil } = IMPACTS.melee;
-    expect(hitStop + end(lunge.envelope)).toBeLessThan(TUNING.meleeRecovery);
-    expect(hitStop + end(recoil.envelope)).toBeLessThan(TUNING.meleeRecovery);
+    expect(hitStop + end(lunge.envelope)).toBeLessThan(TUNING.landingStagger);
+    expect(hitStop + end(recoil.envelope)).toBeLessThan(TUNING.landingStagger);
   });
 
   it('never carries the attacker into the victim, even while the victim is knocked back towards nobody', () => {

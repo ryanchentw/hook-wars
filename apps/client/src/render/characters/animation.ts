@@ -1,6 +1,6 @@
 import type { GameEvent, Grapple, Hook, Player, PlayerId } from '@hookbrawl/sim';
 
-export type AnimState = 'idle' | 'run' | 'throw' | 'hold' | 'swing' | 'flinch' | 'dragged' | 'brace' | 'haul' | 'death';
+export type AnimState = 'idle' | 'run' | 'throw' | 'hold' | 'swing' | 'flinch' | 'dragged' | 'stagger' | 'brace' | 'haul' | 'death';
 
 /** `once` returns to a resting state when the clip ends; `clamp` stays on the clip's last frame. */
 export type Playback = 'loop' | 'once' | 'clamp';
@@ -29,6 +29,8 @@ export const ANIMATIONS: Readonly<Record<AnimState, AnimSpec>> = {
   swing: { clip: '1H_Melee_Attack_Slice_Horizontal', playback: 'once', fadeIn: 0, timeScale: 1, startAt: 0.235, endAt: 0.5 },
   flinch: { clip: 'Hit_A', playback: 'once', fadeIn: 0.05, timeScale: 1.4, startAt: 0, endAt: 0.8 },
   dragged: { clip: 'Jump_Idle', playback: 'loop', fadeIn: 0.08, timeScale: 1.6, startAt: 0, endAt: 1 },
+  // Set down hard: the player cannot act for `TUNING.landingStagger`, and has to be able to see why.
+  stagger: { clip: 'Hit_B', playback: 'loop', fadeIn: 0.05, timeScale: 1.2, startAt: 0, endAt: 1 },
   // Feet planted and the body set against the line while the head is in the air.
   brace: { clip: 'Blocking', playback: 'loop', fadeIn: 0.06, timeScale: 1, startAt: 0, endAt: 1 },
   haul: { clip: 'Jump_Idle', playback: 'loop', fadeIn: 0.1, timeScale: 1, startAt: 0, endAt: 1 },
@@ -50,6 +52,7 @@ export type AnimTrigger = 'cast' | 'strike' | 'hurt';
 const RESTING: readonly { readonly when: (f: AnimFacts) => boolean; readonly state: AnimState; readonly forced: boolean }[] = [
   { when: (f) => f.status === 'dead', state: 'death', forced: true },
   { when: (f) => f.status === 'dragged', state: 'dragged', forced: true },
+  { when: (f) => f.status === 'staggered', state: 'stagger', forced: true },
   { when: (f) => f.grapple === 'pulling', state: 'haul', forced: true },
   { when: (f) => f.grapple === 'flying', state: 'brace', forced: true },
   { when: (f) => f.moving, state: 'run', forced: false },

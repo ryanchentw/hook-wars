@@ -27,11 +27,11 @@ export function replaceHook(state: GameState, id: HookId, next: Hook | null): Ga
 export const isAlive = (p: Player): boolean => p.status.kind === 'alive';
 
 /**
- * Enemies only ever meet because one of them was just put there. Making the arrival wait half an
- * interval turns a brawl into alternating blows instead of two swings landing on the same tick.
+ * Enemies only ever meet because one of them was just put there. Staggering the arrival gives
+ * whoever was already standing the first blow, and the two then alternate instead of trading on one tick.
  */
-export function landed(p: Player, t: number): Player {
-  return { ...p, status: { kind: 'alive' }, meleeReadyAt: Math.max(p.meleeReadyAt, t + TUNING.meleeRecovery) };
+export function setDown(p: Player, t: number): Player {
+  return { ...p, status: { kind: 'staggered', until: t + TUNING.landingStagger } };
 }
 
 export function ownsHook(state: GameState, id: PlayerId): boolean {

@@ -9,7 +9,7 @@ function duel(w: Vec2, e: Vec2, extra: readonly [string, Vec2][] = []): GameStat
   return armed(placed.reduce((s, [id, pos]) => withPlayer(s, id, { pos }), match(roster)), 'w');
 }
 
-const arrived = (s: GameState) => player(s, 'w').status.kind === 'alive';
+const arrived = (s: GameState) => player(s, 'w').status.kind === 'staggered';
 const readyAt = (s: GameState): number => {
   const item = player(s, 'w').items.grapple;
   return item.kind === 'owned' ? item.readyAt : Number.NaN;
@@ -81,13 +81,15 @@ describe('grapple', () => {
     });
   });
 
-  it('a grappling owner stands still, keeps a held steer, and walks on after arriving', () => {
+  it('a grappling owner stands still, keeps a held steer, and walks on once the landing stagger passes', () => {
     const s0 = step(duel(at(420, 1200), at(2300, 1250)), [steer('w', 1, 0), grapple('w', at(420, 100))], TICK_DT);
     const flying = run(s0, 5).state;
     expect(player(flying, 'w').pos).toEqual(at(420, 1200));
     const home = runUntil(flying, arrived, 120).state;
     expect(player(home, 'w').move).toEqual({ kind: 'steer', dir: at(1, 0) });
-    expect(player(run(home, 3).state, 'w').pos.x).toBeGreaterThan(player(home, 'w').pos.x);
+    const recovered = run(home, Math.ceil(TUNING.landingStagger / TICK_DT) + 2).state;
+    expect(player(recovered, 'w').status.kind).toBe('alive');
+    expect(player(recovered, 'w').pos.x).toBeGreaterThan(player(home, 'w').pos.x);
   });
 
   it('a grappling owner cannot throw a hook or swing, but can be struck', () => {

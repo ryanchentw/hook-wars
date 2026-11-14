@@ -75,7 +75,7 @@ describe('hook', () => {
 
     const back = runUntil(hit.state, noHooks, 120).state;
     const e = player(back, 'e');
-    expect(e.status).toEqual({ kind: 'alive' });
+    expect(e.status.kind).toBe('staggered');
     expect(e.pos.x).toBeLessThan(back.arena.canal.x0);
     expect(insideWalkable(back, e.pos)).toBe(true);
     const w = player(back, 'w');
@@ -89,7 +89,7 @@ describe('hook', () => {
     expect(player(hit.state, 'w2').hp).toBe(TUNING.maxHp);
     expect(player(hit.state, 'w2').status.kind).toBe('dragged');
     const back = runUntil(hit.state, noHooks, 60).state;
-    expect(player(back, 'w2').status).toEqual({ kind: 'alive' });
+    expect(player(back, 'w2').status.kind).toBe('staggered');
     expect(player(back, 'w2').pos.x).toBeLessThan(800);
   });
 

@@ -57,6 +57,14 @@ describe('animation state table', () => {
     expect(nextAnimState('idle', dead, ['hurt'], false)).toBe('death');
   });
 
+  it('reels while set down by a hook or grapple, then stands', () => {
+    const reeling: AnimFacts = { ...standing, status: 'staggered' };
+    expect(nextAnimState('dragged', reeling, [], false)).toBe('stagger');
+    expect(nextAnimState('haul', reeling, [], false)).toBe('stagger');
+    expect(nextAnimState('stagger', reeling, ['hurt'], false)).toBe('stagger');
+    expect(nextAnimState('stagger', standing, [], false)).toBe('idle');
+  });
+
   it('braces while the grapple line flies, is hauled once it bites, and lands back on its feet', () => {
     expect(nextAnimState('idle', bracing, [], false)).toBe('brace');
     expect(nextAnimState('run', bracing, [], false)).toBe('brace');
@@ -94,7 +102,7 @@ describe('animation state table', () => {
 
   it('maps every state to a clip with the right playback', () => {
     const states = Object.keys(ANIMATIONS) as AnimState[];
-    expect(states.sort()).toEqual(['brace', 'death', 'dragged', 'flinch', 'haul', 'hold', 'idle', 'run', 'swing', 'throw']);
+    expect(states.sort()).toEqual(['brace', 'death', 'dragged', 'flinch', 'haul', 'hold', 'idle', 'run', 'stagger', 'swing', 'throw']);
     states.forEach((s) => expect(ANIMATIONS[s].clip.length).toBeGreaterThan(0));
     expect(ANIMATIONS.idle.playback).toBe('loop');
     expect(ANIMATIONS.run.playback).toBe('loop');

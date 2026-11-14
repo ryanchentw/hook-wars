@@ -24,6 +24,8 @@ export type PlayerStatus =
   | { readonly kind: 'alive' }
   | { readonly kind: 'dragged'; readonly hookId: HookId }
   | { readonly kind: 'grappling'; readonly grappleId: GrappleId }
+  /** Just set down by a hook or a grapple: on their feet and hittable, but unable to act until `until`. */
+  | { readonly kind: 'staggered'; readonly until: number }
   | { readonly kind: 'dead'; readonly respawnAt: number };
 
 export type MoveIntent =

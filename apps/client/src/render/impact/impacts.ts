@@ -15,7 +15,7 @@ export type ImpactSpec = ImpactTiming & {
 
 /**
  * The one table that says what a blow looks like. Every layer of a hit reads its strength and timing from here.
- * Brawlers alternate, so the answering blow lands `TUNING.meleeRecovery` after this one; every layer of a melee blow
+ * Brawlers alternate, so the answering blow lands `TUNING.landingStagger` after this one; every layer of a melee blow
  * has to be over by then, or the two would blur into one.
  */
 export const IMPACTS: Readonly<Record<ImpactKind, ImpactSpec>> = {
