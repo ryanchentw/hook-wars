@@ -5,9 +5,13 @@
   "packageManager": "pnpm@11.9.0",
   "scripts": {
     "dev": "pnpm --filter @hookbrawl/client dev",
-    "build": "pnpm --filter @hookbrawl/client build",
+    "dev:server": "pnpm --filter @hookbrawl/server dev",
+    "dev:online": "pnpm --parallel --filter @hookbrawl/client --filter @hookbrawl/server dev",
+    "build": "pnpm --filter @hookbrawl/client --filter @hookbrawl/server build",
+    "start": "HOOKBRAWL_STATIC_DIR=apps/client/dist node apps/server/dist/server.js",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
-    "e2e": "pnpm --filter @hookbrawl/client e2e"
+    "e2e": "pnpm --filter @hookbrawl/client e2e",
+    "e2e:online": "pnpm --filter @hookbrawl/client e2e:online"
   }
 }

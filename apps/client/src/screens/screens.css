@@ -313,3 +313,143 @@
 .lobby-title:focus {
   outline: none;
 }
+
+/* Online */
+
+.menu-online {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--iron);
+  text-align: left;
+}
+
+.menu-online-title {
+  margin: 0 0 10px;
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+  text-align: center;
+}
+
+.menu-invite {
+  margin: 0 0 10px;
+  text-align: center;
+}
+
+.menu-join-row {
+  display: flex;
+  gap: 8px;
+}
+
+.menu-join-row .field-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.room-code-input {
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.menu-create {
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.room-share {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 12px;
+  white-space: nowrap;
+}
+
+.room-code strong {
+  font: 700 18px var(--font-display);
+  letter-spacing: 0.18em;
+  color: var(--gold);
+  user-select: all;
+}
+
+.room-code .field-label {
+  display: inline;
+}
+
+.room-copy {
+  position: relative;
+}
+
+/* Shown and hidden by opacity alone, so the words stay in the accessibility tree to be announced. */
+.room-tip {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  translate: -50% 0;
+  padding: 3px 8px;
+  border: 1px solid var(--iron);
+  border-radius: 2px;
+  background: #0e0c0a;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.room-tip[data-shown='true'] {
+  opacity: 1;
+}
+
+.slot-away {
+  color: var(--bad);
+}
+
+.net-status {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.net-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6fbf73;
+}
+
+.net-connecting .net-dot,
+.net-reconnecting .net-dot {
+  background: var(--gold);
+}
+
+.net-reconnecting {
+  border-color: var(--bad);
+  font-weight: 700;
+}
+
+.net-detail {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-end-wait {
+  margin: 0 0 12px;
+  font-style: italic;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .room-tip {
+    transition: none;
+  }
+}

@@ -6,5 +6,5 @@
     "allowImportingTsExtensions": true,
     "types": ["vite/client"]
   },
-  "include": ["src", "e2e", "vite.config.ts", "playwright.config.ts", "devPort.ts"]
+  "include": ["src", "e2e", "e2e-online", "vite.config.ts", "playwright.config.ts", "playwright.online.config.ts", "devPort.ts"]
 }

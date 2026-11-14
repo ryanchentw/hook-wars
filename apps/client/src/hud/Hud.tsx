@@ -2,6 +2,7 @@ import { Fragment, useSyncExternalStore } from 'react';
 import type { MatchHandle } from '../app/matchHost';
 import { SHOP_SLOTS } from '../game/bindings';
 import { EndPanel } from './EndPanel';
+import { LeaveConfirm } from './LeaveConfirm';
 import type { KillFeedEntry } from './hudView';
 import { CreditsLink, TEAM_LABEL } from './labels';
 import { PauseMenu } from './PauseMenu';
@@ -66,9 +67,17 @@ function Hint() {
   );
 }
 
-type HudProps = { readonly match: MatchHandle; readonly onRematch: () => void; readonly onLobby: () => void };
+type HudProps = {
+  readonly match: MatchHandle;
+  /** Null when this player may not start the rematch. */
+  readonly onRematch: (() => void) | null;
+  /** Leaves a match that is over, or a local one at any time. */
+  readonly onLobby: () => void;
+  /** Leaves an online match that is still being played, once the player has said they mean it. */
+  readonly onLeave: () => void;
+};
 
-export function Hud({ match, onRematch, onLobby }: HudProps) {
+export function Hud({ match, onRematch, onLobby, onLeave }: HudProps) {
   const view = useSyncExternalStore(match.hud.subscribe, match.hud.getSnapshot);
   const ui = useSyncExternalStore(match.ui.subscribe, match.ui.getSnapshot);
   const respawnIn = view.local?.respawnIn ?? null;
@@ -89,7 +98,7 @@ export function Hud({ match, onRematch, onLobby }: HudProps) {
             Scores <kbd className="hud-key" aria-hidden="true">Tab</kbd>
           </button>
           <button type="button" className="hud-button" aria-keyshortcuts="Escape" onClick={() => match.setPaused(true)} disabled={view.end !== null}>
-            Pause <kbd className="hud-key" aria-hidden="true">Esc</kbd>
+            {match.holds.menu ? 'Pause' : 'Menu'} <kbd className="hud-key" aria-hidden="true">Esc</kbd>
           </button>
           <CreditsLink />
         </div>
@@ -99,7 +108,14 @@ export function Hud({ match, onRematch, onLobby }: HudProps) {
         {view.feedback.announcement}
       </p>
       {view.end !== null && <EndPanel end={view.end} board={view.scoreboard} onRematch={onRematch} onLobby={onLobby} />}
-      <PauseMenu open={ui.paused} onResume={() => match.setPaused(false)} onLobby={onLobby} />
+      <PauseMenu
+        open={ui.paused}
+        holds={match.holds.menu}
+        leaveLabel={match.online ? 'Leave match' : 'Back to lobby'}
+        onResume={() => match.setPaused(false)}
+        onLeave={match.online ? () => match.setLeaving(true) : onLobby}
+      />
+      <LeaveConfirm open={ui.leaving} onStay={() => match.setLeaving(false)} onLeave={onLeave} />
     </div>
   );
 }

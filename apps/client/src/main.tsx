@@ -4,6 +4,7 @@ import { createApp } from './app/controller';
 import { startMatch } from './app/matchHost';
 import { pageOptionsFromQuery } from './app/matchSetup';
 import { createNameStore } from './app/nameStore';
+import { browserOnline } from './app/onlineSetup';
 import { createRouter } from './app/route';
 import { createBootScreen } from './boot/bootScreen';
 import { loadAssets } from './render/assets/loadAssets';
@@ -39,7 +40,8 @@ async function start(): Promise<void> {
       page,
       names: createNameStore(() => window.localStorage),
       makeBackdrop: (scene) => createBackdrop(graphics, scene, context),
-      startMatch: (setup, view, rematch) => startMatch({ graphics, setup, view, router, hudElement: hud, context, rematch }),
+      startMatch: (source, view, rematch) => startMatch({ graphics, source, view, router, hudElement: hud, context, rematch }),
+      online: browserOnline(window),
       focusGame: () => stage.focus(),
       busy(starting) {
         stage.dataset.state = starting ? 'starting' : 'ready';

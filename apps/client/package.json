@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run --passWithNoTests",
     "typecheck": "tsc --noEmit",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "e2e:online": "playwright test --config playwright.online.config.ts"
   },
   "dependencies": {
     "@hookbrawl/protocol": "workspace:*",

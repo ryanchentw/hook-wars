@@ -9,6 +9,9 @@ type Props = {
   readonly slot: Slot;
   readonly member: MemberId;
   readonly isHost: boolean;
+  /** Online only: the member in this seat hosts the room, or has dropped and may yet return. */
+  readonly hosts: boolean;
+  readonly away: boolean;
   readonly act: (action: LocalAction) => void;
 };
 
@@ -17,22 +20,24 @@ function Where({ at }: { readonly at: SlotRef }) {
   return <span className="hud-sr"> in {TEAM_LABEL[at.team]} slot {at.index + 1}</span>;
 }
 
-function Occupant({ at, slot, member }: Pick<Props, 'at' | 'slot' | 'member'>) {
+function Occupant({ at, slot, member, hosts, away }: Pick<Props, 'at' | 'slot' | 'member' | 'hosts' | 'away'>) {
   if (slot.kind === 'empty') return <span className="slot-name slot-empty">Open slot</span>;
   const isYou = slot.kind === 'human' && slot.memberId === member;
   return (
     <span className="slot-name">
       {slot.kind === 'human' ? slot.name : botName(at)}
       <span className="score-tag">{isYou ? 'you' : slot.kind === 'bot' ? 'bot' : 'player'}</span>
+      {hosts && <span className="score-tag">host</span>}
+      {away && <span className="score-tag slot-away">reconnecting</span>}
     </span>
   );
 }
 
 /** One seat in a team column. The row itself takes focus when the button that was pressed goes away with the change. */
-export const SlotRow = forwardRef<HTMLLIElement, Props>(function SlotRow({ at, slot, member, isHost, act }, ref) {
+export const SlotRow = forwardRef<HTMLLIElement, Props>(function SlotRow({ at, slot, member, isHost, hosts, away, act }, ref) {
   return (
     <li ref={ref} tabIndex={-1} className={`slot slot-${slot.kind}`}>
-      <Occupant at={at} slot={slot} member={member} />
+      <Occupant at={at} slot={slot} member={member} hosts={hosts} away={away} />
       <span className="slot-actions">
         {slot.kind === 'empty' && (
           <button type="button" className="hud-button" onClick={() => act({ kind: 'moveTo', slot: at })}>

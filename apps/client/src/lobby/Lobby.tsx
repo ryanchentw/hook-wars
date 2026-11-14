@@ -1,11 +1,12 @@
 import { canStart, fighterCount, hasEmptySlot, KILL_TARGETS, SCENE_IDS, SLOTS_PER_TEAM, TEAMS } from '@hookbrawl/room';
-import type { SlotRef } from '@hookbrawl/room';
+import type { MemberId, Slot, SlotRef } from '@hookbrawl/room';
 import type { TeamId } from '@hookbrawl/sim';
 import { useEffect, useId, useRef } from 'react';
 import type { App, AppView, LocalAction } from '../app/controller';
 import { CreditsLink, TEAM_LABEL } from '../hud/labels';
 import { SCENES } from '../render/scenes/registry';
 import { Notice } from '../screens/Notice';
+import { RoomShare } from './RoomShare';
 import { SlotRow } from './SlotRow';
 
 type Props = { readonly view: AppView; readonly app: App };
@@ -34,7 +35,8 @@ function useFocusKeeper() {
 
 function TeamColumn({ team, view, act, rowRef }: { readonly team: TeamId; readonly view: AppView; readonly act: (a: LocalAction) => void; readonly rowRef: (at: SlotRef) => (el: HTMLLIElement | null) => void }) {
   const headingId = useId();
-  const { room, member } = view;
+  const { room, member, online } = view;
+  const memberAt = (slot: Slot): MemberId | null => (slot.kind === 'human' ? slot.memberId : null);
   return (
     <section className={`team team-${team} hud-plate`} aria-labelledby={headingId}>
       <h2 id={headingId} className={`team-name hud-${team}`}>
@@ -45,7 +47,17 @@ function TeamColumn({ team, view, act, rowRef }: { readonly team: TeamId; readon
       </h2>
       <ol className="slots">
         {room.slots[team].map((slot, index) => (
-          <SlotRow key={index} ref={rowRef({ team, index })} at={{ team, index }} slot={slot} member={member} isHost={room.host === member} act={act} />
+          <SlotRow
+            key={index}
+            ref={rowRef({ team, index })}
+            at={{ team, index }}
+            slot={slot}
+            member={member}
+            isHost={room.host === member}
+            hosts={online !== null && memberAt(slot) === room.host}
+            away={online !== null && online.away.some((id) => id === memberAt(slot))}
+            act={act}
+          />
         ))}
       </ol>
     </section>
@@ -100,13 +112,20 @@ function Settings({ view, act }: { readonly view: AppView; readonly act: (a: Loc
   );
 }
 
-/** Who fights on which side, and how the match is set up. Nothing here is a dead control: no room code until rooms are served. */
+/** Why the match cannot be started from here right now, or null when it can. */
+function startBlocker(view: AppView): string | null {
+  if (view.room.phase.kind === 'in-match') return 'A match is being played. You are in the next one.';
+  if (!canStart(view.room)) return 'Each side needs at least one fighter.';
+  return view.room.host === view.member ? null : 'The host starts the match.';
+}
+
+/** Who fights on which side, and how the match is set up. Online, the room's code and link sit beside the credits. */
 export function Lobby({ view, app }: Props) {
   const heading = useRef<HTMLHeadingElement>(null);
   const reasonId = useId();
   const titleId = useId();
   const keeper = useFocusKeeper();
-  const ready = canStart(view.room);
+  const blocker = startBlocker(view);
   const isHost = view.room.host === view.member;
   useEffect(() => heading.current?.focus(), []);
   const act = (action: LocalAction): void => {
@@ -123,8 +142,8 @@ export function Lobby({ view, app }: Props) {
         <h1 ref={heading} id={titleId} tabIndex={-1} className="lobby-title">
           Lobby
         </h1>
-        {/* The room code and share link go beside the credits once a server can answer them. */}
         <div className="lobby-share">
+          {view.online !== null && <RoomShare code={view.online.code} link={view.online.link} />}
           <CreditsLink />
         </div>
       </header>
@@ -141,11 +160,11 @@ export function Lobby({ view, app }: Props) {
             Fill with bots
           </button>
         )}
-        <button type="button" className="hud-primary" disabled={!ready || !isHost} aria-describedby={ready ? undefined : reasonId} onClick={app.start}>
+        <button type="button" className="hud-primary" disabled={blocker !== null} aria-describedby={blocker === null ? undefined : reasonId} onClick={app.start}>
           Start match
         </button>
-        <p id={reasonId} className="lobby-reason" hidden={ready}>
-          Each side needs at least one fighter.
+        <p id={reasonId} className="lobby-reason" hidden={blocker === null}>
+          {blocker}
         </p>
       </div>
     </main>

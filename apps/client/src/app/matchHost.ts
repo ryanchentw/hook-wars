@@ -4,8 +4,10 @@ import { facingAim } from '../game/bindings';
 import { bindInput } from '../game/input';
 import { bindIntroSkip } from '../game/introSkip';
 import { bindMatchKeys } from '../game/matchKeys';
-import { createPauseGate, type PauseGate } from '../game/pauseGate';
+import { createPauseGate, HOLDS_MATCH, HOLDS_ONLINE, type Holds, type PauseGate } from '../game/pauseGate';
 import { createSession, type Session, type SessionSetup } from '../game/session';
+import type { MatchStart } from '@hookbrawl/protocol';
+import { createNetSession, type NetLink, type NetSession } from '../net/netSession';
 import { createHudStore, type HudStore } from '../hud/hudStore';
 import type { ContextEvents } from '../render/frameLoop';
 import type { Graphics } from '../render/graphics';
@@ -13,22 +15,35 @@ import { createRenderer, type MatchView, type Renderer } from '../render/rendere
 import type { Router } from './route';
 import { createStore, type Store } from './store';
 
-/** The overlays a match can open over itself. */
-export type MatchUi = { readonly scores: boolean; readonly paused: boolean };
+/** The overlays a match can open over itself. `leaving` is the question asked before an online match is left. */
+export type MatchUi = { readonly scores: boolean; readonly paused: boolean; readonly leaving: boolean };
+
+/** Where a match is run: here, from a setup, or on the server, which has already started it. */
+export type MatchSource =
+  | { readonly kind: 'local'; readonly setup: SessionSetup }
+  | { readonly kind: 'online'; readonly start: MatchStart; readonly link: NetLink };
 
 export type MatchHandle = {
   readonly session: Session;
   readonly renderer: Renderer;
   readonly hud: HudStore;
   readonly ui: Store<MatchUi>;
+  readonly online: boolean;
+  /** Null for a local match; an online one is told apart from its rematch by this. */
+  readonly matchId: number | null;
+  /** Whether the open menu stops the match, which is what the menu tells the player. */
+  readonly holds: Holds;
   setPaused(paused: boolean): void;
   setScores(shown: boolean): void;
+  setLeaving(asking: boolean): void;
+  /** The connection came back while this match was showing. */
+  resume(): void;
   destroy(): void;
 };
 
 export type MatchDeps = {
   readonly graphics: Graphics;
-  readonly setup: SessionSetup;
+  readonly source: MatchSource;
   readonly view: MatchView;
   readonly router: Router;
   /** Faded out while the establishing shot plays: the plates would sit on top of the landmark the shot is there to show. */
@@ -38,19 +53,25 @@ export type MatchDeps = {
   readonly rematch: () => Promise<void>;
 };
 
-type Controls = { readonly ui: Store<MatchUi>; setPaused(paused: boolean): void; unbind(): void };
+const MS_PER_SECOND = 1000;
+
+type Controls = { readonly ui: Store<MatchUi>; setPaused(paused: boolean): void; setLeaving(asking: boolean): void; unbind(): void };
 
 /** The keys and pointer of one match, and the overlays they open; every switch here reads the state it needs when asked. */
 function bindControls(deps: MatchDeps, session: Session, renderer: Renderer, hud: HudStore, pause: PauseGate): Controls {
   const { router } = deps;
-  const ui = createStore<MatchUi>({ scores: false, paused: false });
+  const ui = createStore<MatchUi>({ scores: false, paused: false, leaving: false });
   const ended = (): boolean => session.getView().phase.kind === 'ended';
   const credits = (): boolean => router.getRoute().credits;
-  const free = (): boolean => !credits() && !ui.getSnapshot().paused;
+  const free = (): boolean => !credits() && !ui.getSnapshot().paused && !ui.getSnapshot().leaving;
   const playing = (): boolean => free() && !renderer.introActive();
   const setPaused = (paused: boolean): void => {
     pause.set('menu', paused);
-    ui.update((u) => (u.paused === paused ? u : { scores: false, paused }));
+    ui.update((u) => (u.paused === paused ? u : { scores: false, paused, leaving: false }));
+  };
+  const setLeaving = (leaving: boolean): void => {
+    pause.set('menu', false);
+    ui.update((u) => (u.leaving === leaving && !u.paused ? u : { scores: false, paused: false, leaving }));
   };
   const syncCredits = (): void => pause.set('credits', credits());
   syncCredits();
@@ -80,22 +101,36 @@ function bindControls(deps: MatchDeps, session: Session, renderer: Renderer, hud
       showScores: (scores) => ui.update((u) => (u.scores === scores ? u : { ...u, scores })),
     }),
   ];
-  return { ui, setPaused, unbind: () => unbinders.forEach((unbind) => unbind()) };
+  return { ui, setPaused, setLeaving, unbind: () => unbinders.forEach((unbind) => unbind()) };
 }
 
 /**
  * Starts one match on the shared graphics: its session, its picture and its controls. Everything it makes, `destroy`
  * takes down again, so the page after a match holds what it held before it.
  */
+function openSession(source: MatchSource): { readonly session: Session; readonly net: NetSession | null } {
+  if (source.kind === 'local') return { session: createSession(sim, source.setup), net: null };
+  const net = createNetSession({ link: source.link, start: source.start, now: () => performance.now() / MS_PER_SECOND });
+  return { session: net, net };
+}
+
 export async function startMatch(deps: MatchDeps): Promise<MatchHandle> {
-  const session = createSession(sim, deps.setup);
-  const pause = createPauseGate(session.setPaused);
+  const { session, net } = openSession(deps.source);
+  const holds = net === null ? HOLDS_MATCH : HOLDS_ONLINE;
+  const pause = createPauseGate(session.setPaused, holds);
+  const release = (): void => {
+    net?.dispose();
+    deps.hudElement.classList.remove('is-intro');
+  };
   const renderer = await createRenderer(deps.graphics, session, deps.view, {
     ...deps.context,
     onIntro: (active) => {
       pause.set('intro', active);
       deps.hudElement.classList.toggle('is-intro', active);
     },
+  }).catch((error: unknown) => {
+    release();
+    throw error;
   });
   try {
     const hud = createHudStore(session);
@@ -106,18 +141,23 @@ export async function startMatch(deps: MatchDeps): Promise<MatchHandle> {
       renderer,
       hud,
       ui: controls.ui,
+      online: net !== null,
+      matchId: net?.matchId ?? null,
+      holds,
       setPaused: controls.setPaused,
+      setLeaving: controls.setLeaving,
+      resume: () => net?.resume(),
       setScores: (scores) => controls.ui.update((u) => (u.scores === scores ? u : { ...u, scores })),
       destroy() {
         devHook?.uninstall();
         controls.unbind();
         renderer.destroy();
-        deps.hudElement.classList.remove('is-intro');
+        release();
       },
     };
   } catch (error) {
     renderer.destroy();
-    deps.hudElement.classList.remove('is-intro');
+    release();
     throw error;
   }
 }

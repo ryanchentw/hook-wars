@@ -6,11 +6,13 @@ import { bountyEarned, describeOutcome, resolvePurchases, shopSlots, type Resolv
 export type HudStore = {
   subscribe(onChange: () => void): () => void;
   getSnapshot(): HudView;
-  /** Sends a buy for the local player; the next tick's view says whether it went through. */
+  /** Sends a buy for the local player; the view that answers it says whether it went through. */
   buy(purchase: Purchase): void;
 };
 
 type Tracked = { readonly feedback: Feedback; readonly seq: number };
+/** A buy that has been sent, and the session's ticket for it. */
+type Sent = { readonly purchase: Purchase; readonly ticket: number };
 
 function applyOutcomes(tracked: Tracked, resolved: readonly ResolvedPurchase[], session: SessionView): Tracked {
   const me = ownPlayer(session.getView(), session.localPlayerId);
@@ -41,14 +43,17 @@ export function createHudStore(session: SessionView): HudStore {
   const listeners = new Set<() => void>();
   const localId = session.localPlayerId;
   let feed: readonly KillFeedEntry[] = [];
-  let pending: readonly Purchase[] = [];
+  let pending: readonly Sent[] = [];
   let tracked: Tracked = { feedback: NO_FEEDBACK, seq: 0 };
   let snapshot = deriveHud(session.getView(), localId, feed, tracked.feedback);
 
   session.subscribe((state) => {
     feed = appendKills(feed, state);
-    tracked = applyBounty(applyOutcomes(tracked, resolvePurchases(pending, state, localId), session), bountyEarned(state, localId));
-    pending = [];
+    // Online the answer to a buy comes a round trip later; until then it is neither bought nor refused.
+    const through = session.answeredThrough();
+    const answered = pending.filter((sent) => sent.ticket <= through).map((sent) => sent.purchase);
+    pending = pending.filter((sent) => sent.ticket > through);
+    tracked = applyBounty(applyOutcomes(tracked, resolvePurchases(answered, state, localId), session), bountyEarned(state, localId));
     snapshot = deriveHud(state, localId, feed, tracked.feedback);
     listeners.forEach((l) => l());
   });
@@ -62,8 +67,7 @@ export function createHudStore(session: SessionView): HudStore {
     },
     getSnapshot: () => snapshot,
     buy(purchase) {
-      pending = [...pending, purchase];
-      session.queueInput({ kind: 'buy', playerId: localId, purchase });
+      pending = [...pending, { purchase, ticket: session.queueInput({ kind: 'buy', playerId: localId, purchase }) }];
     },
   };
 }

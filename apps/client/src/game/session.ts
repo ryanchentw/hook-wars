@@ -38,8 +38,13 @@ export type Session = {
   readonly localPlayerId: PlayerId;
   readonly localTeam: TeamId;
   advance(realSeconds: number): void;
-  /** Drops inputs sent while paused, since game controls are off then. */
-  queueInput(input: PlayerInput): void;
+  /**
+   * Drops inputs sent while paused, since game controls are off then. Returns a ticket: the input has been answered
+   * once `answeredThrough` reaches it, which is when the view shows what came of it.
+   */
+  queueInput(input: PlayerInput): number;
+  /** The last ticket whose input whoever runs the match had dealt with by the view now showing. */
+  answeredThrough(): number;
   /** Level-triggered: the latest held direction reaches the sim at the next tick that runs, once per change. */
   setSteer(dir: Vec2): void;
   /** While paused, real time is discarded rather than banked, so resuming never fast-forwards. */
@@ -53,7 +58,7 @@ export type Session = {
 };
 
 /** The part of a session the picture and the HUD may touch, so neither can reach past the local team's view. */
-export type SessionView = Pick<Session, 'localPlayerId' | 'localTeam' | 'advance' | 'frame' | 'getView' | 'subscribe' | 'queueInput'>;
+export type SessionView = Pick<Session, 'localPlayerId' | 'localTeam' | 'advance' | 'frame' | 'getView' | 'subscribe' | 'queueInput' | 'answeredThrough'>;
 
 type Bot = { readonly id: PlayerId; readonly brain: BotBrain };
 
@@ -73,6 +78,8 @@ export function createSession(sim: SimApi, setup: SessionSetup, options: Session
   let previous = view;
   let bots: readonly Bot[] = setup.bots.map((b) => ({ id: b.id, brain: sim.createBotBrain(b.seed) }));
   let queued: readonly PlayerInput[] = [];
+  let issued = 0;
+  let answered = 0;
   let accumulator = 0;
   let paused = false;
   let desiredSteer = STILL;
@@ -95,6 +102,7 @@ export function createSession(sim: SimApi, setup: SessionSetup, options: Session
     if (current.phase.kind === 'ended') return;
     const inputs = [...takeSteer(), ...queued, ...thinkBots()];
     queued = [];
+    answered = issued;
     current = sim.step(current, inputs, TICK_DT);
     view = sim.viewFor(current, localTeam);
     listeners.forEach((listener) => listener(view));
@@ -115,9 +123,12 @@ export function createSession(sim: SimApi, setup: SessionSetup, options: Session
       if (accumulator + TICK_EPSILON >= TICK_DT) accumulator = 0;
     },
     queueInput(input) {
-      if (paused) return;
+      if (paused) return issued;
       queued = [...queued, input];
+      issued += 1;
+      return issued;
     },
+    answeredThrough: () => answered,
     setSteer(dir) {
       desiredSteer = dir;
     },
