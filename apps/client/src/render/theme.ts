@@ -28,6 +28,10 @@ export const COLORS = {
   flare: 0xfff0d2,
   blood: 0x9c1512,
   wisp: 0x4f9c8e,
+  dust: 0xd6c9ad,
+  /** Tarred hemp: warm and pale enough to stand out from the iron chain and the black water. */
+  rope: 0xd9b77a,
+  coin: 0xffc93c,
 } as const;
 
 export type TeamPalette = {
@@ -86,6 +90,8 @@ export const CAMERA = {
   /** Narrow screens pull back by up to this factor instead of shrinking the view to a sliver. */
   maxPullBack: 1.6,
   followHalfLife: 0.16,
+  /** Sim units of ground past the arena's east and west edges the camera may show: the wall and a little dark. */
+  edgeMargin: 125,
   near: 1,
   far: 400,
 } as const;
@@ -109,7 +115,7 @@ export const SLASH = {
   /** Seconds the arc takes to sweep on and die, once the hit-stop lets go. */
   life: 0.2,
   /** World units: the arc's outer edge from the attacker's centre, and its thickness at the widest. */
-  radius: 2.2,
+  radius: 2.7,
   width: 0.8,
   height: 1.45,
   /** How much of a circle the arc covers, trailing back to the attacker's left where the swing began. */
@@ -120,6 +126,36 @@ export const SLASH = {
   opacity: 0.95,
   /** Brightness of the leading end of the blade edge, as a multiple of the team colour: past 1 it burns towards white. */
   heat: 2.6,
+} as const;
+
+/** The grapple: a thin rope from the off hand to a small three-pronged claw. World units. */
+export const GRAPPLE_LOOK = {
+  ropeRadius: 0.07,
+  ropeGlow: 0.45,
+  /** Height the line is drawn at where it bites the dock, below the hand so it slopes down to the stone. */
+  headHeight: 0.45,
+  headRadius: 0.85,
+  haloSize: 2.2,
+  haloOpacity: 0.6,
+  /** Hauled bodies lean into the pull a little and ride a little off the ground. */
+  haulPitch: 0.35,
+  haulLift: 1.1,
+} as const;
+
+/** The glint on a fighter who has just bought something. */
+export const FLOURISH = {
+  /** Seconds. */
+  life: 0.5,
+  /** World units: the glow's diameter as it appears and as it dies. */
+  from: 2.2,
+  to: 5,
+  height: 1.6,
+  opacity: 1,
+  intensity: 3,
+  /** World units: the ring's radius as it leaves the body and where it dies, and its band. */
+  ringFrom: 1.1,
+  ringTo: 2.6,
+  ringWidth: 0.22,
 } as const;
 
 /** How a struck fighter is lit for the few frames after a blow. */

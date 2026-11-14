@@ -1,4 +1,4 @@
-import type { GameEvent } from '@hookbrawl/sim';
+import type { GameEvent, PlayerId } from '@hookbrawl/sim';
 import { Group, type Camera, type Texture } from 'three';
 import type { Impact } from '../impact/impacts';
 import { burstFor, createRandom, impactBursts, stepParticles, type Particle } from './particles';
@@ -9,7 +9,7 @@ import { createSlashView } from './slashView';
 export type EffectsView = {
   readonly group: Group;
   /** `events` are the sim events since the previous call, each delivered exactly once, and `impacts` the blows among them. */
-  update(events: readonly GameEvent[], impacts: readonly Impact[], dt: number, camera: Camera): void;
+  update(events: readonly GameEvent[], impacts: readonly Impact[], dt: number, camera: Camera, facingOf: (id: PlayerId) => number | null): void;
   clear(): void;
   dispose(): void;
 };
@@ -32,10 +32,10 @@ export function createEffectsView(softDot: Texture): EffectsView {
 
   return {
     group,
-    update(events, impacts, dt, camera) {
+    update(events, impacts, dt, camera, facingOf) {
       // A quiet dock with nothing on show costs nothing; `showing` outlives a clear by one draw, which wipes the views.
       if (events.length === 0 && impacts.length === 0 && !showing) return;
-      const born = [...events.flatMap((event) => burstFor(event, random)), ...impacts.flatMap((impact) => impactBursts(impact, random))];
+      const born = [...events.flatMap((event) => burstFor(event, random, facingOf)), ...impacts.flatMap((impact) => impactBursts(impact, random))];
       particles = stepParticles([...particles, ...born], dt);
       particlesView.draw(particles, camera);
       // Aged first, so an arc born this frame is drawn at age 0, on the frame the blow lands.

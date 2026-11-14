@@ -1,5 +1,5 @@
 import type { Arena, TeamId, Vec2 } from '@hookbrawl/sim';
-import { simToWorld, type Vec3 } from '../space';
+import { simToWorld, toWorldLength, type Vec3 } from '../space';
 import { CAMERA, HUD_INSETS } from '../theme';
 
 export type Viewport = { readonly width: number; readonly height: number };
@@ -40,6 +40,18 @@ function depthFollowFor(viewport: Viewport): number {
 }
 
 /**
+ * Stops the camera leading on past the far wall into the night, as it would for a player who has grappled onto the
+ * enemy dock. It holds back no further than the framing an enemy standing there gets, so the player stays in view.
+ */
+function holdLeadInsideArena(playerX: number, lead: number, towardEnemy: number, arena: Arena, halfView: number): number {
+  const margin = toWorldLength(CAMERA.edgeMargin);
+  const led = playerX + towardEnemy * lead;
+  const mirrored = playerX - towardEnemy * lead;
+  if (towardEnemy > 0) return Math.max(mirrored, Math.min(led, toWorldLength(arena.width) + margin - halfView));
+  return Math.min(mirrored, Math.max(led, halfView - margin));
+}
+
+/**
  * Where the camera wants to look once it has caught up with the player: ahead of them towards the enemy dock,
  * so they stand near their own side of the screen with the ground a hook can reach laid out in front.
  */
@@ -51,7 +63,7 @@ export function focusFor(arena: Arena, team: TeamId, playerPos: Vec2, viewport: 
   const player = simToWorld(playerPos);
   const midZ = simToWorld({ x: 0, y: arena.height / 2 }).z;
   return {
-    x: player.x + towardEnemy * lead,
+    x: holdLeadInsideArena(player.x, lead, towardEnemy, arena, halfView),
     z: midZ + (player.z - midZ) * depthFollowFor(viewport) - CAMERA.northBias,
   };
 }

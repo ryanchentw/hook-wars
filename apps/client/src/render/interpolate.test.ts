@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import type { Hook, HookId } from '@hookbrawl/sim';
+import type { Grapple, GrappleId, Hook, HookId } from '@hookbrawl/sim';
 import { BOT, fakePlayer, fakeState, HUMAN } from '../game/fakeSim';
 import { interpolateFrame } from './interpolate';
 
 const hookId = 'h1' as HookId;
+const grappleId = 'g1' as GrappleId;
+
+function grapple(overrides: Partial<Grapple>): Grapple {
+  return { id: grappleId, ownerId: HUMAN, pos: { x: 0, y: 0 }, anchor: { x: 600, y: 0 }, phase: { kind: 'flying' }, ...overrides };
+}
 
 function hook(overrides: Partial<Hook>): Hook {
   return {
@@ -56,5 +61,27 @@ describe('interpolateFrame', () => {
     const state = fakeState({ players, hooks: [retracting] });
     const hf = interpolateFrame({ previous: state, current: state, alpha: 1 }).hooks[0];
     expect(hf?.chain).toEqual([{ x: 50, y: 60 }, { x: 500, y: 60 }]);
+  });
+
+  it('flies a grapple head between ticks by alpha, in its thrower\'s colour', () => {
+    const previous = fakeState({ grapples: [grapple({ pos: { x: 100, y: 0 } })] });
+    const current = fakeState({ grapples: [grapple({ pos: { x: 160, y: 0 } })] });
+    const gf = interpolateFrame({ previous, current, alpha: 0.5 }).grapples[0];
+    expect(gf?.head).toEqual({ x: 130, y: 0 });
+    expect(gf?.team).toBe('west');
+  });
+
+  it('starts a grapple cast this tick at its head, with nothing to blend from', () => {
+    const current = fakeState({ grapples: [grapple({ pos: { x: 40, y: 0 } })] });
+    expect(interpolateFrame({ previous: fakeState(), current, alpha: 0.5 }).grapples[0]?.head).toEqual({ x: 40, y: 0 });
+  });
+
+  it('pins a pulling grapple at its anchor while the hauled owner closes on it', () => {
+    const pulling = grapple({ pos: { x: 600, y: 0 }, phase: { kind: 'pulling' } });
+    const previous = fakeState({ players: [fakePlayer({ id: HUMAN, pos: { x: 200, y: 0 } })], grapples: [pulling] });
+    const current = fakeState({ players: [fakePlayer({ id: HUMAN, pos: { x: 230, y: 0 } })], grapples: [pulling] });
+    const frame = interpolateFrame({ previous, current, alpha: 0.5 });
+    expect(frame.grapples[0]?.head).toEqual({ x: 600, y: 0 });
+    expect(frame.players[0]?.pos).toEqual({ x: 215, y: 0 });
   });
 });

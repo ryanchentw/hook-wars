@@ -1,10 +1,10 @@
 import { TUNING } from '@hookbrawl/sim';
-import type { GameEvent } from '@hookbrawl/sim';
+import type { GameEvent, PlayerId, Vec2 } from '@hookbrawl/sim';
 import { contactPoint, type Impact } from '../impact/impacts';
 import { simToWorld, type Vec3 } from '../space';
 import { COLORS, SIZES } from '../theme';
 
-export type ParticleKind = 'blood' | 'spark' | 'flare' | 'wisp';
+export type ParticleKind = 'blood' | 'spark' | 'flare' | 'wisp' | 'dust';
 
 export type Particle = {
   readonly kind: ParticleKind;
@@ -35,6 +35,8 @@ export const PARTICLE_STYLES: Readonly<Record<ParticleKind, ParticleStyle>> = {
   // One still, swelling dot at the point of contact: the white of the blow itself.
   flare: { color: COLORS.flare, glows: true, intensity: 2.2, gravity: 0, drag: 0, endScale: 1.7 },
   wisp: { color: COLORS.wisp, glows: true, intensity: 1, gravity: -2.6, drag: 0.8, endScale: 0.35 },
+  // Billows out and slows hard, so it hangs where it was kicked up instead of flying off like debris.
+  dust: { color: COLORS.dust, glows: false, intensity: 1, gravity: -0.6, drag: 3.2, endScale: 2.2 },
 };
 
 export const MAX_PARTICLES = 160;
@@ -64,6 +66,8 @@ const BURSTS = {
   meleeFlare: { kind: 'flare', count: 1, height: CHEST, speed: STILL, lift: STILL, life: [0.1, 0.1], size: [2.3, 2.3], spread: 0, along: STILL },
   meleeSparks: { kind: 'spark', count: 10, height: CHEST, speed: [2, 6], lift: [0.2, 0.9], life: [0.22, 0.42], size: [0.9, 1.5], spread: 0.2, along: [4, 9] },
   meleeBlood: { kind: 'blood', count: 7, height: CHEST, speed: [1.5, 4], lift: [0.3, 1], life: [0.35, 0.6], size: [0.8, 1.3], spread: 0.3, along: [3, 6] },
+  grappleLand: { kind: 'dust', count: 9, height: 0.3, speed: [2, 4], lift: [0.3, 0.7], life: [0.4, 0.65], size: [1.1, 1.8], spread: 0.4, along: STILL },
+  grappleArrive: { kind: 'dust', count: 14, height: 0.3, speed: [3.5, 6.5], lift: [0.1, 0.45], life: [0.45, 0.75], size: [1.3, 2.2], spread: 0.6, along: STILL },
   kill: { kind: 'wisp', count: 16, height: 0.8, speed: [0.3, 1.1], lift: [0.75, 1], life: [1.3, 2.3], size: [1.1, 1.9], spread: 1.3, along: STILL },
 } as const satisfies Record<string, Burst>;
 
@@ -71,6 +75,19 @@ export type BurstName = keyof typeof BURSTS;
 
 /** Sim units from the victim's centre, towards the attacker, at which a blow lands: just inside the rim of the body. */
 const CONTACT_INSET = TUNING.playerRadius * 0.75;
+
+/** Sim units behind their own facing at which a body felled by the death clip ends up, chest and all. */
+const DEATH_FALL = 45;
+
+/** Who the event is about and where the burst should start, given which way each player faces. */
+function originOf(event: GameEvent & { readonly at: Vec2 }, facingOf: (id: PlayerId) => number | null): Vec2 {
+  if (event.kind !== 'kill') return event.at;
+  const facing = facingOf(event.victimId);
+  if (facing === null) return event.at;
+  return { x: event.at.x - Math.cos(facing) * DEATH_FALL, y: event.at.y - Math.sin(facing) * DEATH_FALL };
+}
+
+const FACING_UNKNOWN = (): number | null => null;
 
 /** Small seeded generator (mulberry32) so effects are repeatable in tests. */
 export function createRandom(seed: number): () => number {
@@ -116,6 +133,10 @@ function burstOf(event: GameEvent): Burst | null {
       return BURSTS.hookBounce;
     case 'kill':
       return BURSTS.kill;
+    case 'grappleLand':
+      return BURSTS.grappleLand;
+    case 'grappleArrive':
+      return BURSTS.grappleArrive;
     // Blows are drawn from their impact, which knows where the fighters stood.
     case 'hookHit':
     case 'melee':
@@ -124,16 +145,15 @@ function burstOf(event: GameEvent): Burst | null {
     case 'matchEnd':
     case 'purchase':
     case 'grappleCast':
-    case 'grappleLand':
-    case 'grappleArrive':
       return null;
   }
 }
 
-export function burstFor(event: GameEvent, random: () => number): readonly Particle[] {
+/** `facingOf` is the sim facing of each player, so a kill's wisp can rise from the fallen body rather than its feet. */
+export function burstFor(event: GameEvent, random: () => number, facingOf: (id: PlayerId) => number | null = FACING_UNKNOWN): readonly Particle[] {
   const burst = burstOf(event);
   if (burst === null || !('at' in event)) return [];
-  return emit(burst, simToWorld(event.at, burst.height), 0, random);
+  return emit(burst, simToWorld(originOf(event, facingOf), burst.height), 0, random);
 }
 
 /** Everything a blow throws off, from the point where the weapon met the body. */

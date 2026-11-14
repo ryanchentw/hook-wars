@@ -1,16 +1,18 @@
 import type { GameEvent, PlayerId } from '@hookbrawl/sim';
-import { Group, type BufferGeometry, type Vector3 } from 'three';
+import { Group, type Vector3 } from 'three';
 import type { Assets } from '../assets/loadAssets';
 import type { Impact } from '../impact/impacts';
 import type { PlayerFrame, RenderFrame } from '../interpolate';
 import { factsFor, triggersFor } from './animation';
-import { createCharacterView, type CharacterView } from './characterView';
+import { createCharacterView, type CharacterView, type SharedLooks } from './characterView';
+import { startsFlourish } from './flourish';
 
 export type CharactersView = {
   readonly group: Group;
   /** `events` are the sim events since the previous call, each delivered exactly once, and `impacts` the blows among them. */
   update(frame: RenderFrame, events: readonly GameEvent[], impacts: readonly Impact[], dt: number): void;
   handPosition(playerId: PlayerId): Vector3 | null;
+  offHandPosition(playerId: PlayerId): Vector3 | null;
   clear(): void;
 };
 
@@ -25,7 +27,7 @@ function pullDirection(frame: RenderFrame, pf: PlayerFrame): number | null {
 }
 
 /** Keeps one character per player id, creating and dropping them as players come and go. */
-export function createCharactersView(assets: Assets, hookGeometry: BufferGeometry, localId: PlayerId): CharactersView {
+export function createCharactersView(assets: Assets, looks: SharedLooks, localId: PlayerId): CharactersView {
   const group = new Group();
   let views = new Map<PlayerId, CharacterView>();
 
@@ -41,16 +43,17 @@ export function createCharactersView(assets: Assets, hookGeometry: BufferGeometr
       for (const pf of frame.players) {
         const { player } = pf;
         const existing = views.get(player.id);
-        const view = existing ?? createCharacterView(assets.characters[player.team], hookGeometry, player, player.id === localId);
+        const view = existing ?? createCharacterView(assets.characters[player.team], looks, player, player.id === localId);
         if (existing === undefined) group.add(view.group);
         view.update({
           player,
           pos: pf.pos,
-          facts: factsFor(player, frame.state.hooks),
+          facts: factsFor(player, frame.state.hooks, frame.state.grapples),
           triggers: triggersFor(player.id, events),
           dealt: impacts.length === 0 ? null : (impacts.find((impact) => impact.attackerId === player.id) ?? null),
           taken: impacts.length === 0 ? null : (impacts.find((impact) => impact.targetId === player.id) ?? null),
           pulledTowards: pullDirection(frame, pf),
+          bought: events.length > 0 && startsFlourish(player, events),
           simTime: frame.state.time,
           dt,
         });
@@ -62,6 +65,7 @@ export function createCharactersView(assets: Assets, hookGeometry: BufferGeometr
       views = next;
     },
     handPosition: (playerId) => views.get(playerId)?.handPosition() ?? null,
+    offHandPosition: (playerId) => views.get(playerId)?.offHandPosition() ?? null,
     clear() {
       views.forEach(drop);
       views = new Map();

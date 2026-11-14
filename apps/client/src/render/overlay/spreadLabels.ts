@@ -23,3 +23,11 @@ export function spreadLabels(anchors: readonly (Vec2 | null)[], box: LabelBox): 
   }
   return anchors.map((anchor, index) => (anchor === null ? null : (placed.find((p) => p.index === index)?.at ?? anchor)));
 }
+
+/** Slides a label whose fighter is on screen but near an edge back inside, so the name is never cut off. */
+export function keepInView(anchor: Vec2, box: LabelBox, view: LabelBox): Vec2 {
+  if (anchor.x < 0 || anchor.x > view.width) return anchor;
+  const half = box.width / 2;
+  const x = Math.min(view.width - half, Math.max(half, anchor.x));
+  return x === anchor.x ? anchor : { x, y: anchor.y };
+}

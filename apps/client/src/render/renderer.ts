@@ -9,12 +9,13 @@ import { shakeOffset } from './camera/shake';
 import { createCharactersView } from './characters/charactersView';
 import { createEffectsView } from './effects/effectsView';
 import { createHookGeometry } from './hook/hookGeometry';
+import { createGrapplesView } from './grapple/grapplesView';
 import { createHooksView } from './hook/hooksView';
 import { CALM_IMPACTS, IMPACTS, impactsOf, type Fighter, type Impact } from './impact/impacts';
 import { interpolateFrame, type PlayerFrame, type RenderFrame } from './interpolate';
 import { createDamageNumbers } from './overlay/damageNumbers';
 import { createLabels, type LabelView } from './overlay/labels';
-import { spreadLabels } from './overlay/spreadLabels';
+import { keepInView, spreadLabels } from './overlay/spreadLabels';
 import './overlay/overlay.css';
 import { createArenaView } from './scene/arenaView';
 import { simToWorld, worldToSim, type Vec3 } from './space';
@@ -58,11 +59,12 @@ function fighterOf(pf: PlayerFrame | undefined): Fighter | null {
   return pf === undefined ? null : { pos: pf.pos, team: pf.player.team };
 }
 
-function labelsFor(frame: RenderFrame, project: (world: Vec3) => Vec2): readonly LabelView[] {
-  const anchors = spreadLabels(
+function labelsFor(frame: RenderFrame, project: (world: Vec3) => Vec2, viewport: Viewport): readonly LabelView[] {
+  const spread = spreadLabels(
     frame.players.map(({ player, pos }) => (player.status.kind === 'dead' ? null : project(simToWorld(pos, SIZES.labelHeight)))),
     LABEL_BOX,
   );
+  const anchors = spread.map((anchor) => (anchor === null ? null : keepInView(anchor, LABEL_BOX, viewport)));
   return frame.players.map(({ player }, i) => ({
     id: player.id,
     name: player.name,
@@ -101,12 +103,13 @@ export async function createRenderer(
   const softDot = createSoftDot();
   const arenaView = createArenaView(arena, assets, softDot);
   const hookGeometry = createHookGeometry();
-  const characters = createCharactersView(assets, hookGeometry, session.localPlayerId);
+  const characters = createCharactersView(assets, { hookGeometry, softDot }, session.localPlayerId);
   const hooks = createHooksView(hookGeometry, softDot);
+  const grapples = createGrapplesView(softDot);
   const effects = createEffectsView(softDot);
   const labels = createLabels(overlay);
   const damage = createDamageNumbers(overlay);
-  scene.add(arenaView.group, characters.group, hooks.group, effects.group);
+  scene.add(arenaView.group, characters.group, hooks.group, grapples.group, effects.group);
 
   // People who ask their system for less motion get the hit without the jolt or the freeze.
   const impactSpecs = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? CALM_IMPACTS : IMPACTS;
@@ -179,8 +182,9 @@ export async function createRenderer(
     arenaView.update(elapsed);
     characters.update(frame, tickEvents, impacts, dt);
     hooks.update(frame, characters.handPosition);
-    effects.update(tickEvents, impacts, dt, camera);
-    labels.update(labelsFor(frame, project), dt);
+    grapples.update(frame, characters.offHandPosition);
+    effects.update(tickEvents, impacts, dt, camera, (id) => frameOf(id)?.player.facing ?? null);
+    labels.update(labelsFor(frame, project, viewport), dt);
     damage.spawn(impacts);
     damage.update(dt, project, positionOf);
   };
@@ -230,7 +234,7 @@ export async function createRenderer(
     canvas.removeEventListener('webglcontextlost', onLost);
     canvas.removeEventListener('webglcontextrestored', onRestored);
     characters.clear();
-    [arenaView, hooks, effects].forEach((view) => view.dispose());
+    [arenaView, hooks, grapples, effects].forEach((view) => view.dispose());
     softDot.dispose();
     hookGeometry.dispose();
     gl.dispose();

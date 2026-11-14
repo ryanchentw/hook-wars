@@ -2,11 +2,13 @@ import type { GameEvent, HookId, PlayerId } from '@hookbrawl/sim';
 import { describe, expect, it } from 'vitest';
 import { ANIMATIONS, fadeDuration, nextAnimState, triggersFor, type AnimFacts, type AnimState } from './animation';
 
-const standing: AnimFacts = { status: 'alive', moving: false, hookOut: false };
+const standing: AnimFacts = { status: 'alive', moving: false, hookOut: false, grapple: null };
 const running: AnimFacts = { ...standing, moving: true };
 const hookOut: AnimFacts = { ...standing, hookOut: true };
 const dragged: AnimFacts = { ...standing, status: 'dragged' };
 const dead: AnimFacts = { ...standing, status: 'dead' };
+const bracing: AnimFacts = { ...standing, status: 'grappling', grapple: 'flying' };
+const hauled: AnimFacts = { ...standing, status: 'grappling', grapple: 'pulling' };
 
 describe('animation state table', () => {
   it('derives the resting state from what the sim says the player is doing', () => {
@@ -55,6 +57,20 @@ describe('animation state table', () => {
     expect(nextAnimState('idle', dead, ['hurt'], false)).toBe('death');
   });
 
+  it('braces while the grapple line flies, is hauled once it bites, and lands back on its feet', () => {
+    expect(nextAnimState('idle', bracing, [], false)).toBe('brace');
+    expect(nextAnimState('run', bracing, [], false)).toBe('brace');
+    expect(nextAnimState('brace', hauled, [], false)).toBe('haul');
+    expect(nextAnimState('haul', standing, [], false)).toBe('idle');
+  });
+
+  it('lets nothing but a hook or death interrupt a grapple pose', () => {
+    expect(nextAnimState('brace', bracing, ['hurt'], false)).toBe('brace');
+    expect(nextAnimState('haul', hauled, ['hurt'], false)).toBe('haul');
+    expect(nextAnimState('haul', dragged, [], false)).toBe('dragged');
+    expect(nextAnimState('haul', dead, [], false)).toBe('death');
+  });
+
   it('holds the death pose until the respawn, then stands up at once', () => {
     expect(nextAnimState('death', dead, [], true)).toBe('death');
     expect(nextAnimState('death', standing, [], true)).toBe('idle');
@@ -78,7 +94,7 @@ describe('animation state table', () => {
 
   it('maps every state to a clip with the right playback', () => {
     const states = Object.keys(ANIMATIONS) as AnimState[];
-    expect(states.sort()).toEqual(['death', 'dragged', 'flinch', 'hold', 'idle', 'run', 'swing', 'throw']);
+    expect(states.sort()).toEqual(['brace', 'death', 'dragged', 'flinch', 'haul', 'hold', 'idle', 'run', 'swing', 'throw']);
     states.forEach((s) => expect(ANIMATIONS[s].clip.length).toBeGreaterThan(0));
     expect(ANIMATIONS.idle.playback).toBe('loop');
     expect(ANIMATIONS.run.playback).toBe('loop');
@@ -86,6 +102,8 @@ describe('animation state table', () => {
     expect(ANIMATIONS.swing.playback).toBe('once');
     expect(ANIMATIONS.flinch.playback).toBe('once');
     expect(ANIMATIONS.death).toMatchObject({ clip: 'Death_A', playback: 'clamp' });
+    expect(ANIMATIONS.brace.playback).toBe('loop');
+    expect(ANIMATIONS.haul.playback).toBe('loop');
   });
 });
 

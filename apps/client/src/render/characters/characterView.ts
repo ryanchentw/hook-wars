@@ -13,13 +13,15 @@ import {
   type BufferGeometry,
   type MeshStandardMaterial,
   type Object3D,
+  type Texture,
 } from 'three';
 import type { CharacterAsset } from '../assets/loadAssets';
 import type { Impact } from '../impact/impacts';
 import { facingToYaw, simToWorld, toWorldLength } from '../space';
-import { SIZES, TEAM_COLORS } from '../theme';
+import { GRAPPLE_LOOK, SIZES, TEAM_COLORS } from '../theme';
 import { ANIMATIONS, fadeDuration, nextAnimState, type AnimFacts, type AnimState, type AnimTrigger } from './animation';
 import { createFlash } from './flash';
+import { createFlourishView, type FlourishView } from './flourishView';
 import { createHeldHook } from './heldHook';
 import { createHitReaction } from './hitReaction';
 import { instantiateCharacter } from './model';
@@ -34,6 +36,8 @@ export type CharacterUpdate = {
   readonly taken: Impact | null;
   /** Sim facing the body should take instead of the player's own, while a chain is hauling it. */
   readonly pulledTowards: number | null;
+  /** Whether a purchase should light this player up on this update. */
+  readonly bought: boolean;
   readonly simTime: number;
   readonly dt: number;
 };
@@ -43,11 +47,18 @@ export type CharacterView = {
   update(input: CharacterUpdate): void;
   /** World position of the hand that holds the chain, valid after `update`. */
   handPosition(): Vector3;
+  /** World position of the other hand, which holds the grapple rope, valid after `update`. */
+  offHandPosition(): Vector3;
   dispose(): void;
 };
 
 const TURN_HALF_LIFE = 0.05;
-const DRAG = { pitch: 0.75, lift: 0.5 } as const;
+/** Bodies leave the ground and land back on it over a few frames instead of popping. */
+const TILT_HALF_LIFE = 0.06;
+type Tilt = { readonly pitch: number; readonly lift: number };
+const UPRIGHT: Tilt = { pitch: 0, lift: 0 };
+const DRAG: Tilt = { pitch: 0.75, lift: 0.5 };
+const HAUL: Tilt = { pitch: GRAPPLE_LOOK.haulPitch, lift: GRAPPLE_LOOK.haulLift };
 /** Fraction of the respawn wait a body lies whole before it starts to fade. */
 const FADE_FROM = 0.3;
 const LOCAL_RING_GAP = 0.2;
@@ -141,28 +152,43 @@ function createFade(materials: readonly MeshStandardMaterial[], body: Group): (o
   };
 }
 
-type Turn = { readonly facing: number; readonly snap: boolean; readonly dragged: boolean; readonly dt: number };
+type Turn = { readonly facing: number; readonly snap: boolean; readonly tilt: Tilt; readonly dt: number };
 
 /** Turns the body towards a sim facing, quickly but not at once unless told to snap. */
 function createFacing(body: Group, root: Object3D, facing: number): (turn: Turn) => void {
   let yaw = facingToYaw(facing);
-  return ({ facing: wanted, snap, dragged, dt }) => {
+  let pitch = 0;
+  let lift = 0;
+  return ({ facing: wanted, snap, tilt, dt }) => {
     const target = facingToYaw(wanted);
     yaw = snap ? target : yaw + shortestTurn(yaw, target) * (1 - 0.5 ** (dt / TURN_HALF_LIFE));
     body.rotation.set(0, yaw, 0);
-    // Hauled bodies pitch forward off their feet, towards whoever is reeling them in.
-    root.rotation.x = dragged ? DRAG.pitch : 0;
-    root.position.y = dragged ? DRAG.lift : 0;
+    // Hauled bodies pitch forward off their feet, towards whoever or whatever is reeling them in.
+    const ease = 1 - 0.5 ** (dt / TILT_HALF_LIFE);
+    pitch += (tilt.pitch - pitch) * ease;
+    lift += (tilt.lift - lift) * ease;
+    root.rotation.x = pitch;
+    root.position.y = lift;
   };
 }
 
-type Rig = { readonly group: Group; readonly pivot: Group; readonly body: Group; readonly rings: readonly Mesh<RingGeometry, MeshBasicMaterial>[] };
+type Rig = {
+  readonly group: Group;
+  readonly pivot: Group;
+  readonly body: Group;
+  readonly rings: readonly Mesh<RingGeometry, MeshBasicMaterial>[];
+  readonly flourish: FlourishView;
+  dispose(): void;
+};
+
+/** What every character draws with and nobody but the renderer disposes of. */
+export type SharedLooks = { readonly hookGeometry: BufferGeometry; readonly softDot: Texture };
 
 /**
  * The figure's scene nodes. `group` is always the true sim position and carries the rings;
  * `pivot` takes the lunge and the recoil, and `body` the turn, so neither moves the rings.
  */
-function createRig(root: Object3D, player: Player, isLocal: boolean): Rig {
+function createRig(root: Object3D, player: Player, isLocal: boolean, softDot: Texture): Rig {
   const group = new Group();
   const pivot = new Group();
   const body = new Group();
@@ -173,31 +199,43 @@ function createRig(root: Object3D, player: Player, isLocal: boolean): Rig {
     createRing(radius, TEAM_COLORS[player.team].signal, 0.95),
     ...(isLocal ? [createRing(radius - SIZES.ringWidth - LOCAL_RING_GAP, TEAM_COLORS[player.team].glow, 0.55)] : []),
   ];
-  group.add(pivot, ...rings);
-  return { group, pivot, body, rings };
+  const flourish = createFlourishView(softDot);
+  group.add(pivot, ...rings, flourish.group);
+  const dispose = (): void => {
+    flourish.dispose();
+    rings.forEach((ring) => {
+      ring.geometry.dispose();
+      ring.material.dispose();
+    });
+  };
+  return { group, pivot, body, rings, flourish, dispose };
 }
 
-export function createCharacterView(asset: CharacterAsset, hookGeometry: BufferGeometry, player: Player, isLocal: boolean): CharacterView {
-  const model = instantiateCharacter(asset, player.team);
-  const heldHook = createHeldHook(hookGeometry, player.team);
-  model.hand.add(heldHook);
-  const materials = [...model.materials, heldHook.material];
-  const { group, pivot, body, rings } = createRig(model.root, player, isLocal);
+function tiltFor(status: Player['status']['kind'], hauled: boolean): Tilt {
+  if (status === 'dragged') return DRAG;
+  return hauled ? HAUL : UPRIGHT;
+}
 
+export function createCharacterView(asset: CharacterAsset, looks: SharedLooks, player: Player, isLocal: boolean): CharacterView {
+  const model = instantiateCharacter(asset, player.team);
+  const heldHook = createHeldHook(looks.hookGeometry, player.team);
+  model.hand.add(heldHook.mesh);
+  const materials = [...model.materials, heldHook.mesh.material];
+  const rig = createRig(model.root, player, isLocal, looks.softDot);
+  const { group, pivot, body, rings, flourish } = rig;
   const mixer = new AnimationMixer(model.root);
   const animator = createAnimator(mixer, createActions(mixer, asset));
   const reaction = createHitReaction();
   const flash = createFlash(materials);
   const setOpacity = createFade(materials, body);
   const face = createFacing(body, model.root, player.facing);
-  const hand = new Vector3();
+  const [hand, offHand] = [new Vector3(), new Vector3()];
 
   return {
     group,
-    update({ player: p, pos, facts, triggers, dealt, taken, pulledTowards, simTime, dt }) {
+    update({ player: p, pos, facts, triggers, dealt, taken, pulledTowards, bought, simTime, dt }) {
       reaction.step(dealt, taken, dt);
       animator.advance(facts, triggers, reaction.frozen(), dt);
-
       const at = simToWorld(pos);
       group.position.set(at.x, 0, at.z);
       reaction.pose(pivot);
@@ -206,25 +244,24 @@ export function createCharacterView(asset: CharacterAsset, hookGeometry: BufferG
       const swingAt = animator.state() === 'swing' ? reaction.swingHeading() : null;
       const facing = dragged && pulledTowards !== null ? pulledTowards : (swingAt ?? p.facing);
       // The blow has already landed, so the body squares up to it at once: the frozen frame must show it.
-      face({ facing, snap: dealt !== null && swingAt !== null, dragged, dt });
+      face({ facing, snap: dealt !== null && swingAt !== null, tilt: tiltFor(p.status.kind, facts.grapple === 'pulling'), dt });
       flash(reaction.flash());
-      heldHook.visible = !facts.hookOut;
+      heldHook.update(p, facts.hookOut);
+      flourish.step(bought, dt);
 
-      const dead = p.status.kind === 'dead';
       setOpacity(deathOpacity(p, simTime));
-      rings.forEach((ring) => (ring.visible = !dead));
+      rings.forEach((ring) => (ring.visible = p.status.kind !== 'dead'));
       group.updateMatrixWorld(true);
       model.hand.getWorldPosition(hand);
+      model.offHand.getWorldPosition(offHand);
     },
     handPosition: () => hand,
+    offHandPosition: () => offHand,
     dispose() {
       mixer.stopAllAction();
       mixer.uncacheRoot(model.root);
       materials.forEach((m) => m.dispose());
-      rings.forEach((ring) => {
-        ring.geometry.dispose();
-        ring.material.dispose();
-      });
+      rig.dispose();
     },
   };
 }

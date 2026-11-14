@@ -81,6 +81,24 @@ describe('camera framing', () => {
     }
   });
 
+  it.each(WIDE_VIEWPORTS)('frames a player who has grappled onto the enemy dock without staring past its far wall at $width x $height', (viewport) => {
+    for (const team of TEAMS) {
+      const enemy: TeamId = team === 'west' ? 'east' : 'west';
+      const beyond = toWorldLength(team === 'west' ? arena.width + CAMERA.edgeMargin + 1 : -CAMERA.edgeMargin - 1);
+      for (const pos of dockPositions(arena, enemy)) {
+        const camera = settledCamera(team, pos, viewport);
+        const at = `${team} player at ${pos.x},${pos.y}`;
+        playerScreenPoints(camera, viewport, pos).forEach((p) => expectClearOfHud(p, viewport, at));
+        // Hard against the wall the player gets the framing an enemy standing there would, wall and all.
+        const toWall = team === 'west' ? arena.width - pos.x : pos.x;
+        if (toWorldLength(toWall) < CAMERA.behindPlayer) continue;
+        const lookAt = focusFor(arena, team, pos, viewport);
+        const past = worldToScreen(camera, viewport, { x: beyond, y: 0, z: lookAt.z }).x;
+        expect(past < 0 || past > viewport.width, `void past the far wall for ${at}`).toBe(true);
+      }
+    }
+  });
+
   it.each(NARROW_VIEWPORTS)('keeps the player on screen and clear of the HUD at $width x $height', (viewport) => {
     for (const team of TEAMS) {
       for (const pos of dockPositions(arena, team)) {

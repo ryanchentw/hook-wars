@@ -1,5 +1,8 @@
+import { TUNING } from '@hookbrawl/sim';
 import type { GameEvent, HookId, PlayerId, Vec2 } from '@hookbrawl/sim';
 import { describe, expect, it } from 'vitest';
+import { toWorldLength } from '../space';
+import { SLASH } from '../theme';
 import { CALM_IMPACTS, IMPACTS, contactPoint, impactsOf, type Fighter } from './impacts';
 
 const me = 'me' as PlayerId;
@@ -70,5 +73,25 @@ describe('the calm table, for people who ask for less motion', () => {
   it('shakes less for a melee blow than for a hook', () => {
     expect(IMPACTS.melee.shake).toBeGreaterThan(0);
     expect(IMPACTS.melee.shake).toBeLessThan(IMPACTS.hook.shake);
+  });
+});
+
+describe('a melee blow at the brawling distance and rhythm', () => {
+  const spacing = toWorldLength(TUNING.bodySpacing);
+  const end = ({ attack, hold, release }: { attack: number; hold: number; release: number }): number => attack + hold + release;
+
+  it('sweeps its arc across the near half of the victim standing a body spacing away', () => {
+    expect(SLASH.radius).toBeGreaterThanOrEqual(spacing);
+    expect(SLASH.radius - SLASH.width).toBeLessThan(spacing);
+  });
+
+  it('has both bodies back in place before the answering blow, which comes the recovery time later', () => {
+    const { hitStop, lunge, recoil } = IMPACTS.melee;
+    expect(hitStop + end(lunge.envelope)).toBeLessThan(TUNING.meleeRecovery);
+    expect(hitStop + end(recoil.envelope)).toBeLessThan(TUNING.meleeRecovery);
+  });
+
+  it('never carries the attacker into the victim, even while the victim is knocked back towards nobody', () => {
+    expect(IMPACTS.melee.lunge.distance).toBeLessThan(spacing - 2 * toWorldLength(TUNING.playerRadius));
   });
 });

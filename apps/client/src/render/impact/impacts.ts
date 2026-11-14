@@ -15,14 +15,15 @@ export type ImpactSpec = ImpactTiming & {
 
 /**
  * The one table that says what a blow looks like. Every layer of a hit reads its strength and timing from here.
- * A melee blow lands every 0.7 s from each brawler, so each of its layers has to be over well inside that.
+ * Brawlers alternate, so the answering blow lands `TUNING.meleeRecovery` after this one; every layer of a melee blow
+ * has to be over by then, or the two would blur into one.
  */
 export const IMPACTS: Readonly<Record<ImpactKind, ImpactSpec>> = {
   melee: {
     hitStop: 0.075,
     flash: { attack: 0, hold: 0.07, release: 0.1 },
     lunge: { distance: 0.5, lean: 0.2, envelope: { attack: 0, hold: 0, release: 0.2 } },
-    recoil: { distance: 0.6, lean: 0.3, envelope: { attack: 0.035, hold: 0.02, release: 0.22 } },
+    recoil: { distance: 0.6, lean: 0.3, envelope: { attack: 0.035, hold: 0.02, release: 0.18 } },
     shake: 0.3,
     slash: true,
     bursts: ['meleeFlare', 'meleeSparks', 'meleeBlood'],

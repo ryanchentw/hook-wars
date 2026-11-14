@@ -1,4 +1,3 @@
-import { TUNING } from '@hookbrawl/sim';
 import type { HookId, PlayerId, TeamId } from '@hookbrawl/sim';
 import {
   AdditiveBlending,
@@ -28,7 +27,6 @@ export type HooksView = {
 
 /** Chains drawn at once at full length; later hooks in a crowded frame get shorter chains rather than none. */
 const FULL_CHAINS = 6;
-const HOOK_RADIUS = toWorldLength(TUNING.hookRadius);
 const LINK = {
   length: toWorldLength(CHAIN.linkLength),
   width: toWorldLength(CHAIN.linkWidth),
@@ -52,7 +50,7 @@ function headDirection(hf: HookFrame): Vec3 {
 function chainPath(hf: HookFrame, hand: Vector3 | null, direction: Vec3): readonly Vec3[] {
   const points = hf.chain.map((p) => simToWorld(p, SIZES.chainHeight));
   const head = simToWorld(hf.head, SIZES.chainHeight);
-  const eye = HOOK_RADIUS * HOOK_EYE_OFFSET;
+  const eye = toWorldLength(hf.hook.stats.radius) * HOOK_EYE_OFFSET;
   const ring = { x: head.x - direction.x * eye, y: head.y, z: head.z - direction.z * eye };
   const start = hand === null ? points[0] : { x: hand.x, y: hand.y, z: hand.z };
   return start === undefined ? [] : [start, ...points.slice(1, -1), ring];
@@ -68,8 +66,8 @@ function linkMatrix(link: LinkPlacement, stretch: number, out: Matrix4): Matrix4
   return out.setPosition(link.position.x, link.position.y, link.position.z);
 }
 
-/** Each hook carries a faint halo in its thrower's colour, so it is clear at a glance whose iron is in the air. */
-const HALO_SIZE = HOOK_RADIUS * 4.2;
+/** Each hook carries a faint halo in its thrower's colour, so it is clear at a glance whose iron is in the air. In hook radii. */
+const HALO_SIZE = 4.2;
 
 /** `hookGeometry` is shared with the hooks the fighters carry; whoever made it disposes of it. */
 export function createHooksView(hookGeometry: BufferGeometry, softDot: Texture): HooksView {
@@ -114,10 +112,9 @@ export function createHooksView(hookGeometry: BufferGeometry, softDot: Texture):
   const createHead = (team: TeamId): Mesh => {
     const head = new Mesh(hookGeometry, hookMaterials[team]);
     head.castShadow = true;
-    head.scale.setScalar(HOOK_RADIUS);
     const halo = new Sprite(haloMaterials[team]);
-    // The sprite is a child of a mesh scaled down to hook size, so undo that scale here.
-    halo.scale.setScalar(HALO_SIZE / HOOK_RADIUS);
+    // A child of the head, so it grows with whatever size the hook was bought up to.
+    halo.scale.setScalar(HALO_SIZE);
     head.add(halo);
     return head;
   };
@@ -139,6 +136,7 @@ export function createHooksView(hookGeometry: BufferGeometry, softDot: Texture):
         if (!heads.has(hf.hook.id)) group.add(head);
         const at = simToWorld(hf.head, SIZES.chainHeight);
         head.position.set(at.x, at.y, at.z);
+        head.scale.setScalar(toWorldLength(hf.hook.stats.radius));
         head.rotation.set(0, -Math.atan2(direction.z, direction.x), 0);
         next.set(hf.hook.id, head);
 

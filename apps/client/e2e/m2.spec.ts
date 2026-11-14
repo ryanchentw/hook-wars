@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { ECONOMY, hookStats, ITEMS, TUNING, UPGRADES } from '@hookbrawl/sim';
 import type { GameState, Player, Vec2 } from '@hookbrawl/sim';
+import type { RenderStats } from '../src/render/renderer';
 
 const SHOT_DIR = 'test-results';
 const MAX_DAMAGE_LEVEL = UPGRADES.damage.costs.length;
@@ -156,6 +157,61 @@ test('a digit pressed while the credits dialog is open buys nothing', async ({ p
   const { me } = await snapshot(page);
   expect(me.upgrades.damage).toBe(0);
   expect(me.items.grapple.kind).toBe('unowned');
+});
+
+/** Measured on this scene: about 94 draw calls and 210k triangles at rest, a few more with a rope or a slash out. */
+const BUDGET = { calls: 130, triangles: 260_000 } as const;
+const SAMPLE_MS = 40;
+
+/** Polls the renderer's numbers until `done` holds in the sim, and returns the worst frame seen. */
+async function worstUntil(page: Page, done: (state: GameState) => boolean, timeout = 8_000): Promise<RenderStats> {
+  let worst: RenderStats = { calls: 0, triangles: 0 };
+  const until = Date.now() + timeout;
+  for (;;) {
+    const { stats, state } = await page.evaluate(() => {
+      const hb = window.__hookbrawl!;
+      return { stats: hb.renderStats(), state: hb.getState() };
+    });
+    worst = { calls: Math.max(worst.calls, stats.calls), triangles: Math.max(worst.triangles, stats.triangles) };
+    if (done(state)) return worst;
+    if (Date.now() > until) throw new Error('the scripted moment never came');
+    await page.waitForTimeout(SAMPLE_MS);
+  }
+}
+
+test('a grapple across the canal and a brawl on the far dock both draw within budget', async ({ page }) => {
+  await boot(page, '?opponent=idle&gold=500');
+  await page.keyboard.press('Digit5');
+  await page.waitForFunction(() => window.__hookbrawl!.getState().players.some((p) => !p.isBot && p.items.grapple.kind === 'owned'));
+
+  const target = await page.evaluate(() => {
+    const hb = window.__hookbrawl!;
+    const { arena } = hb.getState();
+    return hb.worldToScreen({ x: arena.canal.x1 + 200, y: arena.height / 2 - 120 });
+  });
+  await page.mouse.move(target.x, target.y);
+  await page.keyboard.press('KeyE');
+  await page.waitForFunction(() => window.__hookbrawl!.getState().grapples.length > 0);
+  const grappling = await worstUntil(page, (s) => s.grapples.length === 0);
+
+  const dummy = await page.evaluate(() => {
+    const hb = window.__hookbrawl!;
+    return hb.worldToScreen(hb.getState().players.find((p) => p.team === 'east')!.pos);
+  });
+  await page.mouse.move(dummy.x, dummy.y);
+  await page.keyboard.press('Space');
+  // Below what the hook alone takes, so the two are trading blows.
+  const struck = TUNING.maxHp - TUNING.hookDamage;
+  await page.waitForFunction((hp) => window.__hookbrawl!.getState().players.some((p) => p.team === 'east' && p.hp < hp), struck, { timeout: 8_000 });
+  // Long enough to catch the slash, sparks and number of several blows in a row.
+  const fightUntil = Date.now() + 1_500;
+  const brawling = await worstUntil(page, () => Date.now() > fightUntil);
+
+  for (const [moment, stats] of [['grapple', grappling], ['brawl', brawling]] as const) {
+    expect(stats.calls, `${moment} draw calls`).toBeGreaterThan(0);
+    expect(stats.calls, `${moment} draw calls`).toBeLessThanOrEqual(BUDGET.calls);
+    expect(stats.triangles, `${moment} triangles`).toBeLessThanOrEqual(BUDGET.triangles);
+  }
 });
 
 const VIEWPORTS = [

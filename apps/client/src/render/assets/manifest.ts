@@ -27,6 +27,8 @@ export type PropName = keyof typeof PROP_FILES;
 
 /** Bone the chain is held in. GLTFLoader strips the dot from the rig's `handslot.r`. */
 export const HAND_BONE = 'handslotr';
+/** Bone the grapple rope is held in, so it never tangles with the hook in the other fist. */
+export const OFF_HAND_BONE = 'handslotl';
 /** Bones whose children are the pack's weapons, shields and mugs; this game's brawlers carry none of them. */
 export const ITEM_SLOT_BONES: readonly string[] = ['handslotr', 'handslotl'];
 export const CAPE_SUFFIX = '_Cape';

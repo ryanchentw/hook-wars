@@ -1,4 +1,4 @@
-import type { GameState, Hook, Player, Vec2 } from '@hookbrawl/sim';
+import type { GameState, Grapple, Hook, Player, Vec2 } from '@hookbrawl/sim';
 import type { Frame } from '../game/session';
 
 export type PlayerFrame = { readonly player: Player; readonly pos: Vec2 };
@@ -9,10 +9,17 @@ export type HookFrame = {
   /** Polyline from the owner's hand, through any bounce points, to the head. */
   readonly chain: readonly Vec2[];
 };
+/** The rope runs from the owner's hand to `head`, so a pulling grapple's rope shortens as the owner is hauled in. */
+export type GrappleFrame = {
+  readonly grapple: Grapple;
+  readonly team: Player['team'] | null;
+  readonly head: Vec2;
+};
 export type RenderFrame = {
   readonly state: GameState;
   readonly players: readonly PlayerFrame[];
   readonly hooks: readonly HookFrame[];
+  readonly grapples: readonly GrappleFrame[];
 };
 
 // A jump larger than this between two ticks is a teleport (respawn), not motion.
@@ -44,9 +51,16 @@ function hookFrame(previous: GameState, hook: Hook, players: readonly PlayerFram
   return { hook, team, head, chain: [hand, ...hook.path.slice(1), head] };
 }
 
+function grappleFrame(previous: GameState, grapple: Grapple, players: readonly PlayerFrame[], alpha: number): GrappleFrame {
+  const before = previous.grapples.find((g) => g.id === grapple.id);
+  const team = players.find((p) => p.player.id === grapple.ownerId)?.player.team ?? null;
+  return { grapple, team, head: before === undefined ? grapple.pos : lerp(before.pos, grapple.pos, alpha) };
+}
+
 export function interpolateFrame(frame: Frame): RenderFrame {
   const { previous, current, alpha } = frame;
   const players = current.players.map((p) => playerFrame(previous, p, alpha));
   const hooks = current.hooks.map((h) => hookFrame(previous, h, players, alpha));
-  return { state: current, players, hooks };
+  const grapples = current.grapples.map((g) => grappleFrame(previous, g, players, alpha));
+  return { state: current, players, hooks, grapples };
 }

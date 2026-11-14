@@ -1,4 +1,4 @@
-import type { GameEvent, HookId, PlayerId } from '@hookbrawl/sim';
+import type { GameEvent, GrappleId, HookId, PlayerId } from '@hookbrawl/sim';
 import { describe, expect, it } from 'vitest';
 import { IMPACTS, impactsOf, type Fighter, type Impact } from '../impact/impacts';
 import { simToWorld } from '../space';
@@ -21,6 +21,30 @@ describe('burstFor', () => {
     const kinds = (event: GameEvent): readonly string[] => [...new Set(burstFor(event, random).map((p) => p.kind))];
     expect(kinds({ kind: 'hookBounce', hookId, at })).toEqual(['spark']);
     expect(kinds({ kind: 'kill', killerId: a, victimId: b, assistIds: [], at })).toEqual(['wisp']);
+    expect(kinds({ kind: 'grappleLand', grappleId: 'g1' as GrappleId, at })).toEqual(['dust']);
+    expect(kinds({ kind: 'grappleArrive', playerId: a, at })).toEqual(['dust']);
+  });
+
+  it('puffs where a grapple head bites and kicks dust up around a landing, at ground level', () => {
+    const random = createRandom(4);
+    const ground = simToWorld(at);
+    const near = (p: Particle): boolean => Math.hypot(p.position.x - ground.x, p.position.z - ground.z) < 1.5;
+    const puff = burstFor({ kind: 'grappleLand', grappleId: 'g1' as GrappleId, at }, random);
+    const dust = burstFor({ kind: 'grappleArrive', playerId: a, at }, random);
+    expect(puff.length).toBeGreaterThan(0);
+    expect(dust.length).toBeGreaterThan(0);
+    [...puff, ...dust].forEach((p) => {
+      expect(near(p)).toBe(true);
+      expect(p.position.y).toBeLessThan(1);
+    });
+  });
+
+  it('lifts the kill wisp from where the body falls, behind a victim who faced east', () => {
+    const kill: GameEvent = { kind: 'kill', killerId: a, victimId: b, assistIds: [], at };
+    const facingEast = (id: PlayerId): number | null => (id === b ? 0 : null);
+    const wisps = burstFor(kill, createRandom(2), facingEast);
+    const mean = wisps.reduce((sum, p) => sum + p.position.x, 0) / wisps.length;
+    expect(mean).toBeLessThan(simToWorld(at).x - 0.8);
   });
 
   it('leaves blows to their impacts, and draws nothing for bookkeeping events', () => {
@@ -37,6 +61,8 @@ describe('burstFor', () => {
     const events: readonly GameEvent[] = [
       { kind: 'hookBounce', hookId, at },
       { kind: 'kill', killerId: a, victimId: b, assistIds: [], at },
+      { kind: 'grappleLand', grappleId: 'g1' as GrappleId, at },
+      { kind: 'grappleArrive', playerId: a, at },
     ];
     events.forEach((e) => expect(burstFor(e, random).length).toBeLessThanOrEqual(20));
   });

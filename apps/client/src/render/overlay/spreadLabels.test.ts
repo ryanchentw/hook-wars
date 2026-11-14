@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { spreadLabels } from './spreadLabels';
+import { keepInView, spreadLabels } from './spreadLabels';
 
 const box = { width: 70, height: 30 };
 
@@ -24,5 +24,19 @@ describe('spreadLabels', () => {
 
   it('keeps hidden labels hidden and in place in the list', () => {
     expect(spreadLabels([null, { x: 5, y: 5 }, null], box)).toEqual([null, { x: 5, y: 5 }, null]);
+  });
+});
+
+describe('keepInView', () => {
+  const view = { width: 1280, height: 720 };
+
+  it('slides a label for a fighter at the screen edge back in, so its name is not cut off', () => {
+    expect(keepInView({ x: 1270, y: 300 }, box, view)).toEqual({ x: 1280 - box.width / 2, y: 300 });
+    expect(keepInView({ x: 4, y: 300 }, box, view)).toEqual({ x: box.width / 2, y: 300 });
+  });
+
+  it('leaves a label alone when it fits, and when its fighter is off screen altogether', () => {
+    expect(keepInView({ x: 600, y: 300 }, box, view)).toEqual({ x: 600, y: 300 });
+    expect(keepInView({ x: 1400, y: 300 }, box, view)).toEqual({ x: 1400, y: 300 });
   });
 });

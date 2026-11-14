@@ -2,12 +2,13 @@ import type { TeamId } from '@hookbrawl/sim';
 import { Mesh, MeshStandardMaterial, SkinnedMesh, type Object3D } from 'three';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import type { CharacterAsset } from '../assets/loadAssets';
-import { CAPE_SUFFIX, FACE_SUFFIX, HAND_BONE, ITEM_SLOT_BONES } from '../assets/manifest';
+import { CAPE_SUFFIX, FACE_SUFFIX, HAND_BONE, ITEM_SLOT_BONES, OFF_HAND_BONE } from '../assets/manifest';
 import { COLORS, LIGHTS, SIZES, TEAM_COLORS, type TeamPalette } from '../theme';
 
 export type CharacterModel = {
   readonly root: Object3D;
   readonly hand: Object3D;
+  readonly offHand: Object3D;
   /** Every material on this instance, so the whole figure can fade as one. */
   readonly materials: readonly MeshStandardMaterial[];
 };
@@ -74,7 +75,8 @@ export function instantiateCharacter(asset: CharacterAsset, team: TeamId): Chara
   });
 
   const hand = root.getObjectByName(HAND_BONE);
-  if (hand === undefined) throw new Error(`Character model has no ${HAND_BONE} bone`);
+  const offHand = root.getObjectByName(OFF_HAND_BONE);
+  if (hand === undefined || offHand === undefined) throw new Error(`Character model needs both ${HAND_BONE} and ${OFF_HAND_BONE} bones`);
   root.scale.set(SIZES.characterScale.x, SIZES.characterScale.y, SIZES.characterScale.z);
-  return { root, hand, materials };
+  return { root, hand, offHand, materials };
 }

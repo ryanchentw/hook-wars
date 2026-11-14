@@ -1,6 +1,6 @@
-import type { GameEvent, Hook, Player, PlayerId } from '@hookbrawl/sim';
+import type { GameEvent, Grapple, Hook, Player, PlayerId } from '@hookbrawl/sim';
 
-export type AnimState = 'idle' | 'run' | 'throw' | 'hold' | 'swing' | 'flinch' | 'dragged' | 'death';
+export type AnimState = 'idle' | 'run' | 'throw' | 'hold' | 'swing' | 'flinch' | 'dragged' | 'brace' | 'haul' | 'death';
 
 /** `once` returns to a resting state when the clip ends; `clamp` stays on the clip's last frame. */
 export type Playback = 'loop' | 'once' | 'clamp';
@@ -29,6 +29,9 @@ export const ANIMATIONS: Readonly<Record<AnimState, AnimSpec>> = {
   swing: { clip: '1H_Melee_Attack_Slice_Horizontal', playback: 'once', fadeIn: 0, timeScale: 1, startAt: 0.235, endAt: 0.5 },
   flinch: { clip: 'Hit_A', playback: 'once', fadeIn: 0.05, timeScale: 1.4, startAt: 0, endAt: 0.8 },
   dragged: { clip: 'Jump_Idle', playback: 'loop', fadeIn: 0.08, timeScale: 1.6, startAt: 0, endAt: 1 },
+  // Feet planted and the body set against the line while the head is in the air.
+  brace: { clip: 'Blocking', playback: 'loop', fadeIn: 0.06, timeScale: 1, startAt: 0, endAt: 1 },
+  haul: { clip: 'Jump_Idle', playback: 'loop', fadeIn: 0.1, timeScale: 1, startAt: 0, endAt: 1 },
   death: { clip: 'Death_A', playback: 'clamp', fadeIn: 0.08, timeScale: 1, startAt: 0, endAt: 1 },
 };
 
@@ -38,14 +41,17 @@ export type AnimFacts = {
   readonly status: Player['status']['kind'];
   readonly moving: boolean;
   readonly hookOut: boolean;
+  readonly grapple: Grapple['phase']['kind'] | null;
 };
 
 export type AnimTrigger = 'cast' | 'strike' | 'hurt';
 
-/** First matching row wins. The two `forced` rows cut through any one-shot; the rest wait for it to end. */
+/** First matching row wins. The `forced` rows cut through any one-shot; the rest wait for it to end. */
 const RESTING: readonly { readonly when: (f: AnimFacts) => boolean; readonly state: AnimState; readonly forced: boolean }[] = [
   { when: (f) => f.status === 'dead', state: 'death', forced: true },
   { when: (f) => f.status === 'dragged', state: 'dragged', forced: true },
+  { when: (f) => f.grapple === 'pulling', state: 'haul', forced: true },
+  { when: (f) => f.grapple === 'flying', state: 'brace', forced: true },
   { when: (f) => f.moving, state: 'run', forced: false },
   { when: (f) => f.hookOut, state: 'hold', forced: false },
   { when: () => true, state: 'idle', forced: false },
@@ -58,11 +64,12 @@ const TRIGGERED: readonly { readonly trigger: AnimTrigger; readonly state: AnimS
   { trigger: 'hurt', state: 'flinch' },
 ];
 
-export function factsFor(player: Player, hooks: readonly Hook[]): AnimFacts {
+export function factsFor(player: Player, hooks: readonly Hook[], grapples: readonly Grapple[]): AnimFacts {
   return {
     status: player.status.kind,
     moving: player.move.kind !== 'idle',
     hookOut: hooks.some((h) => h.ownerId === player.id),
+    grapple: grapples.find((g) => g.ownerId === player.id)?.phase.kind ?? null,
   };
 }
 
