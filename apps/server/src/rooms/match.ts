@@ -1,6 +1,6 @@
 import { toSnapView, type ClientMessageOf, type MatchStart } from '@hookbrawl/protocol';
 import { toMatchConfig, type MemberId } from '@hookbrawl/room';
-import { botThink, createBotBrain, createMatch, step, TICK_DT, TICK_RATE, viewFor, type GameState, type PlayerInput, type TeamId } from '@hookbrawl/sim';
+import { botThink, createBotBrain, createMatch, step, TICK_DT, TICK_RATE, viewFor, withBotControl, type GameState, type PlayerInput, type TeamId } from '@hookbrawl/sim';
 import { enqueueInput, takeInputs } from './inputQueue';
 import type { Entropy, Fighter, MatchRun, Outbound, QueuedInput, Room, RoomRules, Step } from './types';
 import { announce, isMemberOnline } from './view';
@@ -106,7 +106,8 @@ function collectEvents(match: MatchRun, state: GameState): MatchRun['pending'] {
 /** One step of the sim, and a snapshot to every connected fighter's member when one is owed. */
 export function tick(room: Room, match: MatchRun, rules: RoomRules): { readonly match: MatchRun; readonly out: readonly Outbound[] } {
   const driven = match.fighters.map((f) => (f.owner !== null && isMemberOnline(room, f.owner) ? driveByMember(f, rules) : driveByBot(f, match.state)));
-  const state = step(match.state, driven.flatMap((d) => d.inputs), TICK_DT);
+  const bots = new Set(driven.filter((d) => d.fighter.drivenBy === 'bot').map((d) => d.fighter.id));
+  const state = step(withBotControl(match.state, bots), driven.flatMap((d) => d.inputs), TICK_DT);
   const debt = match.snapshotDebt + rules.snapshotHz;
   const owed = debt >= TICK_RATE || state.phase.kind === 'ended';
   const ticked: MatchRun = {
