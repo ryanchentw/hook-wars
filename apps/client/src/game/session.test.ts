@@ -95,3 +95,48 @@ describe('session subscribers and restart', () => {
     expect(changes).toHaveLength(2);
   });
 });
+
+describe('session pause', () => {
+  it('runs no ticks while paused, however much real time passes', () => {
+    const { sim, session } = setup();
+    session.setPaused(true);
+    for (let i = 0; i < 120; i += 1) session.advance(1 / 60);
+    session.advance(10);
+    expect(session.getState().tick).toBe(0);
+    expect(sim.stepped).toHaveLength(0);
+  });
+
+  it('resumes at normal speed without catching up the paused time', () => {
+    const { session } = setup(undefined, 5);
+    session.advance(TICK_DT * 2);
+    session.setPaused(true);
+    session.advance(10);
+    session.setPaused(false);
+    session.advance(TICK_DT);
+    expect(session.getState().tick).toBe(3);
+  });
+
+  it('keeps the interpolation point it had when paused', () => {
+    const { session } = setup();
+    session.advance(TICK_DT * 1.5);
+    session.setPaused(true);
+    session.advance(1);
+    expect(session.frame().alpha).toBeCloseTo(0.5);
+    session.setPaused(false);
+    session.advance(TICK_DT * 0.5);
+    expect(session.getState().tick).toBe(2);
+  });
+
+  it('drops inputs sent while paused and delivers inputs sent after resuming', () => {
+    const { sim, session } = setup();
+    session.setPaused(true);
+    session.queueInput({ kind: 'move', playerId: HUMAN, target: { x: 1, y: 1 } });
+    session.advance(TICK_DT * 3);
+    session.setPaused(false);
+    session.advance(TICK_DT);
+    session.queueInput({ kind: 'stop', playerId: HUMAN });
+    session.advance(TICK_DT);
+    const human = sim.stepped.map((batch) => batch.filter((i) => i.playerId === HUMAN).map((i) => i.kind));
+    expect(human).toEqual([[], ['stop']]);
+  });
+});

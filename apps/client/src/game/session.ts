@@ -32,7 +32,10 @@ export type SessionListener = (state: GameState, change: SessionChange) => void;
 export type Session = {
   readonly localPlayerId: PlayerId;
   advance(realSeconds: number): void;
+  /** Drops inputs sent while paused, since game controls are off then. */
   queueInput(input: PlayerInput): void;
+  /** While paused, real time is discarded rather than banked, so resuming never fast-forwards. */
+  setPaused(paused: boolean): void;
   frame(): Frame;
   getState(): GameState;
   subscribe(listener: SessionListener): () => void;
@@ -54,6 +57,7 @@ export function createSession(sim: SimApi, setup: SessionSetup, options: Session
   let bots = createBots(sim, setup, matchIndex);
   let queued: readonly PlayerInput[] = [];
   let accumulator = 0;
+  let paused = false;
 
   const emit = (change: SessionChange): void => {
     listeners.forEach((listener) => listener(current, change));
@@ -77,7 +81,7 @@ export function createSession(sim: SimApi, setup: SessionSetup, options: Session
   return {
     localPlayerId: setup.localPlayerId,
     advance(realSeconds) {
-      if (!(realSeconds > 0)) return;
+      if (paused || !(realSeconds > 0)) return;
       accumulator += realSeconds;
       let ran = 0;
       while (accumulator + TICK_EPSILON >= TICK_DT && ran < maxTicks) {
@@ -88,7 +92,11 @@ export function createSession(sim: SimApi, setup: SessionSetup, options: Session
       if (accumulator + TICK_EPSILON >= TICK_DT) accumulator = 0;
     },
     queueInput(input) {
+      if (paused) return;
       queued = [...queued, input];
+    },
+    setPaused(next) {
+      paused = next;
     },
     frame() {
       return { previous, current, alpha: Math.min(1, accumulator / TICK_DT) };

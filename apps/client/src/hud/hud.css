@@ -1,14 +1,21 @@
 :root {
-  --navy: #0c1626;
-  --panel: rgba(16, 26, 44, 0.86);
-  --panel-edge: rgba(255, 236, 210, 0.14);
-  --text: #fdf6ea;
-  --muted: #a9b4c8;
-  --west: #ff8a5e;
-  --east: #6aaeff;
-  --hp: #6ee07a;
-  --gold: #ffc46b;
+  --night: #070807;
+  --leather: #1a1511;
+  --leather-deep: #120f0c;
+  --panel: linear-gradient(180deg, rgba(34, 27, 21, 0.95), rgba(18, 14, 11, 0.95));
+  --iron: #5e5850;
+  --iron-dim: #3a3631;
+  --rivet: radial-gradient(circle, #8a8278 0 1.5px, #2a2622 2px, transparent 2.5px);
+  --text: #ece3cf;
+  --muted: #b8ab93;
+  --gold: #cfaa62;
+  --west: #ec8d5f;
+  --east: #86b6e4;
+  --hp: #456a2a;
+  --hp-low: #7a5418;
+  --hp-critical: #93322a;
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: Georgia, 'Times New Roman', serif;
 }
 
 html,
@@ -16,7 +23,7 @@ body {
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: var(--navy);
+  background: var(--night);
   color: var(--text);
   font-family: var(--font);
 }
@@ -50,6 +57,22 @@ body {
   color: var(--east);
 }
 
+/* Iron-and-leather plate shared by every HUD panel; four rivets sit in the corners. */
+.hud-plate {
+  background:
+    var(--rivet) 3px 3px / 8px 8px no-repeat,
+    var(--rivet) calc(100% - 3px) 3px / 8px 8px no-repeat,
+    var(--rivet) 3px calc(100% - 3px) / 8px 8px no-repeat,
+    var(--rivet) calc(100% - 3px) calc(100% - 3px) / 8px 8px no-repeat,
+    var(--panel);
+  border: 1px solid var(--iron);
+  border-radius: 3px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 236, 200, 0.07),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 3px 12px rgba(0, 0, 0, 0.6);
+}
+
 .hud-score {
   position: absolute;
   top: 10px;
@@ -57,32 +80,36 @@ body {
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 6px 18px;
-  background: var(--panel);
-  border: 1px solid var(--panel-edge);
-  border-radius: 999px;
+  gap: 16px;
+  padding: 5px 22px;
   white-space: nowrap;
 }
 
 .hud-team {
+  font-family: var(--font-display);
   font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
 .hud-points {
-  font-size: 26px;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
   min-width: 1.2em;
   text-align: center;
-  font-variant-numeric: tabular-nums;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 .hud-target {
+  font-family: var(--font-display);
   font-size: 12px;
+  font-style: italic;
   color: var(--muted);
+  padding: 0 10px;
+  border-left: 1px solid var(--iron-dim);
+  border-right: 1px solid var(--iron-dim);
 }
 
 .hud-feed {
@@ -99,10 +126,12 @@ body {
 }
 
 .hud-feed li {
-  padding: 4px 10px;
-  background: var(--panel);
-  border: 1px solid var(--panel-edge);
-  border-radius: 6px;
+  padding: 4px 12px;
+  color: var(--muted);
+}
+
+.hud-feed li span {
+  font-weight: 700;
 }
 
 .hud-respawn {
@@ -110,11 +139,10 @@ body {
   top: 40%;
   left: 50%;
   transform: translate(-50%, -50%);
-  padding: 10px 22px;
-  background: var(--panel);
-  border-radius: 10px;
+  padding: 12px 26px;
+  font-family: var(--font-display);
   font-size: 22px;
-  font-weight: 700;
+  font-style: italic;
 }
 
 .hud-bottom {
@@ -132,26 +160,32 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 10px;
-  background: var(--panel);
-  border: 1px solid var(--panel-edge);
-  border-radius: 10px;
+  padding: 9px 12px;
 }
 
 .hud-hp {
   position: relative;
   width: 200px;
   height: 22px;
-  background: #1a2235;
-  border-radius: 6px;
+  background: #0b0908;
+  border: 1px solid var(--iron-dim);
+  border-radius: 2px;
   overflow: hidden;
 }
 
 .hud-hp-fill {
   position: absolute;
   inset: 0 auto 0 0;
-  background: var(--hp);
-  transition: width 120ms linear;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 60%), var(--hp);
+  transition: width 120ms linear, background-color 120ms linear;
+}
+
+.hud-hp-fill.is-low {
+  background-color: var(--hp-low);
+}
+
+.hud-hp-fill.is-critical {
+  background-color: var(--hp-critical);
 }
 
 .hud-hp-text {
@@ -162,16 +196,20 @@ body {
   font-weight: 700;
   line-height: 22px;
   color: var(--text);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+  text-shadow:
+    0 0 2px #000,
+    0 1px 2px #000;
+  font-variant-numeric: tabular-nums;
 }
 
 .hud-hook {
   position: relative;
   width: 48px;
   height: 48px;
-  border-radius: 8px;
-  background: #2a3550;
-  border: 2px solid var(--muted);
+  border-radius: 2px;
+  background: radial-gradient(circle at 50% 35%, #2c2620, #14110e);
+  border: 1px solid var(--iron);
+  box-shadow: inset 0 0 0 1px #000;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -181,6 +219,9 @@ body {
 
 .hud-hook.is-ready {
   border-color: var(--gold);
+  box-shadow:
+    inset 0 0 0 1px #000,
+    0 0 8px rgba(207, 170, 98, 0.35);
 }
 
 .hud-hook-sweep {
@@ -188,13 +229,14 @@ body {
   left: 0;
   right: 0;
   top: 0;
-  background: rgba(6, 10, 18, 0.65);
+  background: rgba(4, 3, 2, 0.72);
 }
 
 .hud-hook-key {
   position: relative;
-  font-size: 18px;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
 }
 
 .hud-hook-label {
@@ -204,10 +246,14 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.hud-aside {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .hud-hint {
   padding: 6px 12px;
-  background: var(--panel);
-  border-radius: 8px;
   font-size: 12px;
   color: var(--muted);
 }
@@ -215,8 +261,9 @@ body {
 .hud-hint kbd {
   padding: 1px 6px;
   margin: 0 2px 0 8px;
-  border: 1px solid var(--panel-edge);
-  border-radius: 4px;
+  border: 1px solid var(--iron);
+  border-radius: 2px;
+  background: #0e0c0a;
   color: var(--text);
   font-family: var(--font);
 }
@@ -225,31 +272,60 @@ body {
   margin-left: 0;
 }
 
+.hud-button {
+  display: inline-block;
+  padding: 7px 16px;
+  border: 1px solid var(--iron);
+  border-radius: 2px;
+  background: linear-gradient(180deg, #2b231c, #17120e);
+  box-shadow: inset 0 1px 0 rgba(255, 236, 200, 0.08);
+  color: var(--text);
+  font: 700 13px var(--font-display);
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.hud-button:hover {
+  border-color: var(--gold);
+}
+
+.hud-button:focus-visible,
+.hud-end button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
 .hud-end-backdrop {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  background: rgba(6, 10, 18, 0.55);
+  padding: 16px;
+  background: radial-gradient(ellipse at center, rgba(8, 6, 5, 0.55), rgba(3, 2, 2, 0.85));
   pointer-events: auto;
 }
 
 .hud-end {
   min-width: 300px;
-  padding: 24px 32px;
-  background: var(--panel);
-  border: 1px solid var(--panel-edge);
-  border-radius: 14px;
+  padding: 26px 34px 24px;
   text-align: center;
 }
 
 .hud-end h1 {
   margin: 0;
-  font-size: 40px;
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .hud-end p {
   margin: 4px 0 16px;
+  font-family: var(--font-display);
+  font-style: italic;
   color: var(--muted);
 }
 
@@ -263,32 +339,38 @@ body {
 .hud-end th,
 .hud-end td {
   padding: 6px 8px;
-  border-bottom: 1px solid var(--panel-edge);
+  border-bottom: 1px solid var(--iron-dim);
 }
 
 .hud-end th {
+  font-family: var(--font-display);
   font-size: 12px;
   color: var(--muted);
-  font-weight: 600;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
 .hud-end tr.is-local td {
   font-weight: 800;
 }
 
-.hud-end button {
-  padding: 10px 28px;
-  border: none;
-  border-radius: 999px;
-  background: var(--gold);
-  color: #2a1a06;
-  font: 700 16px var(--font);
-  cursor: pointer;
+.hud-end-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
 }
 
-.hud-end button:focus-visible {
-  outline: 3px solid var(--text);
-  outline-offset: 2px;
+.hud-end-actions button {
+  padding: 10px 28px;
+  border: 1px solid #e3c486;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #d8b46c, #a9843f);
+  color: #1e1507;
+  font: 700 16px var(--font-display);
+  letter-spacing: 0.08em;
+  cursor: pointer;
 }
 
 @media (max-width: 640px) {
@@ -299,12 +381,12 @@ body {
   .hud-team {
     display: none;
   }
-}
 
-#hud.boot-error {
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  color: var(--gold);
-  font-size: 16px;
+  .hud-feed {
+    top: 64px;
+  }
+
+  .hud-hp {
+    width: 140px;
+  }
 }

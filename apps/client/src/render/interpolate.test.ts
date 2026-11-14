@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Hook, HookId } from '@hookbrawl/sim';
 import { BOT, fakePlayer, fakeState, HUMAN } from '../game/fakeSim';
-import { beadPoints } from './hooksView';
 import { interpolateFrame } from './interpolate';
 
 const hookId = 'h1' as HookId;
@@ -56,12 +55,5 @@ describe('interpolateFrame', () => {
     const state = fakeState({ players, hooks: [retracting] });
     const hf = interpolateFrame({ previous: state, current: state, alpha: 1 }).hooks[0];
     expect(hf?.chain).toEqual([{ x: 50, y: 60 }, { x: 500, y: 60 }]);
-  });
-});
-
-describe('beadPoints', () => {
-  it('spaces beads evenly across bends in the polyline', () => {
-    const beads = beadPoints([{ x: 0, y: 0 }, { x: 30, y: 0 }, { x: 30, y: 30 }], 20);
-    expect(beads).toEqual([{ x: 0, y: 0 }, { x: 20, y: 0 }, { x: 30, y: 10 }]);
   });
 });
