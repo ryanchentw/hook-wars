@@ -1,13 +1,13 @@
 import { createRoom, parseName, reduce, seatOf, toMatchConfig, upcomingScene } from '@hookbrawl/room';
 import type { MemberId, RoomAction, RoomState } from '@hookbrawl/room';
-import { createBackdrop } from '../render/backdrop';
-import type { ContextEvents } from '../render/frameLoop';
-import type { Graphics } from '../render/graphics';
+import type { SessionSetup } from '../game/session';
+import type { Backdrop } from '../render/backdrop';
 import { playsIntro } from '../render/intro/intro';
+import type { MatchView } from '../render/renderer';
 import type { SceneId } from '../render/scenes/types';
 import { createBackdropSlot } from './backdropSlot';
 import { directRoom, matchSeed, sessionSetupFor, type PageOptions } from './matchSetup';
-import { startMatch, type MatchHandle } from './matchHost';
+import type { MatchHandle } from './matchHost';
 import type { NameStore } from './nameStore';
 import type { Route, Router } from './route';
 import { createStore, type Store } from './store';
@@ -40,12 +40,14 @@ export type App = Pick<Store<AppView>, 'subscribe' | 'getSnapshot'> & {
 };
 
 export type AppDeps = {
-  readonly graphics: Graphics;
   readonly router: Router;
   readonly names: NameStore;
   readonly page: PageOptions;
-  readonly hudElement: HTMLElement;
-  readonly context: ContextEvents;
+  readonly makeBackdrop: (scene: SceneId) => Promise<Backdrop>;
+  /** `rematch` is what the dev hook's restart does. */
+  readonly startMatch: (setup: SessionSetup, view: MatchView, rematch: () => Promise<void>) => Promise<MatchHandle>;
+  /** Puts the keyboard on the game once a match is up. */
+  readonly focusGame: () => void;
   /** Shown over the page while a match is set up, and hidden again. */
   readonly busy: (starting: boolean) => void;
 };
@@ -69,7 +71,7 @@ export function createApp(deps: AppDeps): App {
   const patch = (change: Partial<AppView>): void => store.update((v) => ({ ...v, ...change }));
   const dispatch = (action: LocalAction): void => patch({ room: reduce(view().room, { ...action, by: LOCAL } as RoomAction) });
   const backdrops = createBackdropSlot(
-    (scene) => createBackdrop(deps.graphics, scene, deps.context),
+    deps.makeBackdrop,
     (error) => patch({ notice: `The scenery could not be drawn: ${describe(error)}` }),
   );
   let lastScene: SceneId | null = null;
@@ -101,14 +103,14 @@ export function createApp(deps: AppDeps): App {
       const setup = sessionSetupFor(plan, LOCAL, page.overrides);
       await backdrops.show(null);
       const intro = playsIntro(page.intro, lastScene, plan.scene);
-      const match = await startMatch({ ...deps, setup, view: { scene: plan.scene, intro }, rematch });
+      const match = await deps.startMatch(setup, { scene: plan.scene, intro }, rematch);
       if (mine !== ticket) {
         match.destroy();
         return;
       }
       lastScene = plan.scene;
       patch({ match, starting: false });
-      deps.graphics.host.focus();
+      deps.focusGame();
     } catch (error) {
       if (mine === ticket) failStart(error);
     } finally {

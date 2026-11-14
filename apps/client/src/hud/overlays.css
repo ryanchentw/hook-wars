@@ -151,12 +151,15 @@
   vertical-align: 1px;
 }
 
+/* Under the button's word, so the two extra buttons cost the shop row no width. */
+.hud-aside .hud-key {
+  display: block;
+  width: fit-content;
+  margin: 2px auto 0;
+}
+
 @media (max-width: 900px) {
   .hud-key {
     display: none;
   }
-}
-
-.hud-aside .hud-button {
-  white-space: nowrap;
 }

@@ -1,11 +1,13 @@
 import { createRoot } from 'react-dom/client';
 import { App } from './app/App';
 import { createApp } from './app/controller';
+import { startMatch } from './app/matchHost';
 import { pageOptionsFromQuery } from './app/matchSetup';
 import { createNameStore } from './app/nameStore';
 import { createRouter } from './app/route';
 import { createBootScreen } from './boot/bootScreen';
 import { loadAssets } from './render/assets/loadAssets';
+import { createBackdrop } from './render/backdrop';
 import { createGraphics } from './render/graphics';
 
 const ASSET_BASE = `${import.meta.env.BASE_URL}assets/kaykit/`;
@@ -28,16 +30,17 @@ async function start(): Promise<void> {
   const page = pageOptionsFromQuery(window.location.search, Date.now());
   try {
     const router = createRouter(window, page.direct === null ? 'menu' : 'match');
+    const context = {
+      onContextLost: () => boot.showNotice('The graphics context was lost. Waiting for the browser to restore it…'),
+      onContextRestored: boot.hide,
+    };
     const app = createApp({
-      graphics,
       router,
       page,
       names: createNameStore(() => window.localStorage),
-      hudElement: hud,
-      context: {
-        onContextLost: () => boot.showNotice('The graphics context was lost. Waiting for the browser to restore it…'),
-        onContextRestored: boot.hide,
-      },
+      makeBackdrop: (scene) => createBackdrop(graphics, scene, context),
+      startMatch: (setup, view, rematch) => startMatch({ graphics, setup, view, router, hudElement: hud, context, rematch }),
+      focusGame: () => stage.focus(),
       busy(starting) {
         stage.dataset.state = starting ? 'starting' : 'ready';
         if (starting) boot.showNotice('Setting the scene…');
