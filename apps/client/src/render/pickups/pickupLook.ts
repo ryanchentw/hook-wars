@@ -28,6 +28,8 @@ export const PICKUP_SIZES = {
   ringInner: 1.25,
   ringOuter: 1.9,
   ringOpacity: 0.55,
+  /** Keeps the ring just above the water so the two never z-fight. */
+  ringLift: 0.02,
   ringPulseRate: 3,
   /** How bright the body burns, so it reads in the darkest scene. */
   emissive: 1.4,
@@ -44,6 +46,8 @@ export const AURA = {
   galeOpacity: 0.9,
   stormHaloSize: 4.2,
   stormHaloOpacity: 0.45,
+  stormHaloHeight: 1.4,
+  boltColor: 0xf2e6ff,
   /** How long one lightning strike stays drawn. */
   boltLife: 0.28,
   boltTop: 9,
