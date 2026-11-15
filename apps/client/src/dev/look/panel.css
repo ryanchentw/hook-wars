@@ -57,7 +57,7 @@
   font: 600 11px/1.4 system-ui, sans-serif;
 }
 
-.look-panel .look-changed .name::before {
+.look-panel .look-changed .lil-name::before {
   content: '● ';
   color: #ffb020;
 }
