@@ -1,8 +1,8 @@
 .audio-settings {
   box-sizing: border-box;
   inline-size: 100%;
-  margin: 18px 0 0;
-  padding: 12px 14px 10px;
+  margin: 14px 0 0;
+  padding: 6px 14px 8px;
   border: 1px solid var(--iron-dim);
   border-radius: 2px;
   text-align: start;
@@ -30,7 +30,7 @@
 .audio-slider {
   inline-size: 100%;
   min-inline-size: 0;
-  block-size: 32px;
+  block-size: 28px;
   margin: 0;
   cursor: pointer;
 }
@@ -52,7 +52,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .audio-mute input {

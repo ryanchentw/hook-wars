@@ -7,8 +7,8 @@ import type { AudioOutput } from './output';
 import { audioSettings } from './settingsStore';
 import { createWebAudioOutput } from './webAudio';
 
-/** What the browser suite reads under `?audio=fake`: the labels of every sound asked for, oldest first. */
-export type AudioProbe = { readonly requested: () => readonly string[]; readonly clear: () => void };
+/** What the browser suite reads under `?audio=fake`: the labels of every sound asked for, oldest first, and how many files were fetched. */
+export type AudioProbe = { readonly requested: () => readonly string[]; readonly clear: () => void; readonly loaded: () => number };
 
 declare global {
   interface Window {
@@ -18,7 +18,7 @@ declare global {
 
 function fakeWithProbe(win: Window): FakeOutput {
   const fake = createFakeOutput();
-  win.__hookwarsAudio = { requested: () => fake.played().map((p) => p.label), clear: fake.clear };
+  win.__hookwarsAudio = { requested: () => fake.played().map((p) => p.label), clear: fake.clear, loaded: () => fake.loaded().length };
   return fake;
 }
 

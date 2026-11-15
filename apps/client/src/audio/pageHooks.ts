@@ -43,11 +43,14 @@ export function bindButtonClicks(doc: Document, counts: (button: HTMLButtonEleme
   });
 }
 
+/** A page drawing every frame may never fall idle; the fetch starts after this long regardless. */
+const IDLE_TIMEOUT_MS = 2000;
+
 /** Runs `job` once the page has loaded and the browser is idle, so nothing it fetches competes with the first paint. */
 export function whenIdle(win: Window, job: () => void): void {
   // Safari shipped requestIdleCallback late.
   const onIdle = (win as Partial<Pick<Window, 'requestIdleCallback'>>).requestIdleCallback?.bind(win);
-  const idle = (): void => void (onIdle === undefined ? win.setTimeout(job, 0) : onIdle(() => job()));
+  const idle = (): void => void (onIdle === undefined ? win.setTimeout(job, 0) : onIdle(() => job(), { timeout: IDLE_TIMEOUT_MS }));
   if (win.document.readyState === 'complete') idle();
   else win.addEventListener('load', idle, { once: true });
 }
