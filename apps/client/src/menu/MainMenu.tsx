@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react';
 import type { Invite } from '../app/onlineMode';
+import { GAME_VERSION } from '@hookwars/protocol';
 import { CreditsLink } from '../hud/labels';
 import type { QualitySetting } from '../render/quality';
 import { Notice } from '../screens/Notice';
@@ -88,6 +89,7 @@ export function MainMenu({ name, notice, invite, connecting, quality, onPlay, on
         <div className="menu-footer">
           <Settings quality={quality} buttonClass="menu-quiet" />
           <CreditsLink className="menu-quiet" />
+          <span className="menu-version">v{GAME_VERSION}</span>
         </div>
       </div>
     </main>

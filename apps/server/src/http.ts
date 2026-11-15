@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { serveStatic } from '@hono/node-server/serve-static';
+import { GAME_VERSION } from '@hookwars/protocol';
 import { Hono } from 'hono';
 
 export const HEALTH_PATH = '/healthz';
@@ -27,7 +28,7 @@ export type Health = { readonly rooms: number; readonly matches: number; readonl
 /** The health check the platform polls, and the built client when there is one to serve. */
 export function createHttpApp(staticDir: string | null, health: () => Health): Hono {
   const app = new Hono();
-  app.get(HEALTH_PATH, (c) => c.json({ ok: true, ...health() }));
+  app.get(HEALTH_PATH, (c) => c.json({ ok: true, version: GAME_VERSION, ...health() }));
   if (staticDir === null) return app;
 
   const root = resolve(staticDir);

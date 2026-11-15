@@ -1,6 +1,9 @@
 /** Checked at connect: a client and a server that disagree do not talk. Raise it with any change to a message. */
 export const PROTOCOL_VERSION = 4;
 
+/** The release a player or the health check reports. Kept equal to every package.json by a test. */
+export const GAME_VERSION = '0.1.0';
+
 /** No client message comes near this; the server's socket refuses anything longer before it is read. */
 export const MAX_CLIENT_MESSAGE_BYTES = 2048;
 /** A 3v3 snapshot is about 4 kB; a client that is sent more than this is not talking to this server. */
