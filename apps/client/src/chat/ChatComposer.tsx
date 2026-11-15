@@ -22,19 +22,11 @@ type Props = {
   readonly placeholder: string;
 };
 
-/**
- * One line of text in a real input, so an input method draws its candidates at the caret. Enter, Escape and Tab are
- * read through `chatKeyAction`, which leaves every key an input method is still using to the input method.
- */
-export function ChatComposer({ channel, canSwitch, team, draft, onDraft, onSend, onCancel, onSwitch, onBlur, focusOnMount, placeholder }: Props) {
-  const inputId = useId();
-  const counterId = useId();
-  const input = useRef<HTMLInputElement>(null);
-  const composition = useRef<Composition>(NO_COMPOSITION);
-  useEffect(() => {
-    if (focusOnMount) input.current?.focus();
-  }, [focusOnMount]);
+type Handlers = Pick<Props, 'canSwitch' | 'onDraft' | 'onSend' | 'onCancel' | 'onSwitch'>;
 
+/** Enter, Escape and Tab go through `chatKeyAction`, which leaves every key an input method is still using to it. */
+function useComposerKeys({ canSwitch, onDraft, onSend, onCancel, onSwitch }: Handlers) {
+  const composition = useRef<Composition>(NO_COMPOSITION);
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>): void => {
     const action = chatKeyAction(pressOf(event.nativeEvent), composition.current, canSwitch);
     if (action === 'type') return;
@@ -52,10 +44,26 @@ export function ChatComposer({ channel, canSwitch, team, draft, onDraft, onSend,
     const composing = composition.current.active || (event.nativeEvent as InputEvent).isComposing === true;
     onDraft(composing ? value : clampDraft(value));
   };
+  const onCompositionStart = (): void => {
+    composition.current = { ...composition.current, active: true };
+  };
   const onCompositionEnd = (event: CompositionEvent<HTMLInputElement>): void => {
     composition.current = { active: false, endedAt: event.nativeEvent.timeStamp };
     onDraft(clampDraft(event.currentTarget.value));
   };
+  return { onKeyDown, onChange, onCompositionStart, onCompositionEnd };
+}
+
+/** One line of text in a real input, so an input method draws its candidates at the caret. */
+export function ChatComposer(props: Props) {
+  const { channel, team, draft, onBlur, focusOnMount, placeholder } = props;
+  const inputId = useId();
+  const counterId = useId();
+  const input = useRef<HTMLInputElement>(null);
+  const handlers = useComposerKeys(props);
+  useEffect(() => {
+    if (focusOnMount) input.current?.focus();
+  }, [focusOnMount]);
   const count = graphemeCount(draft);
   const teamClass = channel === 'team' && team !== null ? ` hud-${team}` : '';
 
@@ -77,10 +85,7 @@ export function ChatComposer({ channel, canSwitch, team, draft, onDraft, onSend,
         spellCheck={false}
         enterKeyHint="send"
         aria-describedby={counterId}
-        onChange={onChange}
-        onKeyDown={onKeyDown}
-        onCompositionStart={() => (composition.current = { ...composition.current, active: true })}
-        onCompositionEnd={onCompositionEnd}
+        {...handlers}
         onBlur={onBlur}
       />
       <span id={counterId} className="chat-counter" data-full={count >= CHAT_MAX_GRAPHEMES}>

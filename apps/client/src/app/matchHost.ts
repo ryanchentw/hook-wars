@@ -87,25 +87,25 @@ function bindControls(deps: MatchDeps, session: Session, renderer: Renderer, hud
   };
   const syncCredits = (): void => pause.set('credits', credits());
   syncCredits();
-  const input = bindInput({
-      target: renderer.canvas,
-      window,
-      document,
-      playerId: session.localPlayerId,
-      toWorld: renderer.screenToWorld,
-      fallbackAim: () => {
-        const local = session.getView().players.find((p) => p.id === session.localPlayerId);
-        return local === undefined ? null : facingAim(local);
-      },
-      enabled: playing,
-      send: (input) => session.queueInput(input),
-      buy: (purchase) => hud.buy(purchase),
-      steer: (dir) => session.setSteer(dir),
+  const pointerAndKeys = bindInput({
+    target: renderer.canvas,
+    window,
+    document,
+    playerId: session.localPlayerId,
+    toWorld: renderer.screenToWorld,
+    fallbackAim: () => {
+      const local = session.getView().players.find((p) => p.id === session.localPlayerId);
+      return local === undefined ? null : facingAim(local);
+    },
+    enabled: playing,
+    send: (input) => session.queueInput(input),
+    buy: (purchase) => hud.buy(purchase),
+    steer: (dir) => session.setSteer(dir),
   });
-  const chat = createMatchChat({ feed, memory: channelMemory, release: input.releaseAll, focusGame: deps.focusGame });
+  const chat = createMatchChat({ feed, memory: channelMemory, release: pointerAndKeys.releaseAll, focusGame: deps.focusGame });
   const unbinders = [
     router.subscribe(syncCredits),
-    input.unbind,
+    pointerAndKeys.unbind,
     bindChatKey({ window, canOpen: () => shown() && !renderer.introActive(), open: chat.open }),
     bindIntroSkip({ window, skippable: () => free() && renderer.introActive(), skip: renderer.skipIntro }),
     bindMatchKeys({
