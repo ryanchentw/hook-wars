@@ -23,7 +23,7 @@ export function toMatchConfig(state: RoomState, seed: number): MatchPlan | null 
     return { player: { id: playerId, name: botName(ref), team: ref.team, isBot: true }, seat: { kind: 'bot', playerId, slot: ref, seed: botSeed } };
   });
   return {
-    config: { killTarget: state.settings.killTarget, fog: state.settings.fog, players: entries.map((e) => e.player) },
+    config: { killTarget: state.settings.killTarget, fog: state.settings.fog, pickups: state.settings.pickups, seed, players: entries.map((e) => e.player) },
     scene: sceneFor(state.settings.scene, state.matchesStarted - 1),
     seats: entries.map((e) => e.seat),
   };

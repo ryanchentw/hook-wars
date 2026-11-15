@@ -1,5 +1,5 @@
 import { createRoom } from '@hookwars/room';
-import { createMatch, viewFor, type PlayerId } from '@hookwars/sim';
+import { createMatch, spawnPickup, viewFor, type HookId, type PickupId, type PlayerId } from '@hookwars/sim';
 import { describe, expect, it } from 'vitest';
 import {
   encodeClientMessage,
@@ -99,14 +99,15 @@ describe('lobby actions', () => {
 });
 
 describe('server messages', () => {
-  const state = createMatch({
+  const config = {
     killTarget: 5,
     fog: true,
     players: [
-      { id: 'west-0' as PlayerId, name: 'Ada', team: 'west', isBot: false },
-      { id: 'east-0' as PlayerId, name: 'Bo', team: 'east', isBot: true },
+      { id: 'west-0' as PlayerId, name: 'Ada', team: 'west' as const, isBot: false },
+      { id: 'east-0' as PlayerId, name: 'Bo', team: 'east' as const, isBot: true },
     ],
-  });
+  };
+  const state = createMatch(config);
   const view = toSnapView(viewFor(state, 'west'));
 
   it('carries a real team view through the wire unchanged', () => {
@@ -125,6 +126,25 @@ describe('server messages', () => {
     expect(parseServerMessage(frame({ t: 'snap', ack: 0, view: { ...view, tick: 'now' } })).ok).toBe(false);
     expect(parseServerMessage(frame({ t: 'error', code: 'because' })).ok).toBe(false);
     expect(parseServerMessage('nonsense').ok).toBe(false);
+  });
+
+  it('carries pickups, effects and a pickup on a hook through the wire', () => {
+    const river = spawnPickup(createMatch({ ...config, pickups: true }), { kind: 'storm', from: 'north', lane: 1100 });
+    const carried = { ...river, pickups: river.pickups.map((p) => ({ ...p, state: { kind: 'carried' as const, hookId: 'h0' as HookId } })) };
+    const hooked = { ...carried, hooks: [{ id: 'h0' as HookId, ownerId: 'west-0' as PlayerId, pos: { x: 1, y: 2 }, dir: { x: 1, y: 0 }, path: [], phase: { kind: 'retracting' as const, cargo: { kind: 'pickup' as const, id: 'p0' as PickupId } }, stats: { damage: 1, range: 1, speed: 1, retractSpeed: 1, radius: 1, barbed: false } }] };
+    const effects = { ...hooked, players: hooked.players.map((p) => ({ ...p, effects: [{ kind: 'gale' as const, source: p.id, since: 0, until: 8 }] })) };
+    const message: ServerMessage = { t: 'snap', ack: 1, view: toSnapView(viewFor(effects, 'west')) };
+    expect(message.view.pickups).toHaveLength(1);
+    expect(parseServerMessage(encodeServerMessage(message))).toEqual({ ok: true, value: message });
+  });
+
+  it('refuses a snapshot in the shape from before pickups: no pickups, no effects, a bare fighter id as cargo', () => {
+    const { pickups: _pickups, ...noPickups } = view;
+    expect(parseServerMessage(frame({ t: 'snap', ack: 0, view: noPickups })).ok).toBe(false);
+    const noEffects = view.players.map(({ effects: _effects, ...p }) => p);
+    expect(parseServerMessage(frame({ t: 'snap', ack: 0, view: { ...view, players: noEffects } })).ok).toBe(false);
+    const oldHook = { id: 'h0', ownerId: 'west-0', pos: { x: 1, y: 2 }, dir: { x: 1, y: 0 }, path: [], phase: { kind: 'retracting', cargo: 'east-0' }, stats: { damage: 1, range: 1, speed: 1, retractSpeed: 1, radius: 1, barbed: false } };
+    expect(parseServerMessage(frame({ t: 'snap', ack: 0, view: { ...view, hooks: [oldHook] } })).ok).toBe(false);
   });
 
   it('refuses a roster card without gold earned, as a server from before it was added would send', () => {

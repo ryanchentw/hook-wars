@@ -84,7 +84,10 @@ export function triggersFor(playerId: PlayerId, events: readonly SeenEvent[]): r
       case 'melee':
         return [...(e.attackerId === playerId ? (['strike'] as const) : []), ...(e.targetId === playerId ? (['hurt'] as const) : [])];
       case 'hookHit':
+      case 'storm':
         return e.targetId === playerId ? ['hurt'] : [];
+      case 'pickupCaught':
+      case 'pickupCollected':
       case 'hookBounce':
       case 'kill':
       case 'respawn':

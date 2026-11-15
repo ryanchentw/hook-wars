@@ -147,6 +147,9 @@ function burstOf(event: SeenEvent): Burst | null {
     case 'matchEnd':
     case 'purchase':
     case 'grappleCast':
+    case 'pickupCaught':
+    case 'pickupCollected':
+    case 'storm':
       return null;
   }
 }

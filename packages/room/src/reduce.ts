@@ -85,6 +85,9 @@ const HANDLERS: Handlers = {
   setFog(s, a) {
     return hostInLobby(s, a.by) && typeof a.fog === 'boolean' && a.fog !== s.settings.fog ? { ...s, settings: { ...s.settings, fog: a.fog } } : s;
   },
+  setPickups(s, a) {
+    return hostInLobby(s, a.by) && typeof a.pickups === 'boolean' && a.pickups !== s.settings.pickups ? { ...s, settings: { ...s.settings, pickups: a.pickups } } : s;
+  },
   startMatch: (s, a) => (s.host === a.by && canStart(s) ? { ...s, phase: { kind: 'in-match' }, matchesStarted: s.matchesStarted + 1 } : s),
   endMatch: (s, a) => (s.host === a.by && s.phase.kind === 'in-match' ? { ...s, phase: { kind: 'lobby' } } : s),
 };

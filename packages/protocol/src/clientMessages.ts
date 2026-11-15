@@ -35,6 +35,7 @@ export const lobbyActionSchema = z.discriminatedUnion('kind', [
   z.strictObject({ kind: z.literal('setScene'), scene: z.enum(['rotate', ...SCENE_IDS]) }),
   z.strictObject({ kind: z.literal('setKillTarget'), killTarget: z.union(KILL_TARGETS.map((n) => z.literal(n))) }),
   z.strictObject({ kind: z.literal('setFog'), fog: z.boolean() }),
+  z.strictObject({ kind: z.literal('setPickups'), pickups: z.boolean() }),
   z.strictObject({ kind: z.literal('startMatch') }),
 ]);
 export type LobbyAction = z.infer<typeof lobbyActionSchema>;
