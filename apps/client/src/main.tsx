@@ -12,6 +12,7 @@ import { createBootScreen } from './boot/bootScreen';
 import { loadAssets } from './render/assets/loadAssets';
 import { createBackdrop } from './render/backdrop';
 import { createGraphics } from './render/graphics';
+import type { LookTap } from './render/lookTap';
 import { QUALITY_PARAM } from './render/quality';
 
 const ASSET_BASE = `${import.meta.env.BASE_URL}assets/kaykit/`;
@@ -26,12 +27,15 @@ const stage = mountPoint('stage');
 const boot = createBootScreen(mountPoint('boot'));
 const hud = mountPoint('hud');
 const storage = (): Storage => window.localStorage;
+// Behind the DEV flag as a whole, so the look panel and its library are not in a production build at all. Once per
+// page, not per start: "Try again" must not leave a second panel behind.
+const lookTap: Promise<LookTap | null> = import.meta.env.DEV ? import('./dev/look').then((dev) => dev.installLookTuner(storage)) : Promise.resolve(null);
 
 /** Models load once for the whole visit; every match and the menu's scenery draw with them. */
 async function start(): Promise<void> {
   stage.dataset.state = 'loading';
   const assets = await loadAssets(ASSET_BASE, boot.showLoading);
-  const graphics = createGraphics(stage, assets, { storage, askedQuality: new URLSearchParams(window.location.search).get(QUALITY_PARAM), tap: null });
+  const graphics = createGraphics(stage, assets, { storage, askedQuality: new URLSearchParams(window.location.search).get(QUALITY_PARAM), tap: await lookTap });
   const page = pageOptionsFromQuery(window.location.search, Date.now());
   try {
     const router = createRouter(window, page.direct === null ? 'menu' : 'match');
