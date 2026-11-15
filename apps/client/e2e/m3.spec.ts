@@ -130,7 +130,7 @@ test('the name is trimmed, checked when Play is pressed, and remembered', async 
 
   await page.goto('/');
   await expect(page.getByLabel('Your name')).toHaveValue('Ada Lovelace');
-  await expect(play).toBeFocused();
+  await expect(page.getByLabel('Your name')).toBeFocused();
 });
 
 test('Start stays off until each side has a fighter, whichever side the player sits on', async ({ page }) => {

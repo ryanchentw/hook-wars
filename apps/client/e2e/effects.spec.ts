@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { SCENE_IDS } from '../src/render/scenes/types';
 
 /**
@@ -48,8 +48,11 @@ test('the pause menu changes the quality at once and the choice is remembered', 
 
   await page.keyboard.press('Escape');
   const pause = page.getByRole('dialog', { name: 'Paused' });
-  await expect(pause.getByRole('radio', { name: 'Low' })).toBeChecked();
-  await pause.getByRole('radio', { name: 'High' }).check();
+  const settings = page.getByRole('dialog', { name: 'Settings' });
+  await pause.getByRole('button', { name: 'Settings' }).click();
+  await expect(settings.getByRole('radio', { name: 'Low' })).toBeChecked();
+  await settings.getByRole('radio', { name: 'High' }).check();
+  await settings.getByRole('button', { name: 'Done' }).click();
   await pause.getByRole('button', { name: 'Resume' }).click();
   // The mirror image and the light sources are each a second trip through the scene.
   await expect.poll(() => calls(page), { timeout: 15_000 }).toBeGreaterThan(plain * 1.3);
@@ -57,21 +60,22 @@ test('the pause menu changes the quality at once and the choice is remembered', 
   await ready(page, '?scene=harbour&intro=off&opponent=idle&seed=1');
   await expect.poll(() => calls(page), { timeout: 15_000 }).toBeGreaterThan(plain * 1.3);
   await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog', { name: 'Paused' }).getByRole('radio', { name: 'High' })).toBeChecked();
+  await page.getByRole('dialog', { name: 'Paused' }).getByRole('button', { name: 'Settings' }).click();
+  await expect(settings.getByRole('radio', { name: 'High' })).toBeChecked();
   expect(errors).toEqual([]);
 });
 
 test('the main menu offers the quality too, and ?quality= overrides it for one visit without changing it', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.locator('#stage')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
-  await expect(page.getByRole('radio', { name: 'Low' })).toBeChecked();
-  // Each visit loads the scene again, which under software WebGL can outlast the default wait.
-  await page.goto('/?quality=high');
-  await expect(page.locator('#stage')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
-  await expect(page.getByRole('radio', { name: 'High' })).toBeChecked();
-  await page.goto('/');
-  await expect(page.locator('#stage')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
-  await expect(page.getByRole('radio', { name: 'Low' })).toBeChecked();
+  const menuQuality = async (query: string): Promise<Locator> => {
+    // Each visit loads the scene again, which under software WebGL can outlast the default wait.
+    await page.goto(`/${query}`);
+    await expect(page.locator('#stage')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
+    await page.getByRole('button', { name: 'Settings' }).click();
+    return page.getByRole('dialog', { name: 'Settings' });
+  };
+  await expect((await menuQuality('')).getByRole('radio', { name: 'Low' })).toBeChecked();
+  await expect((await menuQuality('?quality=high')).getByRole('radio', { name: 'High' })).toBeChecked();
+  await expect((await menuQuality('')).getByRole('radio', { name: 'Low' })).toBeChecked();
 });
 
 test('at high quality the picture survives losing and regaining the WebGL context', async ({ page }) => {

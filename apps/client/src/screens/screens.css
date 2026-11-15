@@ -87,92 +87,6 @@
   color: var(--muted);
 }
 
-/* Menu */
-
-.menu {
-  display: grid;
-  place-items: center;
-}
-
-.menu-panel {
-  width: min(400px, 100%);
-  text-align: center;
-}
-
-.menu-title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: clamp(40px, 9vw, 56px);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--gold);
-}
-
-.menu-tagline {
-  margin: 2px 0 24px;
-  font-family: var(--font-display);
-  font-style: italic;
-  color: var(--muted);
-}
-
-.menu-form {
-  display: grid;
-  text-align: left;
-}
-
-.menu-form .hud-primary {
-  margin-top: 18px;
-}
-
-.menu-links {
-  margin-top: 18px;
-}
-
-/* Online */
-
-.menu-online {
-  margin-top: 22px;
-  padding-top: 16px;
-  border-top: 1px solid var(--iron);
-  text-align: left;
-}
-
-.menu-online-title {
-  margin: 0 0 10px;
-  font-family: var(--font-display);
-  font-size: 18px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--gold);
-  text-align: center;
-}
-
-.menu-invite {
-  margin: 0 0 10px;
-  text-align: center;
-}
-
-.menu-join-row {
-  display: flex;
-  gap: 8px;
-}
-
-.menu-join-row .field-input {
-  flex: 1;
-  min-width: 0;
-}
-
-.room-code-input {
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-}
-
-.menu-create {
-  box-sizing: border-box;
-  width: 100%;
-  margin-top: 12px;
-}
-
 .net-status {
   position: fixed;
   top: 10px;
@@ -214,10 +128,10 @@
   color: var(--muted);
 }
 
-/* Graphics quality: on the menu and in the pause menu */
+/* Graphics quality, in the settings dialog */
 
 .quality {
-  margin: 18px 0 0;
+  margin: 14px 0 0;
   padding: 0;
   border: 0;
   text-align: left;
@@ -246,10 +160,4 @@
 
 .quality-hint {
   margin: 4px 0 0;
-}
-
-.pause .quality {
-  margin: 20px 0 0;
-  padding-top: 14px;
-  border-top: 1px solid var(--iron);
 }

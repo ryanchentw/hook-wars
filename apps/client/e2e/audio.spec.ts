@@ -107,34 +107,39 @@ test('under fog a hook thrown out of sight asks for no sound at all', async ({ p
 
 test('M mutes and is remembered, but not while typing a name', async ({ page }) => {
   await page.goto('/?audio=fake');
-  const mute = page.getByRole('checkbox', { name: /Mute/ });
-  await expect(mute).not.toBeChecked();
+  const muted = page.getByRole('button', { name: 'Mute' });
+  const settings = page.getByRole('dialog', { name: 'Settings' });
+  await expect(muted).toHaveAttribute('aria-pressed', 'false');
   await page.getByLabel('Your name').fill('');
   await page.getByLabel('Your name').pressSequentially('Mim');
-  await expect(mute).not.toBeChecked();
+  await expect(muted).toHaveAttribute('aria-pressed', 'false');
   await page.getByRole('heading', { name: 'Hook Wars' }).click();
   await page.keyboard.press('KeyM');
-  await expect(mute).toBeChecked();
-  await page.getByRole('slider', { name: 'Music' }).fill('20');
+  await expect(muted).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await settings.getByRole('slider', { name: 'Music' }).fill('20');
   await page.reload();
-  await expect(page.getByRole('checkbox', { name: /Mute/ })).toBeChecked();
-  await expect(page.getByRole('slider', { name: 'Music' })).toHaveValue('20');
-  await expect(page.getByText('20%')).toBeVisible();
+  await expect(muted).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await expect(settings.getByRole('checkbox', { name: /Mute/ })).toBeChecked();
+  await expect(settings.getByRole('slider', { name: 'Music' })).toHaveValue('20');
+  await expect(settings.getByText('20%')).toBeVisible();
 });
 
 for (const [label, size] of [['1280', DESKTOP], ['390', PHONE]] as const) {
   test(`sound settings on the main menu and in the pause menu at ${label}px`, async ({ page }) => {
     await page.setViewportSize(size);
     await page.goto('/');
+    await page.getByRole('button', { name: 'Settings' }).click();
     await expect(page.getByRole('group', { name: 'Sound' })).toBeVisible();
-    await page.getByRole('group', { name: 'Sound' }).scrollIntoViewIfNeeded();
     await page.screenshot({ path: `${SHOT_DIR}/audio-menu-${label}.png` });
 
     await page.goto('/?seed=1&intro=off');
     await matchUp(page);
     await page.keyboard.press('Escape');
     const pause = page.getByRole('dialog', { name: 'Paused' });
-    await expect(pause.getByRole('slider', { name: 'Effects' })).toBeVisible();
+    await pause.getByRole('button', { name: 'Settings' }).click();
+    await expect(page.getByRole('dialog', { name: 'Settings' }).getByRole('slider', { name: 'Effects' })).toBeVisible();
     await page.screenshot({ path: `${SHOT_DIR}/audio-pause-${label}.png` });
   });
 }

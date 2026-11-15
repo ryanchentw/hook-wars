@@ -129,7 +129,7 @@ test('Esc opens a menu that does not stop an online match, and leaving asks firs
   await host.goBack();
   await expect(ask).toBeVisible();
   await ask.getByRole('button', { name: 'Leave match' }).click();
-  await expect(host.getByRole('button', { name: 'Play offline' })).toBeVisible();
+  await expect(host.getByLabel('Your name')).toBeVisible();
   await expect(host).not.toHaveURL(/room=/);
   // The match goes on for the player who stayed, against a bot in the leaver's place.
   const after = await tick(guest);

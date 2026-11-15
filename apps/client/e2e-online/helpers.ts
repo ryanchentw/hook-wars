@@ -18,6 +18,7 @@ export async function player(browser: Browser): Promise<Page> {
 export async function createRoom(page: Page, name: string, query = ''): Promise<string> {
   await page.goto(`/${query}`);
   await page.getByLabel('Your name').fill(name, { timeout: PAGE_LOAD_MS });
+  await page.getByRole('tab', { name: 'With friends' }).click();
   await page.getByRole('button', { name: 'Create a room' }).click();
   await expect(page.getByRole('heading', { name: 'Lobby' })).toBeVisible();
   const code = await page.locator('.room-code strong').innerText();
@@ -30,7 +31,7 @@ export async function joinByLink(page: Page, code: string, name: string, extraQu
   await page.goto(`/?room=${code}${extraQuery}`);
   await expect(page.getByText(`You have been invited to room ${code}.`)).toBeVisible({ timeout: PAGE_LOAD_MS });
   await page.getByLabel('Your name').fill(name);
-  await page.getByRole('button', { name: 'Join room' }).click();
+  await page.getByRole('button', { name: 'Join', exact: true }).click();
 }
 
 export async function matchUp(page: Page): Promise<void> {

@@ -1,0 +1,219 @@
+/* The main menu: the name, the two ways to play as tabs, and a quiet line for settings and credits. */
+
+.menu {
+  display: grid;
+  place-items: center;
+}
+
+.menu-panel {
+  inline-size: min(440px, 100%);
+  text-align: center;
+}
+
+.menu-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(32px, 8vw, 44px);
+  line-height: 1.1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.menu-tagline {
+  margin: 2px 0 20px;
+  font-family: var(--font-display);
+  font-style: italic;
+  color: var(--muted);
+}
+
+/* Name */
+
+.menu-name {
+  text-align: start;
+}
+
+.menu-name-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0 12px;
+  margin-bottom: 6px;
+}
+
+.menu-name-label {
+  font-size: 15px;
+  color: var(--text);
+}
+
+.menu-name-head .field-hint {
+  margin: 0;
+}
+
+/* Doubled class: screens.css loads after this file and its plain .field-input would win. */
+.menu-name-input.field-input {
+  padding: 12px 14px;
+  border-color: var(--gold);
+  font: 26px var(--font-display);
+}
+
+/* Tabs */
+
+.menu-tabs {
+  margin-top: 22px;
+  text-align: start;
+}
+
+.menu-tablist {
+  display: flex;
+  border-bottom: 1px solid var(--iron);
+}
+
+.menu-tab {
+  position: relative;
+  flex: 1 1 0;
+  min-inline-size: 0;
+  padding: 10px 8px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: 700 18px var(--font-display);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.menu-tab:hover {
+  color: var(--text);
+}
+
+/* An underline, not colour alone, marks the open tab; a border survives forced colours where a shadow would not. */
+.menu-tab[aria-selected='true'] {
+  color: var(--gold);
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: auto 0 -1px;
+    border-block-end: 3px solid var(--gold);
+  }
+}
+
+.menu-tab:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: -2px;
+}
+
+.menu-tabs .screen-notice {
+  margin: 12px 0 0;
+}
+
+/* Both panels share one cell, so the page does not jump when the tab changes. */
+.menu-panels {
+  display: grid;
+  padding-top: 14px;
+}
+
+.menu-tabpanel {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.menu-tabpanel[hidden] {
+  display: flex;
+  visibility: hidden;
+}
+
+.menu-lead,
+.menu-invite {
+  margin: 0 0 12px;
+  text-align: center;
+}
+
+.menu-invite {
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.menu-wide {
+  box-sizing: border-box;
+  inline-size: 100%;
+}
+
+.menu-or {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 8px;
+  font-family: var(--font-display);
+  font-style: italic;
+  color: var(--muted);
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    border-top: 1px solid var(--iron-dim);
+  }
+}
+
+.menu-join-row {
+  display: flex;
+  gap: 8px;
+}
+
+.menu-join-row .field-input {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.room-code-input {
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* Settings and credits: present, never competing with the way in. */
+
+.menu-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px 20px;
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--iron-dim);
+}
+
+.menu-quiet {
+  padding: 6px 4px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: 700 13px var(--font-display);
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.menu-quiet:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .menu.screen {
+    padding: 16px;
+  }
+
+  .menu-panel {
+    padding: 22px 16px;
+  }
+
+  .menu-join-row {
+    flex-direction: column;
+  }
+}

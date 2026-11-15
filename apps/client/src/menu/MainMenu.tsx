@@ -1,12 +1,15 @@
-import { parseName } from '@hookwars/room';
-import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useId, useState } from 'react';
 import type { Invite } from '../app/onlineMode';
-import { AudioSettings } from '../audio/AudioSettings';
-import { parseRoomCode } from '../app/roomAddress';
 import { CreditsLink } from '../hud/labels';
 import type { QualitySetting } from '../render/quality';
 import { Notice } from '../screens/Notice';
-import { QualityPicker } from '../screens/QualityPicker';
+import { Settings } from '../settings/Settings';
+import { FriendsPanel, useJoinCode } from './FriendsPanel';
+import { openingTab, primaryAction, type MenuTab, type PrimaryAction } from './menuChoice';
+import { MenuTabs } from './MenuTabs';
+import { NameField, useName, type Enter } from './NameField';
+import { menuTabMemory } from './tabMemory';
+import './menu.css';
 
 type Props = {
   readonly name: string;
@@ -16,154 +19,75 @@ type Props = {
   /** A room has been asked for and the server has not answered yet. */
   readonly connecting: boolean;
   readonly quality: QualitySetting;
-  /** Each returns why the name was refused, or null once the player is on their way. */
-  readonly onPlay: (name: string) => string | null;
-  readonly onCreate: (name: string) => string | null;
+  readonly onPlay: Enter;
+  readonly onCreate: Enter;
   readonly onJoin: (name: string, code: string) => string | null;
 };
 
-const BAD_CODE = 'Enter the room code: six letters and digits.';
-
-type JoinProps = { readonly invite: string | null; readonly connecting: boolean; readonly onJoin: (code: string) => void; readonly button: React.RefObject<HTMLButtonElement | null> };
-
-/** The code is checked when Join is pressed, never while it is typed, and the error goes as soon as the code is one. */
-function JoinForm({ invite, connecting, onJoin, button }: JoinProps) {
-  const [code, setCode] = useState(invite ?? '');
-  const [error, setError] = useState<string | null>(null);
-  const input = useRef<HTMLInputElement>(null);
-  const ids = { field: useId(), hint: useId(), error: useId() };
-
+/** Which tab is open: chosen once on arrival, switched to With friends whenever a room comes on offer, remembered on use. */
+function useMenuTab(invite: Invite | null): readonly [MenuTab, (tab: MenuTab) => void] {
+  const [tab, setTab] = useState(() => openingTab(invite, menuTabMemory.load()));
   useEffect(() => {
-    if (invite !== null) setCode(invite);
+    if (invite !== null) setTab('friends');
   }, [invite]);
-
-  const submit = (event: FormEvent): void => {
-    event.preventDefault();
-    const parsed = parseRoomCode(code);
-    setError(parsed === null ? BAD_CODE : null);
-    if (parsed === null) return input.current?.focus();
-    onJoin(parsed);
+  const choose = (next: MenuTab): void => {
+    setTab(next);
+    menuTabMemory.save(next);
   };
+  return [tab, choose];
+}
 
+function SoloPanel({ onPlay }: { readonly onPlay: () => void }) {
   return (
-    <form className="menu-join" onSubmit={submit} noValidate>
-      <label htmlFor={ids.field} className="field-label">
-        Room code
-      </label>
-      <span id={ids.hint} className="field-hint">
-        Six letters and digits, from whoever made the room
-      </span>
-      <div className="menu-join-row">
-        <input
-          ref={input}
-          id={ids.field}
-          className="field-input room-code-input"
-          value={code}
-          autoComplete="off"
-          autoCapitalize="characters"
-          spellCheck={false}
-          aria-invalid={error !== null}
-          aria-describedby={error === null ? ids.hint : `${ids.hint} ${ids.error}`}
-          onChange={(e) => {
-            setCode(e.target.value);
-            if (error !== null && parseRoomCode(e.target.value) !== null) setError(null);
-          }}
-        />
-        <button ref={button} type="submit" className={invite === null ? 'hud-button' : 'hud-primary'} disabled={connecting}>
-          Join room
-        </button>
-      </div>
-      <p id={ids.error} className="join-error" hidden={error === null}>
-        <span aria-hidden="true">✕ </span>
-        {error}
-      </p>
-    </form>
+    <>
+      <p className="menu-lead">Fight bots on this machine, no waiting.</p>
+      <button type="button" className="hud-primary menu-wide" onClick={onPlay}>
+        Play
+      </button>
+    </>
   );
 }
 
-/** Title, name, and the three ways in. The name is checked once the player leaves the field or presses a way in, never while typing. */
+/** Name, then how to play, then go. Everything else waits behind Settings. */
 export function MainMenu({ name, notice, invite, connecting, quality, onPlay, onCreate, onJoin }: Props) {
-  const [draft, setDraft] = useState(name);
-  const [error, setError] = useState<string | null>(null);
-  const input = useRef<HTMLInputElement>(null);
-  const play = useRef<HTMLButtonElement>(null);
-  const join = useRef<HTMLButtonElement>(null);
-  const ids = { hint: useId(), error: useId(), title: useId(), online: useId() };
+  const player = useName(name);
+  const join = useJoinCode(invite);
+  const [tab, choose] = useMenuTab(invite);
+  const titleId = useId();
 
-  useEffect(() => {
-    const ready = invite === null ? play.current : join.current;
-    (parseName(name).ok ? ready : input.current)?.focus();
-  }, [name, invite]);
+  useEffect(() => player.input.current?.focus(), [player.input]);
 
-  const check = (value: string): string | null => {
-    const parsed = parseName(value);
-    return parsed.ok ? null : parsed.error;
-  };
-  /** Goes in by `enter` under the name as typed; a refused name is said beside the field, which takes focus. */
-  const go = (enter: (name: string) => string | null): void => {
-    const refused = enter(draft);
-    setError(refused);
-    if (refused !== null) input.current?.focus();
-  };
-  const submit = (event: FormEvent): void => {
-    event.preventDefault();
-    go(onPlay);
+  const run = (action: PrimaryAction): void => {
+    menuTabMemory.save(tab);
+    if (action === 'play') return player.go(onPlay);
+    if (action === 'create') return player.go(onCreate);
+    const code = join.check();
+    if (code !== null) player.go((typed) => onJoin(typed, code));
   };
 
   return (
-    <main className="screen menu" aria-labelledby={ids.title}>
+    <main className="screen menu" aria-labelledby={titleId}>
       <div className="screen-panel hud-plate menu-panel">
-        <h1 id={ids.title} className="menu-title">
+        <h1 id={titleId} className="menu-title">
           Hook Wars
         </h1>
         <p className="menu-tagline">A hook duel across the water</p>
-        <form className="menu-form" onSubmit={submit} noValidate>
-          <label htmlFor={ids.hint + 'name'} className="field-label">
-            Your name
-          </label>
-          <span id={ids.hint} className="field-hint">
-            1 to 16 characters
-          </span>
-          <input
-            ref={input}
-            id={ids.hint + 'name'}
-            className="field-input"
-            value={draft}
-            autoComplete="nickname"
-            spellCheck={false}
-            aria-invalid={error !== null}
-            aria-describedby={error === null ? ids.hint : `${ids.hint} ${ids.error}`}
-            onChange={(e) => {
-              setDraft(e.target.value);
-              if (error !== null) setError(check(e.target.value));
-            }}
-            onBlur={() => {
-              if (draft !== '' || error !== null) setError(check(draft));
-            }}
-          />
-          <p id={ids.error} className="field-error" hidden={error === null}>
-            <span aria-hidden="true">✕ </span>
-            {error}
-          </p>
-          <button ref={play} type="submit" className={invite === null ? 'hud-primary' : 'hud-button'}>
-            Play offline
-          </button>
-        </form>
-        <section className="menu-online" aria-labelledby={ids.online}>
-          <h2 id={ids.online} className="menu-online-title">
-            With friends
-          </h2>
-          {invite !== null && <p className="menu-invite">{invite.why === 'link' ? `You have been invited to room ${invite.code}.` : `Join room ${invite.code} to get back in.`}</p>}
-          <JoinForm invite={invite?.code ?? null} connecting={connecting} button={join} onJoin={(code) => go((typed) => onJoin(typed, code))} />
-          <button type="button" className="hud-button menu-create" disabled={connecting} onClick={() => go(onCreate)}>
-            Create a room
-          </button>
-        </section>
-        <QualityPicker setting={quality} />
-        <Notice text={notice} />
-        <AudioSettings />
-        <div className="menu-links">
-          <CreditsLink />
+        <NameField state={player} onEnter={() => run(primaryAction(tab, invite))} />
+        <MenuTabs
+          selected={tab}
+          onSelect={choose}
+          between={<Notice text={notice} />}
+          panel={(which) =>
+            which === 'solo' ? (
+              <SoloPanel onPlay={() => run('play')} />
+            ) : (
+              <FriendsPanel invite={invite} join={join} connecting={connecting} onCreate={() => run('create')} onJoin={() => run('join')} />
+            )
+          }
+        />
+        <div className="menu-footer">
+          <Settings quality={quality} buttonClass="menu-quiet" />
+          <CreditsLink className="menu-quiet" />
         </div>
       </div>
     </main>

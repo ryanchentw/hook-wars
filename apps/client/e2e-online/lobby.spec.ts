@@ -3,10 +3,11 @@ import { close, createRoom, DESKTOP, joinByLink, player, SHOT_DIR } from './help
 
 test.use({ viewport: DESKTOP });
 
-test('the menu offers offline play, a new room and a room code', async ({ page }) => {
+test('the menu offers solo play, a new room and a room code', async ({ page }) => {
   await page.goto('/');
   await page.getByLabel('Your name').fill('Ada');
-  await expect(page.getByRole('button', { name: 'Play offline' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible();
+  await page.getByRole('tab', { name: 'With friends' }).click();
   await expect(page.getByRole('button', { name: 'Create a room' })).toBeVisible();
   await expect(page.getByLabel('Room code')).toBeVisible();
   await page.screenshot({ path: `${SHOT_DIR}/m4-menu.png` });
@@ -59,7 +60,7 @@ test('the host leaving hands the room to the other player', async ({ browser }) 
   await joinByLink(guest, code, 'Bo');
   await expect(guest.getByRole('button', { name: 'Start match' })).toBeDisabled();
   await host.getByRole('button', { name: 'Menu' }).click();
-  await expect(host.getByRole('button', { name: 'Play offline' })).toBeVisible();
+  await expect(host.getByLabel('Your name')).toBeFocused();
   await expect(host).not.toHaveURL(/room=/);
   await expect(guest.locator('.team-east .slot-human')).toContainText('host');
   await expect(guest.locator('.team-west .slot-human')).toHaveCount(0);
@@ -71,8 +72,9 @@ test.describe('trouble getting in', () => {
   test('a code that is not a code is caught before anything is sent', async ({ page }) => {
     await page.goto('/');
     await page.getByLabel('Your name').fill('Ada');
+    await page.getByRole('tab', { name: 'With friends' }).click();
     await page.getByLabel('Room code').fill('abc');
-    await page.getByRole('button', { name: 'Join room' }).click();
+    await page.getByRole('button', { name: 'Join', exact: true }).click();
     await expect(page.locator('.join-error')).toHaveText(/six letters and digits/);
     await expect(page.getByLabel('Room code')).toHaveAttribute('aria-invalid', 'true');
     await expect(page.getByLabel('Room code')).toBeFocused();
@@ -81,13 +83,15 @@ test.describe('trouble getting in', () => {
   test('a code no room has says so, and leaves the player on the menu with the ways on', async ({ page }) => {
     await page.goto('/');
     await page.getByLabel('Your name').fill('Ada');
+    await page.getByRole('tab', { name: 'With friends' }).click();
     await page.getByLabel('Room code').fill('zzzzzz');
-    await page.getByRole('button', { name: 'Join room' }).click();
+    await page.getByRole('button', { name: 'Join', exact: true }).click();
     await expect(page.getByRole('alert')).toHaveText(/No room has that code/);
     await expect(page.getByRole('button', { name: 'Create a room' })).toBeEnabled();
-    await expect(page.getByRole('button', { name: 'Play offline' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Join', exact: true })).toBeEnabled();
     await expect(page).not.toHaveURL(/room=/);
     await page.screenshot({ path: `${SHOT_DIR}/m4-error.png` });
+    await page.screenshot({ path: `${SHOT_DIR}/menu-error.png` });
   });
 
   test('a name already in the room is refused, and one more press with another name gets in', async ({ browser }) => {
@@ -97,7 +101,7 @@ test.describe('trouble getting in', () => {
     await expect(guest.getByRole('alert')).toHaveText(/already has that name/);
     await expect(guest.getByLabel('Room code')).toHaveValue(code);
     await guest.getByLabel('Your name').fill('Bo');
-    await guest.getByRole('button', { name: 'Join room' }).click();
+    await guest.getByRole('button', { name: 'Join', exact: true }).click();
     await expect(guest.getByRole('heading', { name: 'Lobby' })).toBeVisible();
     await close(host, guest);
   });
@@ -116,9 +120,11 @@ test.describe('trouble getting in', () => {
     await page.routeWebSocket('/ws', (socket) => socket.close());
     await page.goto('/');
     await page.getByLabel('Your name').fill('Ada');
+    await page.getByRole('tab', { name: 'With friends' }).click();
     await page.getByRole('button', { name: 'Create a room' }).click();
     await expect(page.getByRole('alert')).toHaveText(/server cannot be reached/);
-    await page.getByRole('button', { name: 'Play offline' }).click();
+    await page.getByRole('tab', { name: 'Solo' }).click();
+    await page.getByRole('button', { name: 'Play', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Lobby' })).toBeVisible();
     await expect(page.locator('.room-code')).toHaveCount(0);
   });
