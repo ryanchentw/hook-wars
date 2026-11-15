@@ -1,6 +1,6 @@
-import { TUNING } from './config';
+import { PICKUPS, TUNING } from './config';
 import { along, dot, normalize, reflect, sub, sweepCircle } from './geometry';
-import type { Arena, GameState, Hook, Player, PlayerId, Vec2 } from './types';
+import type { Arena, Cargo, GameState, Hook, Pickup, Player, Vec2 } from './types';
 
 /** Caps bounces in one step so a hook wedged in a corner cannot loop forever. */
 const MAX_BOUNCES_PER_STEP = 8;
@@ -11,7 +11,7 @@ export type Flight = {
   readonly remaining: number;
   readonly path: readonly Vec2[];
   readonly bounces: readonly Vec2[];
-  readonly hit: PlayerId | null;
+  readonly hit: Cargo | null;
 };
 
 type Surface = { readonly t: number; readonly normal: Vec2 };
@@ -61,15 +61,39 @@ export function firstPlayer(players: readonly Player[], hook: Hook, p: Vec2, dir
   );
 }
 
-/** Moves an extending hook up to `travel` along its bouncing path, stopping at the first player it reaches. */
+/** The first pickup the hook head would reach, drifting or on another hook; never the one it already carries. */
+export function firstPickup(pickups: readonly Pickup[], hook: Hook, p: Vec2, dir: Vec2, maxT: number) {
+  const reach = PICKUPS.radius + hook.stats.radius;
+  return nearest(
+    pickups
+      .filter((q) => !(q.state.kind === 'carried' && q.state.hookId === hook.id))
+      .map((q) => {
+        const t = sweepCircle(p, dir, maxT, q.pos, reach);
+        return t === null ? null : { t, id: q.id };
+      }),
+  );
+}
+
+/** Whatever the head meets first along its line: a fighter or a pickup, so a pickup shields whoever stands behind it. */
+export function firstCatch(players: readonly Player[], pickups: readonly Pickup[], hook: Hook, p: Vec2, dir: Vec2, maxT: number) {
+  const fighter = firstPlayer(players, hook, p, dir, maxT);
+  const pickup = firstPickup(pickups, hook, p, dir, maxT);
+  const options: ({ readonly t: number; readonly cargo: Cargo } | null)[] = [
+    pickup && { t: pickup.t, cargo: { kind: 'pickup', id: pickup.id } },
+    fighter && { t: fighter.t, cargo: { kind: 'fighter', id: fighter.id } },
+  ];
+  return nearest(options);
+}
+
+/** Moves an extending hook up to `travel` along its bouncing path, stopping at the first fighter or pickup it reaches. */
 export function fly(state: GameState, hook: Hook, remaining: number, travel: number): Flight {
   let flight: Flight = { pos: hook.pos, dir: hook.dir, remaining, path: hook.path, bounces: [], hit: null };
   let left = Math.min(travel, remaining);
   for (let i = 0; i <= MAX_BOUNCES_PER_STEP && left > 0; i++) {
     const surface = firstSurface(state.arena, flight.pos, flight.dir, left, hook.stats.radius);
-    const target = firstPlayer(state.players, hook, flight.pos, flight.dir, surface ? surface.t : left);
+    const target = firstCatch(state.players, state.pickups, hook, flight.pos, flight.dir, surface ? surface.t : left);
     if (target) {
-      return { ...flight, pos: along(flight.pos, flight.dir, target.t), remaining: flight.remaining - target.t, hit: target.id };
+      return { ...flight, pos: along(flight.pos, flight.dir, target.t), remaining: flight.remaining - target.t, hit: target.cargo };
     }
     if (!surface) {
       return { ...flight, pos: along(flight.pos, flight.dir, left), remaining: flight.remaining - left };

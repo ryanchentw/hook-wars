@@ -1,5 +1,5 @@
 import { createMatch, step, TICK_DT } from '../index';
-import type { GameEvent, GameState, Grapple, GrappleId, Hook, HookId, Player, PlayerId, PlayerInput, Purchase, TeamId, Vec2 } from '../index';
+import type { GameEvent, GameState, Grapple, GrappleId, Hook, HookId, Pickup, PickupId, PickupKind, Player, PlayerId, PlayerInput, Purchase, TeamId, Vec2 } from '../index';
 
 export const pid = (id: string): PlayerId => id as PlayerId;
 
@@ -131,3 +131,18 @@ export function grappleOf(owner: string, pos: { x: number; y: number }): Grapple
   return { id: `${owner}-grapple` as GrappleId, ownerId: pid(owner), pos, anchor: pos, phase: { kind: 'flying' } };
 }
 
+
+/** A match with the water sending pickups, seeded `seed`. */
+export function riverMatch(roster: readonly (readonly [string, TeamId])[], seed = 7, fog = false): GameState {
+  return createMatch({ killTarget: 50, fog, pickups: true, seed, players: roster.map(([id, team]) => ({ id: pid(id), name: id, team, isBot: false })) });
+}
+
+/** Floats a `kind` pickup at `pos`, in the lane through it, drifting south unless told otherwise. */
+export function withPickup(state: GameState, kind: PickupKind, pos: Vec2, patch: Partial<Pickup> = {}): GameState {
+  const pickup: Pickup = { id: `p${state.nextPickupSeq}` as PickupId, kind, pos, from: 'north', lane: pos.x, state: { kind: 'drifting' }, ...patch };
+  return { ...state, nextPickupSeq: state.nextPickupSeq + 1, pickups: [...state.pickups, pickup] };
+}
+
+export function hook(id: string, target: Vec2): PlayerInput {
+  return { kind: 'hook', playerId: pid(id), target };
+}

@@ -66,7 +66,7 @@ describe('a returning hook', () => {
     const e = player(caught.state, 'e');
     expect(e).toMatchObject({ hp: TUNING.maxHp - TUNING.hookDamage, status: { kind: 'dragged' }, move: { kind: 'idle' } });
     expect(e.recentDamage).toEqual([{ from: 'w', at: expect.any(Number) }]);
-    expect(caught.state.hooks[0]?.phase).toEqual({ kind: 'retracting', cargo: 'e' });
+    expect(caught.state.hooks[0]?.phase).toEqual({ kind: 'retracting', cargo: { kind: 'fighter', id: 'e' } });
 
     const home = runUntil(caught.state, noHooks, 200);
     const w = player(home.state, 'w');

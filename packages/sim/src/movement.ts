@@ -1,6 +1,7 @@
 import { clampToDock, dockAt, facingCanal, spawnPoint } from './arena';
 import { TUNING } from './config';
 import { along, distance, normalize, sub } from './geometry';
+import { moveScale } from './effects';
 import { IDLE, interrupt } from './intent';
 import type { Arena, GameEvent, GameState, Player, Vec2 } from './types';
 import type { Stage } from './world';
@@ -54,7 +55,7 @@ function walkSteer(arena: Arena, p: Player, dir: Vec2, stride: number): Player {
 /** One fighter's walk for one step, alone: what a client runs ahead of the server for its own fighter. */
 export function walkPlayer(arena: Arena, p: Player, dt: number): Player {
   if (p.status.kind !== 'alive') return p;
-  const stride = TUNING.moveSpeed * dt;
+  const stride = TUNING.moveSpeed * moveScale(p) * dt;
   switch (p.move.kind) {
     case 'idle':
       return p;

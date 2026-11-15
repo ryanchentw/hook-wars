@@ -1,5 +1,6 @@
 import { clampToDock, dockAt } from './arena';
 import { normalize, sub } from './geometry';
+import { boostHook } from './effects';
 import { castGrapple } from './grapple';
 import { IDLE, steerIntent } from './intent';
 import { buy, hookStats } from './shop';
@@ -11,7 +12,7 @@ function castHook(state: GameState, player: Player, target: Vec2, t: number): Ou
   if (t < player.hookReadyAt || ownsHook(state, player.id)) return none;
   if (target.x === player.pos.x && target.y === player.pos.y) return none;
   const dir = normalize(sub(target, player.pos));
-  const stats = hookStats(player);
+  const stats = boostHook(hookStats(player), player);
   const id = `h${state.nextHookSeq}` as HookId;
   const cast: GameEvent = { kind: 'hookCast', hookId: id, ownerId: player.id };
   const withHook: GameState = {

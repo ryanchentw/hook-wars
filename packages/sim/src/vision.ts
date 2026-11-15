@@ -1,5 +1,5 @@
 import { distance, sub } from './geometry';
-import type { GameState, Grapple, GrappleId, Hook, HookId, Player, PlayerId, TeamId, Vec2 } from './types';
+import type { GameState, Grapple, GrappleId, Hook, HookId, Pickup, PickupId, Player, PlayerId, TeamId, Vec2 } from './types';
 
 /** Where a team can see: everywhere, or inside any of its living fighters' circles. */
 export type SightArea =
@@ -13,6 +13,7 @@ export type Sight = {
   readonly players: ReadonlySet<PlayerId>;
   readonly hooks: ReadonlySet<HookId>;
   readonly grapples: ReadonlySet<GrappleId>;
+  readonly pickups: ReadonlySet<PickupId>;
 };
 
 /** Steps of the search for where a line leaves sight; each halves the error, so 24 is far below a sim unit. */
@@ -33,26 +34,33 @@ function seesPlayer(area: SightArea, team: TeamId, p: Player): boolean {
   return p.team === team || p.status.kind === 'dragged' || seesPoint(area, p.pos);
 }
 
-/** The hook is seen where its head is; a hook that carries someone is at them, and they are seen. */
+/** The hook is seen where its head is; a hook that carries a fighter is at them, and they are seen. */
 function seesHook(area: SightArea, team: TeamId, owners: ReadonlyMap<PlayerId, TeamId>, hook: Hook): boolean {
   if (owners.get(hook.ownerId) === team) return true;
-  return (hook.phase.kind === 'retracting' && hook.phase.cargo !== null) || seesPoint(area, hook.pos);
+  return (hook.phase.kind === 'retracting' && hook.phase.cargo?.kind === 'fighter') || seesPoint(area, hook.pos);
+}
+
+/** Seen like an enemy hook head: where it floats, or on a hook the team sees. */
+function seesPickup(area: SightArea, hooks: ReadonlySet<HookId>, pickup: Pickup): boolean {
+  return pickup.state.kind === 'carried' ? hooks.has(pickup.state.hookId) : seesPoint(area, pickup.pos);
 }
 
 function seesGrapple(area: SightArea, team: TeamId, owners: ReadonlyMap<PlayerId, TeamId>, grapple: Grapple): boolean {
   return owners.get(grapple.ownerId) === team || seesPoint(area, grapple.pos);
 }
 
-/** Which players, hook heads and grapple heads `team` may see. A dead fighter gives no vision. */
+/** Which players, hook heads, grapple heads and pickups `team` may see. A dead fighter gives no vision. */
 export function visibleTo(state: GameState, team: TeamId): Sight {
   const area = areaOf(state, team);
   const owners = new Map(state.players.map((p) => [p.id, p.team]));
+  const hooks = new Set(state.hooks.filter((h) => seesHook(area, team, owners, h)).map((h) => h.id));
   return {
     viewer: team,
     area,
     players: new Set(state.players.filter((p) => seesPlayer(area, team, p)).map((p) => p.id)),
-    hooks: new Set(state.hooks.filter((h) => seesHook(area, team, owners, h)).map((h) => h.id)),
+    hooks,
     grapples: new Set(state.grapples.filter((g) => seesGrapple(area, team, owners, g)).map((g) => g.id)),
+    pickups: new Set(state.pickups.filter((p) => seesPickup(area, hooks, p)).map((p) => p.id)),
   };
 }
 
