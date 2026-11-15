@@ -35,6 +35,7 @@ export const KNOBS: readonly Knob[] = [
   num('Bloom', 'strength', 'bloom.strength', 0, 3, 0.01),
   num('Bloom', 'radius', 'bloom.radius', 0, 1, 0.01),
   num('Bloom', 'threshold', 'bloom.threshold', 0, 3, 0.01),
+  num('Bloom', 'most it can add', 'bloom.limit', 0.05, 2, 0.01),
   toggle('Fighter rim', 'rim light', 'fighterRim.on'),
   num('Fighter rim', 'strength', 'fighterRim.strength', 0, 6, 0.05),
   color('Fighter rim', 'colour', 'fighterRim.color'),

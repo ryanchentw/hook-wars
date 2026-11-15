@@ -21,7 +21,11 @@ type MirrorUniforms = {
   readonly mirrorDistortion: { value: number };
 };
 
-/** Mixes the mirror image into the lit water, pushed about by the same normal map that shades the swell. */
+/**
+ * Mixes the mirror image into the water's body colour, pushed about by the same normal map that shades the swell.
+ * The glints the lamps throw on the swell are left whole: they are reflections too, and a mirror that dimmed them
+ * would make lamplit water duller, not shinier.
+ */
 function reflectIn(material: MeshStandardMaterial, uniforms: MirrorUniforms): void {
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
@@ -37,17 +41,15 @@ function reflectIn(material: MeshStandardMaterial, uniforms: MirrorUniforms): vo
         '#include <opaque_fragment>',
         `#ifdef ${MIRROR_DEFINE}
   vec2 mirrorPush = (texture2D(normalMap, vNormalMapUv).xy * 2.0 - 1.0) * mirrorDistortion * vec2(1.0, ${RIPPLE_STRETCH});
-  outgoingLight = mix(outgoingLight, texture2D(mirrorMap, vMirrorUv.xy / vMirrorUv.w + mirrorPush).rgb, mirrorStrength);
+  vec3 mirrorImage = texture2D(mirrorMap, vMirrorUv.xy / vMirrorUv.w + mirrorPush).rgb;
+  outgoingLight = mix(totalDiffuse, mirrorImage, mirrorStrength) + totalSpecular + totalEmissiveRadiance;
 #endif
 #include <opaque_fragment>`,
       );
   };
 }
 
-/** One big sheet under everything; whatever walls the platforms stand on cut the strip out of it. */
-export function createWater(spec: WaterSpec, sheet: WaterSheet): Water {
-  const normals = createWaterNormals();
-  normals.repeat.set(sheet.width / spec.swellSize, sheet.depth / spec.swellSize);
+function createSurface(spec: WaterSpec, normals: Texture): { readonly material: MeshStandardMaterial; readonly uniforms: MirrorUniforms } {
   // Undoes the exaggeration baked into the normal texture.
   const ripple = spec.ripple / WATER_NORMAL_STEEPNESS;
   const material = new MeshStandardMaterial({
@@ -64,6 +66,21 @@ export function createWater(spec: WaterSpec, sheet: WaterSheet): Water {
     mirrorDistortion: { value: 0 },
   };
   reflectIn(material, uniforms);
+  return { material, uniforms };
+}
+
+/** A define, not a zero strength: without reflections the water's shader is exactly the one it had before them. */
+function setReflecting(material: MeshStandardMaterial, reflect: boolean): void {
+  const others = Object.fromEntries(Object.entries(material.defines ?? {}).filter(([name]) => name !== MIRROR_DEFINE));
+  material.defines = reflect ? { ...others, [MIRROR_DEFINE]: '' } : others;
+  material.needsUpdate = true;
+}
+
+/** One big sheet under everything; whatever walls the platforms stand on cut the strip out of it. */
+export function createWater(spec: WaterSpec, sheet: WaterSheet): Water {
+  const normals = createWaterNormals();
+  normals.repeat.set(sheet.width / spec.swellSize, sheet.depth / spec.swellSize);
+  const { material, uniforms } = createSurface(spec, normals);
   const geometry = new PlaneGeometry(sheet.width, sheet.depth);
   const mesh = new Mesh(geometry, material);
   mesh.rotation.x = -Math.PI / 2;
@@ -85,9 +102,7 @@ export function createWater(spec: WaterSpec, sheet: WaterSheet): Water {
       uniforms.mirrorDistortion.value = next.reflection.distortion;
       if (reflect === reflecting) return;
       reflecting = reflect;
-      // A define, not a zero strength: without reflections the water's shader is exactly the one it had before them.
-      material.defines = reflect ? { ...material.defines, [MIRROR_DEFINE]: '' } : Object.fromEntries(Object.entries(material.defines ?? {}).filter(([name]) => name !== MIRROR_DEFINE));
-      material.needsUpdate = true;
+      setReflecting(material, reflect);
     },
     mirror(gl, scene, camera) {
       if (!reflecting) return;

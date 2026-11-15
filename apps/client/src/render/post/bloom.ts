@@ -35,7 +35,7 @@ function createPasses(): Passes {
     bright: pass(BRIGHT, { source: source(), texel: { value: new Vector2() }, threshold: { value: 1 }, knee: { value: KNEE } }),
     shrink: pass(SHRINK, { source: source(), texel: { value: new Vector2() } }),
     grow: pass(GROW, { source: source(), sharper: source(), texel: { value: new Vector2() }, spread: { value: 0 } }),
-    add: pass(ADD, { source: source(), strength: { value: 0 } }, true),
+    add: pass(ADD, { source: source(), strength: { value: 0 }, limit: { value: 1 } }, true),
   };
 }
 
@@ -77,8 +77,9 @@ export function createBloom(gl: WebGLRenderer): Bloom {
 
   const resize = (): void => {
     size.copy(measured);
-    sources.setSize(Math.max(1, size.x >> 1), Math.max(1, size.y >> 1));
-    [shrunk, grown].forEach((chain) => chain.forEach((target, level) => target.setSize(Math.max(1, size.x >> (level + 2)), Math.max(1, size.y >> (level + 2)))));
+    const halved = (times: number): [number, number] => [Math.max(1, size.x >> times), Math.max(1, size.y >> times)];
+    sources.setSize(...halved(1));
+    [shrunk, grown].forEach((chain) => chain.forEach((target, level) => target.setSize(...halved(level + 2))));
   };
   const draw = (material: ShaderMaterial, source: WebGLRenderTarget, into: WebGLRenderTarget | null): void => {
     const uniforms = material.uniforms as Record<string, { value: unknown }>;
@@ -95,15 +96,15 @@ export function createBloom(gl: WebGLRenderer): Bloom {
       passes.bright.uniforms.threshold!.value = spec.threshold;
       passes.grow.uniforms.spread!.value = spec.radius;
       passes.add.uniforms.strength!.value = spec.strength;
+      passes.add.uniforms.limit!.value = spec.limit;
       drawSources(gl, scene, camera, sources);
       draw(passes.bright, sources, shrunk[0]!);
-      for (let level = 1; level < LEVELS; level += 1) draw(passes.shrink, shrunk[level - 1]!, shrunk[level]!);
-      let blurred = shrunk[LEVELS - 1]!;
-      for (let level = LEVELS - 2; level >= 0; level -= 1) {
+      shrunk.slice(1).forEach((target, level) => draw(passes.shrink, shrunk[level]!, target));
+      const blurred = grown.reduceRight((below, target, level) => {
         passes.grow.uniforms.sharper!.value = shrunk[level]!.texture;
-        draw(passes.grow, blurred, grown[level]!);
-        blurred = grown[level]!;
-      }
+        draw(passes.grow, below, target);
+        return target;
+      }, shrunk[LEVELS - 1]!);
       const cleared = gl.autoClear;
       // The last pass adds to the picture; clearing first would leave only the glow.
       gl.autoClear = false;

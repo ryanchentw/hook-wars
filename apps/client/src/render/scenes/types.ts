@@ -80,8 +80,10 @@ export type BloomSpec = {
   readonly strength: number;
   /** 0..1: how far the glow spreads. */
   readonly radius: number;
-  /** Scene light a source must be brighter than to glow: 1 is white, and a lamp or a neon tube is drawn well past it. */
+  /** How bright a light source must be to glow, in scene light, where 1 is white: lower lets dimmer lamps and signs in. */
   readonly threshold: number;
+  /** The most light the glow may add to any one spot, where 1 is white: what keeps a large lit surface from washing out. */
+  readonly limit: number;
 };
 
 /** A light on the edges of each fighter's silhouette, so a dark pelt never sinks into dark ground. */

@@ -100,9 +100,9 @@ export const DAAN_LOOK: SceneLook = {
     rim: null,
     fill: { sky: C.skyFill, ground: C.lawnBounce, intensity: 1.5 },
   },
-  water: { level: DAAN_SIZES.waterLevel, color: C.pond, roughness: 0.22, metalness: 0.05, swellSize: 12, ripple: 0.45, drift: { x: 0.003, y: 0.005 }, reflection: { on: true, strength: 0.25, distortion: 0.008 } },
+  water: { level: DAAN_SIZES.waterLevel, color: C.pond, roughness: 0.22, metalness: 0.05, swellSize: 12, ripple: 0.45, drift: { x: 0.003, y: 0.005 }, reflection: { on: true, strength: 0.12, distortion: 0.008 } },
   fogOfWar: { color: 0x22304a, opacity: 0.86, edge: 140 },
-  bloom: { on: true, strength: 1.0, radius: 0.8, threshold: 0.6 },
+  bloom: { on: true, strength: 0.7, radius: 0.8, threshold: 0.6, limit: 0.5 },
   fighterRim: { on: true, strength: 0.35, color: 0xfff4dc, power: 3, team: 0.85 },
   tints: {
     // Bright steel and bleached rope: both cross the dark pond, the mid-green lawns and the grey paving, and pale holds on all three.

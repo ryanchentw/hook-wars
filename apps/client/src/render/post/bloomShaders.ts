@@ -59,11 +59,17 @@ void main() {
   gl_FragColor = vec4(texture2D(sharper, vUv).rgb + c / 12.0 * spread, 1.0);
 }`;
 
-/** Added over the finished picture. */
+/**
+ * Added over the finished picture, and never more than \`limit\` of it. The levels add up, which is what gives a barb a
+ * few pixels across its halo, but a long row of lit windows adds up to several times white the same way; the shoulder
+ * leaves a faint glow as it is and stops a wide one short of washing out what is under it.
+ */
 export const ADD = /* glsl */ `
 uniform sampler2D source;
 uniform float strength;
+uniform float limit;
 varying vec2 vUv;
 void main() {
-  gl_FragColor = vec4(texture2D(source, vUv).rgb * strength, 1.0);
+  vec3 glow = texture2D(source, vUv).rgb * strength;
+  gl_FragColor = vec4(limit * (1.0 - exp(-glow / max(limit, 1e-4))), 1.0);
 }`;
