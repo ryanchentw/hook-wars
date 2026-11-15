@@ -17,12 +17,18 @@ type Props = {
 /** A native modal: Escape and the Resume button both close it, and the browser keeps focus inside while it is open. */
 export function PauseMenu({ open, holds, leaveLabel, quality, onResume, onLeave }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
+  const resume = useRef<HTMLButtonElement>(null);
   const titleId = useId();
 
   useEffect(() => {
     const dialog = ref.current;
     if (dialog === null) return;
-    if (open && !dialog.open) dialog.showModal();
+    if (open && !dialog.open) {
+      dialog.showModal();
+      // A modal focuses whatever comes first in it; said outright, the way back into the match stays under Space
+      // and Enter whatever else the menu grows.
+      resume.current?.focus();
+    }
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
@@ -30,10 +36,9 @@ export function PauseMenu({ open, holds, leaveLabel, quality, onResume, onLeave 
     <dialog ref={ref} className="pause hud-plate" aria-labelledby={titleId} onClose={onResume}>
       <h2 id={titleId}>{holds ? 'Paused' : 'Menu'}</h2>
       <p className="pause-note">{holds ? 'The match waits for you.' : 'An online match cannot be paused: it goes on while this is open.'}</p>
-      <QualityPicker setting={quality} />
       <div className="pause-actions">
         <form method="dialog">
-          <button type="submit" className="hud-primary" autoFocus>
+          <button ref={resume} type="submit" className="hud-primary">
             Resume
           </button>
         </form>
@@ -42,6 +47,7 @@ export function PauseMenu({ open, holds, leaveLabel, quality, onResume, onLeave 
         </button>
         <CreditsLink />
       </div>
+      <QualityPicker setting={quality} />
     </dialog>
   );
 }

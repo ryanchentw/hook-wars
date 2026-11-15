@@ -249,5 +249,7 @@
 }
 
 .pause .quality {
-  margin: 0 0 18px;
+  margin: 20px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--iron);
 }
