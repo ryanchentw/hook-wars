@@ -65,9 +65,12 @@ test('the main menu offers the quality too, and ?quality= overrides it for one v
   await page.goto('/');
   await expect(page.locator('#stage')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(page.getByRole('radio', { name: 'Low' })).toBeChecked();
+  // Each visit loads the scene again, which under software WebGL can outlast the default wait.
   await page.goto('/?quality=high');
+  await expect(page.locator('#stage')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(page.getByRole('radio', { name: 'High' })).toBeChecked();
   await page.goto('/');
+  await expect(page.locator('#stage')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
   await expect(page.getByRole('radio', { name: 'Low' })).toBeChecked();
 });
 
