@@ -139,15 +139,30 @@ test('Start stays off until each side has a fighter, whichever side the player s
   await expect(start).toBeDisabled();
   await expect(page.getByText('Each side needs at least one fighter.')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Add bot in East Side slot 1' }).click();
+  await page.getByRole('button', { name: 'Add a bot to East Side' }).click();
   await expect(start).toBeEnabled();
-  await page.getByRole('button', { name: 'Sit here in East Side slot 2' }).click();
+  await page.getByRole('button', { name: 'Sit here in East Side seat 2' }).click();
   await expect(start).toBeDisabled();
-  await page.getByRole('button', { name: 'Add bot in West Side slot 3' }).click();
+  await page.getByRole('button', { name: 'Add a bot to West Side' }).click();
+  await expect(page.locator('.team-west .slot').nth(0)).toHaveClass(/slot-bot/);
   await expect(start).toBeEnabled();
-  await page.getByRole('button', { name: 'Remove Tern from West Side' }).click();
+  await page.getByRole('button', { name: /^Remove .+ from West Side$/ }).click();
   await expect(start).toBeDisabled();
-  await expect(page.locator('.slot').nth(2)).toBeFocused();
+  await expect(page.locator('.slot').nth(0)).toBeFocused();
+});
+
+test('+ Bot fills the team in order and keeps the keyboard when the team is full', async ({ page }) => {
+  await enterLobby(page);
+  const addEast = page.getByRole('button', { name: 'Add a bot to East Side' });
+  await addEast.focus();
+  for (let seat = 1; seat <= 3; seat += 1) {
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.team-east .slot-bot')).toHaveCount(seat);
+  }
+  await expect(addEast).toHaveAttribute('aria-disabled', 'true');
+  await expect(addEast).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('.team-east .slot-bot')).toHaveCount(3);
 });
 
 test('holding Tab shows every fighter by side without moving focus out of the game', async ({ page }) => {
@@ -211,7 +226,7 @@ test('Back and Forward move between menu, lobby and match, and never into a matc
   await page.goForward();
   await expect(page.getByRole('heading', { name: 'Lobby' })).toBeVisible();
 
-  await page.getByRole('button', { name: 'Add bot in East Side slot 1' }).click();
+  await page.getByRole('button', { name: 'Add a bot to East Side' }).click();
   await page.getByRole('button', { name: 'Start match' }).click();
   await matchUp(page);
   await page.goBack();

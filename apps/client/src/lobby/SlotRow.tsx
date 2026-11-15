@@ -15,13 +15,8 @@ type Props = {
   readonly act: (action: LocalAction) => void;
 };
 
-/** Visible on screen as "Sit here"; a screen reader hears which slot. */
-function Where({ at }: { readonly at: SlotRef }) {
-  return <span className="hud-sr"> in {TEAM_LABEL[at.team]} slot {at.index + 1}</span>;
-}
-
 function Occupant({ at, slot, member, hosts, away }: Pick<Props, 'at' | 'slot' | 'member' | 'hosts' | 'away'>) {
-  if (slot.kind === 'empty') return <span className="slot-name slot-empty">Open slot</span>;
+  if (slot.kind === 'empty') return null;
   const isYou = slot.kind === 'human' && slot.memberId === member;
   return (
     <span className="slot-name">
@@ -33,31 +28,29 @@ function Occupant({ at, slot, member, hosts, away }: Pick<Props, 'at' | 'slot' |
   );
 }
 
+/** An open seat is one button: pressing it sits you there. A screen reader hears which seat. */
+function OpenSeat({ at, act }: Pick<Props, 'at' | 'act'>) {
+  return (
+    <button type="button" className="slot-take" onClick={() => act({ kind: 'moveTo', slot: at })}>
+      Sit here
+      <span className="hud-sr">
+        {' '}
+        in {TEAM_LABEL[at.team]} seat {at.index + 1}
+      </span>
+    </button>
+  );
+}
+
 /** One seat in a team column. The row itself takes focus when the button that was pressed goes away with the change. */
 export const SlotRow = forwardRef<HTMLLIElement, Props>(function SlotRow({ at, slot, member, isHost, hosts, away, act }, ref) {
   return (
     <li ref={ref} tabIndex={-1} className={`slot slot-${slot.kind}`}>
-      <Occupant at={at} slot={slot} member={member} hosts={hosts} away={away} />
-      <span className="slot-actions">
-        {slot.kind === 'empty' && (
-          <button type="button" className="hud-button" onClick={() => act({ kind: 'moveTo', slot: at })}>
-            Sit here
-            <Where at={at} />
-          </button>
-        )}
-        {slot.kind === 'empty' && isHost && (
-          <button type="button" className="hud-button" onClick={() => act({ kind: 'addBot', slot: at })}>
-            Add bot
-            <Where at={at} />
-          </button>
-        )}
-        {slot.kind === 'bot' && isHost && (
-          <button type="button" className="hud-button" onClick={() => act({ kind: 'removeBot', slot: at })}>
-            Remove
-            <span className="hud-sr"> {botName(at)} from {TEAM_LABEL[at.team]}</span>
-          </button>
-        )}
-      </span>
+      {slot.kind === 'empty' ? <OpenSeat at={at} act={act} /> : <Occupant at={at} slot={slot} member={member} hosts={hosts} away={away} />}
+      {slot.kind === 'bot' && isHost && (
+        <button type="button" className="slot-remove" aria-label={`Remove ${botName(at)} from ${TEAM_LABEL[at.team]}`} onClick={() => act({ kind: 'removeBot', slot: at })}>
+          <span aria-hidden="true">×</span>
+        </button>
+      )}
     </li>
   );
 });

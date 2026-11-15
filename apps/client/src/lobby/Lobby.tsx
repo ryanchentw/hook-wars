@@ -1,13 +1,13 @@
-import { canStart, fighterCount, hasEmptySlot, KILL_TARGETS, SCENE_IDS, SLOTS_PER_TEAM, TEAMS } from '@hookbrawl/room';
-import type { MemberId, Slot, SlotRef } from '@hookbrawl/room';
-import type { TeamId } from '@hookbrawl/sim';
+import { canStart, hasEmptySlot, TEAMS } from '@hookbrawl/room';
+import type { SlotRef } from '@hookbrawl/room';
 import { useEffect, useId, useRef } from 'react';
 import type { App, AppView, LocalAction } from '../app/controller';
-import { CreditsLink, TEAM_LABEL } from '../hud/labels';
-import { SCENES } from '../render/scenes/registry';
+import { CreditsLink } from '../hud/labels';
 import { Notice } from '../screens/Notice';
+import { LobbySettings } from './LobbySettings';
 import { RoomShare } from './RoomShare';
-import { SlotRow } from './SlotRow';
+import { TeamColumn } from './TeamColumn';
+import './lobby.css';
 
 type Props = { readonly view: AppView; readonly app: App };
 
@@ -33,85 +33,6 @@ function useFocusKeeper() {
   };
 }
 
-function TeamColumn({ team, view, act, rowRef }: { readonly team: TeamId; readonly view: AppView; readonly act: (a: LocalAction) => void; readonly rowRef: (at: SlotRef) => (el: HTMLLIElement | null) => void }) {
-  const headingId = useId();
-  const { room, member, online } = view;
-  const memberAt = (slot: Slot): MemberId | null => (slot.kind === 'human' ? slot.memberId : null);
-  return (
-    <section className={`team team-${team} hud-plate`} aria-labelledby={headingId}>
-      <h2 id={headingId} className={`team-name hud-${team}`}>
-        {TEAM_LABEL[team]}
-        <span className="team-count">
-          {fighterCount(room, team)} of {SLOTS_PER_TEAM}
-        </span>
-      </h2>
-      <ol className="slots">
-        {room.slots[team].map((slot, index) => (
-          <SlotRow
-            key={index}
-            ref={rowRef({ team, index })}
-            at={{ team, index }}
-            slot={slot}
-            member={member}
-            isHost={room.host === member}
-            hosts={online !== null && memberAt(slot) === room.host}
-            away={online !== null && online.away.some((id) => id === memberAt(slot))}
-            act={act}
-          />
-        ))}
-      </ol>
-    </section>
-  );
-}
-
-function Settings({ view, act }: { readonly view: AppView; readonly act: (a: LocalAction) => void }) {
-  const ids = { scene: useId(), kills: useId(), fog: useId(), fogHint: useId() };
-  const { settings } = view.room;
-  const locked = view.room.host !== view.member;
-  return (
-    <div className="lobby-settings hud-plate">
-      <label htmlFor={ids.scene} className="field-label">
-        Scene
-      </label>
-      <select id={ids.scene} className="field-input" value={settings.scene} disabled={locked} onChange={(e) => act({ kind: 'setScene', scene: e.target.value })}>
-        <option value="rotate">Rotate each match</option>
-        {SCENE_IDS.map((id) => (
-          <option key={id} value={id}>
-            {SCENES[id].title.name}
-          </option>
-        ))}
-      </select>
-      <label htmlFor={ids.kills} className="field-label">
-        Kills to win
-      </label>
-      <select id={ids.kills} className="field-input" value={settings.killTarget} disabled={locked} onChange={(e) => act({ kind: 'setKillTarget', killTarget: Number(e.target.value) })}>
-        {KILL_TARGETS.map((n) => (
-          <option key={n} value={n}>
-            {n}
-          </option>
-        ))}
-      </select>
-      <div className="lobby-fog">
-        <input
-          id={ids.fog}
-          type="checkbox"
-          className="field-check"
-          checked={settings.fog}
-          disabled={locked}
-          aria-describedby={ids.fogHint}
-          onChange={(e) => act({ kind: 'setFog', fog: e.target.checked })}
-        />
-        <label htmlFor={ids.fog} className="field-label">
-          Fog of war
-        </label>
-        <span id={ids.fogHint} className="field-hint">
-          Enemies show only when someone on your side is close enough to see them.
-        </span>
-      </div>
-    </div>
-  );
-}
-
 /** Why the match cannot be started from here right now, or null when it can. */
 function startBlocker(view: AppView): string | null {
   if (view.room.phase.kind === 'in-match') return 'A match is being played. You are in the next one.';
@@ -119,14 +40,42 @@ function startBlocker(view: AppView): string | null {
   return view.room.host === view.member ? null : 'The host starts the match.';
 }
 
-/** Who fights on which side, and how the match is set up. Online, the room's code and link sit beside the credits. */
+/** Fill with bots stays focusable once every seat is taken, so the keyboard is not dropped when the press that filled them hides nothing. */
+function LobbyActions({ view, app, act }: Props & { readonly act: (action: LocalAction) => void }) {
+  const reasonId = useId();
+  const blocker = startBlocker(view);
+  const full = !hasEmptySlot(view.room);
+  return (
+    <div className="lobby-actions">
+      {view.room.host === view.member && (
+        <button
+          type="button"
+          className="hud-button"
+          aria-disabled={full}
+          onClick={() => {
+            if (!full) act({ kind: 'fillWithBots' });
+          }}
+        >
+          Fill with bots
+        </button>
+      )}
+      <button type="button" className="hud-primary" disabled={blocker !== null} aria-describedby={blocker === null ? undefined : reasonId} onClick={app.start}>
+        Start match
+      </button>
+      {blocker !== null && (
+        <p id={reasonId} className="lobby-reason">
+          {blocker}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Who fights on which side, and how the match is set up. Online, the room's code and link sit under the title. */
 export function Lobby({ view, app }: Props) {
   const heading = useRef<HTMLHeadingElement>(null);
-  const reasonId = useId();
   const titleId = useId();
   const keeper = useFocusKeeper();
-  const blocker = startBlocker(view);
-  const isHost = view.room.host === view.member;
   useEffect(() => heading.current?.focus(), []);
   const act = (action: LocalAction): void => {
     keeper.acted('slot' in action ? action.slot : null);
@@ -142,31 +91,17 @@ export function Lobby({ view, app }: Props) {
         <h1 ref={heading} id={titleId} tabIndex={-1} className="lobby-title">
           Lobby
         </h1>
-        <div className="lobby-share">
-          {view.online !== null && <RoomShare code={view.online.code} link={view.online.link} />}
-          <CreditsLink />
-        </div>
+        <CreditsLink />
       </header>
+      {view.online !== null && <RoomShare code={view.online.code} link={view.online.link} />}
       <div className="lobby-teams">
         {TEAMS.map((team) => (
           <TeamColumn key={team} team={team} view={view} act={act} rowRef={keeper.rowRef} />
         ))}
       </div>
-      <Settings view={view} act={act} />
+      <LobbySettings view={view} act={act} />
       <Notice text={view.notice} />
-      <div className="lobby-actions">
-        {isHost && (
-          <button type="button" className="hud-button" disabled={!hasEmptySlot(view.room)} onClick={() => act({ kind: 'fillWithBots' })}>
-            Fill with bots
-          </button>
-        )}
-        <button type="button" className="hud-primary" disabled={blocker !== null} aria-describedby={blocker === null ? undefined : reasonId} onClick={app.start}>
-          Start match
-        </button>
-        <p id={reasonId} className="lobby-reason" hidden={blocker === null}>
-          {blocker}
-        </p>
-      </div>
+      <LobbyActions view={view} app={app} act={act} />
     </main>
   );
 }

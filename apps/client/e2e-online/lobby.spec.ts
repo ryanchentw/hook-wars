@@ -23,17 +23,20 @@ test('two players share one lobby: seats change live, and only the host has the 
   await expect(guest.locator('.team-west .slot-human')).toContainText('host');
   await expect(guest.locator('.room-code strong')).toHaveText(code);
 
-  await expect(guest.getByLabel('Scene')).toBeDisabled();
-  await expect(guest.getByLabel('Fog of war')).toBeDisabled();
+  const guestSetting = (term: string) => guest.locator('.setting', { hasText: term }).locator('dd');
+  await expect(guest.getByRole('combobox')).toHaveCount(0);
+  await expect(guest.getByRole('switch')).toHaveCount(0);
+  await expect(guestSetting('Scene')).toHaveText('Rotate each match');
+  await expect(guestSetting('Fog of war')).toHaveText('On');
   await expect(guest.getByRole('button', { name: 'Start match' })).toBeDisabled();
   await expect(guest.getByText('The host starts the match.')).toBeVisible();
-  await expect(guest.getByRole('button', { name: /Add bot/ })).toHaveCount(0);
+  await expect(guest.getByRole('button', { name: /bot/i })).toHaveCount(0);
 
   await host.getByLabel('Kills to win').selectOption('5');
-  await expect(guest.getByLabel('Kills to win')).toHaveValue('5');
-  await host.getByRole('button', { name: 'Add bot in East Side slot 2' }).click();
+  await expect(guestSetting('Kills to win')).toHaveText('5');
+  await host.getByRole('button', { name: 'Add a bot to East Side' }).click();
   await expect(guest.locator('.team-east .slot-bot')).toHaveCount(1);
-  await guest.getByRole('button', { name: 'Sit here in West Side slot 3' }).click();
+  await guest.getByRole('button', { name: 'Sit here in West Side seat 3' }).click();
   await expect(host.locator('.team-west .slot-human')).toHaveCount(2);
 
   await Promise.all([host.screenshot({ path: `${SHOT_DIR}/m4-lobby-host.png` }), guest.screenshot({ path: `${SHOT_DIR}/m4-lobby-guest.png` })]);

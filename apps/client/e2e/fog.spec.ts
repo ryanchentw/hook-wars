@@ -96,7 +96,7 @@ test('the lobby opens with fog of war on, explains it, toggles it by keyboard, a
   await page.getByRole('button', { name: 'Play' }).click();
   await expect(page.getByRole('heading', { name: 'Lobby' })).toBeFocused();
 
-  const fog = page.getByRole('checkbox', { name: 'Fog of war' });
+  const fog = page.getByRole('switch', { name: 'Fog of war' });
   await expect(fog).toBeChecked();
   await expect(fog).toHaveAccessibleDescription(/Enemies show only when someone on your side/);
   await tabTo(page, 'Fog of war');
