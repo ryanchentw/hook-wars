@@ -1,6 +1,7 @@
 import { Fragment, useSyncExternalStore } from 'react';
 import type { MatchHandle } from '../app/matchHost';
 import type { QualitySetting } from '../render/quality';
+import { MatchChatBox } from '../chat/MatchChatBox';
 import { SHOP_SLOTS } from '../game/bindings';
 import { EndPanel } from './EndPanel';
 import { LeaveConfirm } from './LeaveConfirm';
@@ -103,6 +104,7 @@ export function Hud({ match, quality, onRematch, onLobby, onLeave }: HudProps) {
       )}
       {ui.scores && view.end === null && <Scoreboard board={view.scoreboard} />}
       <div className="hud-bottom">
+        <MatchChatBox chat={match.chat} team={match.session.localTeam} />
         {view.local !== null && <PlayerPanel local={view.local} feedback={view.feedback} onBuy={match.hud.buy} />}
         <ShopStrip slots={view.shop} feedback={view.feedback} onBuy={match.hud.buy} />
         <div className="hud-aside">

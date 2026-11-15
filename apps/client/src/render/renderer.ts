@@ -54,6 +54,9 @@ export type MatchView = {
   readonly intro: boolean;
 };
 
+/** The speech bubble over each fighter now, given the fighters the local team can see. */
+export type BubbleSource = (visible: ReadonlySet<PlayerId>) => ReadonlyMap<PlayerId, string>;
+
 export type RendererEvents = ContextEvents & {
   /** The establishing shot started or ended; the match must not run while it plays. */
   readonly onIntro: (active: boolean) => void;
@@ -83,10 +86,11 @@ type PictureParts = {
   readonly intro: boolean;
   /** People who ask their system for less motion get the hit without the jolt or the freeze. */
   readonly calm: boolean;
+  readonly bubbles: BubbleSource;
 };
 
 /** Keeps the picture in step with the session: collects each tick's events and draws. */
-function createPicture({ gl, session, surface, show, rig, opening, intro, calm }: PictureParts) {
+function createPicture({ gl, session, surface, show, rig, opening, intro, calm, bubbles }: PictureParts) {
   const overlay = createWorldOverlay(surface.overlay);
   const goldPops = createGoldPops(surface.overlay, calm);
   let pending: readonly SeenEvent[] = [];
@@ -118,7 +122,9 @@ function createPicture({ gl, session, surface, show, rig, opening, intro, calm }
     show.setHaze(introHaze(stage.theme.intro, intro));
     stage.update({ frame, events: tickEvents, impacts, dt, elapsed, camera: rig.camera });
     overlay.setVisible(intro === null);
-    overlay.update(frame, impacts, { project, viewport: surface.viewport() }, dt);
+    // Fighters fading out of sight are still drawn; only those seen this tick may carry a bubble.
+    const said = bubbles(new Set(interpolated.players.map((pf) => pf.player.id)));
+    overlay.update(frame, impacts, { project, viewport: surface.viewport() }, dt, said);
     goldPops.update(tickEvents, frame, project, dt);
   };
   const present = (): void => {
@@ -164,7 +170,7 @@ function createPicture({ gl, session, surface, show, rig, opening, intro, calm }
  * Resolves once every shader is compiled and frames are flowing, so the match never opens on a stalled picture;
  * the session is not advanced before then.
  */
-export async function createRenderer(graphics: Graphics, session: SessionView, view: MatchView, events: RendererEvents): Promise<Renderer> {
+export async function createRenderer(graphics: Graphics, session: SessionView, view: MatchView & { readonly bubbles: BubbleSource }, events: RendererEvents): Promise<Renderer> {
   const { gl, surface, host, assets, softDot, hookGeometry } = graphics;
   const arena = session.getView().arena;
   const { vision } = session.getView();
@@ -174,7 +180,7 @@ export async function createRenderer(graphics: Graphics, session: SessionView, v
   const show = createSceneShow(gl, host, shared, view.scene, graphics.kit);
   const rig = createCameraRig(arena, session.localPlayerId);
   const opening = createOpening(surface.overlay, calm ? INTRO_TIMING.reduced : INTRO_TIMING.full, events.onIntro);
-  const picture = createPicture({ gl, session, surface, show, rig, opening, intro: view.intro, calm });
+  const picture = createPicture({ gl, session, surface, show, rig, opening, intro: view.intro, calm, bubbles: view.bubbles });
   const loop = createFrameLoop(surface.canvas, events, (dt) => {
     session.advance(dt);
     picture.draw(dt);

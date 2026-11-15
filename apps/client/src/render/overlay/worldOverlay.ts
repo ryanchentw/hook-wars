@@ -12,7 +12,8 @@ import { keepInView, spreadLabels } from './spreadLabels';
 import './overlay.css';
 
 export type WorldOverlay = {
-  update(frame: RenderFrame, impacts: readonly Impact[], view: { readonly project: (world: Vec3) => Vec2; readonly viewport: Viewport }, dt: number): void;
+  /** `bubbles`: what each fighter has just said, for those the local team can see. */
+  update(frame: RenderFrame, impacts: readonly Impact[], view: { readonly project: (world: Vec3) => Vec2; readonly viewport: Viewport }, dt: number, bubbles: ReadonlyMap<PlayerId, string>): void;
   /** Hides names and bars while the camera is away on the establishing shot. */
   setVisible(visible: boolean): void;
   clear(): void;
@@ -22,8 +23,14 @@ export type WorldOverlay = {
 const LABEL_BOX = { width: 72, height: SIZES.labelBlockPx };
 /** Clear air left between two labels side by side. */
 const LABEL_GAP_PX = 8;
+/** As wide as a bubble may grow (see overlay.css), so one over a fighter at the edge is slid fully on screen. */
+const BUBBLE_BOX = { width: 220, height: SIZES.labelBlockPx };
 
-function labelsFor(frame: RenderFrame, labels: Labels, project: (world: Vec3) => Vec2, viewport: Viewport): readonly LabelView[] {
+function bubbleShift(anchor: Vec2 | null, viewport: Viewport): number {
+  return anchor === null ? 0 : keepInView(anchor, BUBBLE_BOX, viewport).x - anchor.x;
+}
+
+function labelsFor(frame: RenderFrame, labels: Labels, project: (world: Vec3) => Vec2, viewport: Viewport, bubbles: ReadonlyMap<PlayerId, string>): readonly LabelView[] {
   const widths = frame.players.map(({ player }) => Math.max(LABEL_BOX.width, (labels.widthOf(player.id) ?? 0) + LABEL_GAP_PX));
   const spread = spreadLabels(
     frame.players.map(({ player, pos }) => (player.status.kind === 'dead' ? null : project(simToWorld(pos, SIZES.labelHeight)))),
@@ -38,6 +45,8 @@ function labelsFor(frame: RenderFrame, labels: Labels, project: (world: Vec3) =>
     hpFraction: player.hp / TUNING.maxHp,
     presence,
     anchor: anchors[i] ?? null,
+    bubble: bubbles.get(player.id) ?? null,
+    bubbleShift: bubbleShift(anchors[i] ?? null, viewport),
   }));
 }
 
@@ -46,9 +55,9 @@ export function createWorldOverlay(parent: HTMLElement): WorldOverlay {
   const labels = createLabels(parent);
   const damage = createDamageNumbers(parent);
   return {
-    update(frame, impacts, { project, viewport }, dt) {
+    update(frame, impacts, { project, viewport }, dt, bubbles) {
       const positionOf = (id: PlayerId): Vec2 | null => frame.players.find((p) => p.player.id === id)?.pos ?? null;
-      labels.update(labelsFor(frame, labels, project, viewport), dt);
+      labels.update(labelsFor(frame, labels, project, viewport, bubbles), dt);
       damage.spawn(impacts);
       damage.update(dt, project, positionOf);
     },

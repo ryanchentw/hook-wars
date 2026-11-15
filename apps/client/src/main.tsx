@@ -49,7 +49,7 @@ async function start(): Promise<void> {
       page,
       names: createNameStore(storage),
       makeBackdrop: (scene) => createBackdrop(graphics, scene, context),
-      startMatch: (source, view, rematch) => startMatch({ graphics, source, view, router, hudElement: hud, context, rematch }),
+      startMatch: (source, view, rematch) => startMatch({ graphics, source, view, router, hudElement: hud, context, rematch, focusGame: () => stage.focus() }),
       online: browserOnline(window),
       focusGame: () => stage.focus(),
       busy(starting) {

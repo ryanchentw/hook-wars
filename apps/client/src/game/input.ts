@@ -95,7 +95,10 @@ function createHandlers(deps: InputDeps): Handlers {
 
 type Listener = readonly [EventTarget, string, (e: never) => void];
 
-export function bindInput(deps: InputDeps): () => void {
+/** `releaseAll` lets go of every held direction at once, as when the chat takes the keyboard. */
+export type InputBinding = { readonly unbind: () => void; readonly releaseAll: () => void };
+
+export function bindInput(deps: InputDeps): InputBinding {
   const h = createHandlers(deps);
   const listeners: readonly Listener[] = [
     [deps.window, 'keydown', h.keydown],
@@ -107,5 +110,5 @@ export function bindInput(deps: InputDeps): () => void {
     [deps.target, 'contextmenu', h.contextmenu],
   ];
   listeners.forEach(([target, type, fn]) => target.addEventListener(type, fn as EventListener));
-  return () => listeners.forEach(([target, type, fn]) => target.removeEventListener(type, fn as EventListener));
+  return { unbind: () => listeners.forEach(([target, type, fn]) => target.removeEventListener(type, fn as EventListener)), releaseAll: h.releaseAll };
 }

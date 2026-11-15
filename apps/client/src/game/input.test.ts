@@ -47,14 +47,14 @@ function harness() {
     buy: (purchase) => bought.push(purchase),
     steer: (dir) => steers.push(dir),
   };
-  const unbind = bindInput(deps);
+  const { unbind, releaseAll } = bindInput(deps);
   const down = (init: KeyInit) => {
     const e = keyEvent('keydown', init);
     win.dispatchEvent(e);
     return e;
   };
   const up = (code: string) => win.dispatchEvent(keyEvent('keyup', { code }));
-  return { steers, sent, bought, flags, canvas, win, doc, unbind, down, up, last: () => steers.at(-1) };
+  return { steers, sent, bought, flags, canvas, win, doc, unbind, releaseAll, down, up, last: () => steers.at(-1) };
 }
 
 let h: ReturnType<typeof harness>;
@@ -182,6 +182,19 @@ describe('stuck keys', () => {
     h.down({ code: 'KeyW' });
     h.down({ code: 'Tab', metaKey: true });
     expect(h.last()).toEqual({ x: 0, y: 0 });
+  });
+
+  it('lets go at once when the chat takes the keyboard, and then no game key acts and nothing is prevented', () => {
+    h.down({ code: 'KeyW' });
+    h.releaseAll();
+    h.flags.enabled = false;
+    expect(h.last()).toEqual({ x: 0, y: 0 });
+    const typed = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'Space', 'KeyE', 'KeyQ', 'Digit1', 'ArrowUp'].map((code) => h.down({ code }));
+    h.canvas.dispatchEvent(pointerEvent('pointerdown', 0, { x: 15, y: 25 }));
+    expect(h.last()).toEqual({ x: 0, y: 0 });
+    expect(h.sent).toEqual([]);
+    expect(h.bought).toEqual([]);
+    expect(typed.some((e) => e.defaultPrevented)).toBe(false);
   });
 
   it('stops listening once unbound', () => {

@@ -38,6 +38,8 @@ export function installLookTuner(storage: () => Storage): LookTap {
   button.addEventListener('click', () => void toggle());
   window.addEventListener('keydown', (event) => {
     if (event.code !== TOGGLE_KEY || event.repeat || event.metaKey || event.ctrlKey || event.altKey) return;
+    // A backtick typed into the chat, or any field, is text.
+    if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
     event.preventDefault();
     void toggle();
   });

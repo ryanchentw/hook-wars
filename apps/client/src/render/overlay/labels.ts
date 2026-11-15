@@ -11,6 +11,10 @@ export type LabelView = {
   readonly presence: number;
   /** CSS pixels from the overlay's top-left corner, or null to hide the label. */
   readonly anchor: Vec2 | null;
+  /** What the fighter just said, shown above the name, or null. */
+  readonly bubble: string | null;
+  /** CSS pixels the bubble is slid sideways to stay on screen when its fighter is near an edge. */
+  readonly bubbleShift: number;
 };
 
 export type Labels = {
@@ -25,6 +29,7 @@ type Entry = {
   readonly name: HTMLElement;
   readonly fill: HTMLElement;
   readonly lost: HTMLElement;
+  readonly bubble: HTMLElement;
   readonly loss: HpLoss;
   readonly width: number | null;
 };
@@ -46,9 +51,13 @@ function createEntry(parent: HTMLElement, view: LabelView): Entry {
   const fill = document.createElement('div');
   fill.className = 'unit-hp-fill';
   bar.append(lost, fill);
-  root.append(name, bar);
+  // Placed out of the label's flow, so a bubble coming and going never moves the name or changes the label's width.
+  const bubble = document.createElement('p');
+  bubble.className = 'unit-bubble';
+  bubble.hidden = true;
+  root.append(bubble, name, bar);
   parent.append(root);
-  return { root, name, fill, lost, loss: startLoss(clamp01(view.hpFraction)), width: null };
+  return { root, name, fill, lost, bubble, loss: startLoss(clamp01(view.hpFraction)), width: null };
 }
 
 /** A name can change mid-match, as when a bot takes over a fighter; the width is measured again once it is on screen. */
@@ -59,6 +68,14 @@ function renamed(entry: Entry, name: string): Entry {
 }
 
 const measured = (entry: Entry): Entry => (entry.width !== null || entry.root.hidden ? entry : { ...entry, width: entry.root.offsetWidth });
+
+/** Text only, through `textContent`: whatever a player typed is shown as the characters they typed. */
+function say(entry: Entry, view: LabelView): void {
+  const text = view.bubble ?? '';
+  if (entry.bubble.textContent !== text) entry.bubble.textContent = text;
+  entry.bubble.hidden = view.bubble === null;
+  if (view.bubble !== null) entry.bubble.style.setProperty('--bubble-shift', `${view.bubbleShift.toFixed(1)}px`);
+}
 
 /** Name and hp bar floating over each character, as DOM so the text stays crisp at any zoom. */
 export function createLabels(parent: HTMLElement): Labels {
@@ -77,6 +94,7 @@ export function createLabels(parent: HTMLElement): Labels {
         if (view.anchor !== null) {
           entry.root.style.transform = `translate(${view.anchor.x.toFixed(1)}px, ${view.anchor.y.toFixed(1)}px) translate(-50%, -100%)`;
         }
+        say(entry, view);
         entry.fill.style.width = percent(fraction);
         entry.fill.dataset.level = hpLevel(fraction);
         if (loss !== entry.loss) entry.lost.style.width = percent(loss.shown);
