@@ -254,12 +254,21 @@ test('three matches in a row, through the lobby each time, leave the GPU holding
   const rounds: Memory[] = [];
   for (let round = 0; round < 3; round += 1) {
     await matchUp(page);
-    // Long enough for every fighter to have been drawn with everything it carries.
-    await page.waitForTimeout(400);
-    rounds.push(await page.evaluate(() => {
+    // Fighters pick up what they carry over their first drawn frames, and under software WebGL on a busy
+    // machine those frames can be far apart, so read the counts once they have stopped changing.
+    const read = (): Promise<Memory> => page.evaluate(() => {
       const { geometries, textures } = window.__hookwars!.renderStats();
       return { geometries, textures };
-    }));
+    });
+    let settled = await read();
+    await expect.poll(async () => {
+      await page.waitForTimeout(400);
+      const next = await read();
+      const same = next.geometries === settled.geometries && next.textures === settled.textures;
+      settled = next;
+      return same;
+    }, { timeout: 20_000 }).toBe(true);
+    rounds.push(settled);
     expect(await page.locator('#stage canvas').count()).toBe(1);
     await page.keyboard.press('Escape');
     await page.getByRole('button', { name: 'Back to lobby' }).click();
