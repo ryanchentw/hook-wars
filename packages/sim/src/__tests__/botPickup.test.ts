@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { botThink, createBotBrain, createMatch, TUNING } from '../index';
-import type { GameState, PlayerInput, Vec2 } from '../index';
+import { botThink, createBotBrain, createMatch, step, TICK_DT, TUNING } from '../index';
+import type { BotBrain, GameState, PlayerId, PlayerInput, Vec2 } from '../index';
 import { at, pid, withPickup, withPlayer } from './helpers';
 
 const BOT = at(420, 335);
@@ -29,7 +29,28 @@ function marks(s: GameState): { readonly pickup: number; readonly fighter: numbe
   return { pickup, fighter: throws.length - pickup };
 }
 
+/** A 3v3 of bots to five kills with pickups on: how it ended and how many pickups reached a hand. */
+function botMatch(seed: number): { readonly state: GameState; readonly collected: number } {
+  const players = (['west', 'east'] as const).flatMap((team) => [0, 1, 2].map((i) => ({ id: pid(`${team}${i}`), name: `${team}${i}`, team, isBot: true })));
+  let state = createMatch({ killTarget: 5, fog: true, pickups: true, seed, players });
+  let brains = new Map<PlayerId, BotBrain>(state.players.map((p, i) => [p.id, createBotBrain(seed * 31 + i)]));
+  let collected = 0;
+  for (let i = 0; i < 600 / TICK_DT && state.phase.kind === 'playing'; i++) {
+    const thoughts = state.players.map((p) => ({ id: p.id, ...botThink(state, p.id, brains.get(p.id)!) }));
+    brains = new Map(thoughts.map((x) => [x.id, x.brain]));
+    state = step(state, thoughts.flatMap((x) => x.inputs), TICK_DT);
+    collected += state.events.filter((e) => e.kind === 'pickupCollected').length;
+  }
+  return { state, collected };
+}
+
 describe('bots and pickups', () => {
+  it('still fight a 3v3 to the end with pickups on, and bring some home', () => {
+    const runs = [1, 2, 3].map(botMatch);
+    runs.forEach(({ state }) => expect(state.phase.kind).toBe('ended'));
+    expect(runs.reduce((n, r) => n + r.collected, 0)).toBeGreaterThan(0);
+  });
+
   it('throw at a pickup in reach about the configured share of the time, and at the fighter otherwise', () => {
     const { pickup, fighter } = marks(duel(true));
     const share = pickup / (pickup + fighter);
