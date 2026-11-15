@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { PROTOCOL_VERSION } from '@hookbrawl/protocol';
 import { loadConfig } from '../config';
 import { createLogger } from '../logger';
 import { startServer, type RunningServer } from '../server';
@@ -120,7 +121,7 @@ describe('hostile and broken clients', () => {
     ] as const;
     for (const [room, reason] of cases) {
       const client = await open();
-      client.send({ t: 'hello', v: 1, name: 'ada', room });
+      client.send({ t: 'hello', v: PROTOCOL_VERSION, name: 'ada', room });
       expect((await client.next('error')).code).toBe(reason);
       expect(await client.closed()).toBe(reason);
     }
@@ -139,7 +140,7 @@ describe('hostile and broken clients', () => {
     const reasons: string[] = [];
     for (let i = 0; i < 14; i += 1) {
       const client = await open();
-      client.send({ t: 'hello', v: 1, name: 'Eve', room: { kind: 'join', code: 'ZZZZZZ' } });
+      client.send({ t: 'hello', v: PROTOCOL_VERSION, name: 'Eve', room: { kind: 'join', code: 'ZZZZZZ' } });
       reasons.push(await client.closed());
     }
     expect(reasons.slice(0, 12).every((r) => r === 'room-not-found')).toBe(true);
@@ -172,7 +173,7 @@ describe('dropping and coming back', () => {
     await ada.next('room', (m) => m.lobby.away.length === 1);
     await ada.next('room', (m) => m.lobby.room.slots.east[0]?.kind === 'empty');
     const late = await open();
-    late.send({ t: 'hello', v: 1, name: 'Bo', room: { kind: 'rejoin', code, token: boToken } });
+    late.send({ t: 'hello', v: PROTOCOL_VERSION, name: 'Bo', room: { kind: 'rejoin', code, token: boToken } });
     expect(await late.closed()).toBe('rejoin-refused');
     ada.send({ t: 'leave' });
     await ada.closed();
@@ -198,7 +199,7 @@ describe('the server limits', () => {
     await boot({ HOOKBRAWL_MAX_ROOMS: '1' });
     await pair();
     const extra = await open();
-    extra.send({ t: 'hello', v: 1, name: 'Cy', room: { kind: 'create' } });
+    extra.send({ t: 'hello', v: PROTOCOL_VERSION, name: 'Cy', room: { kind: 'create' } });
     expect(await extra.closed()).toBe('server-full');
   });
 
