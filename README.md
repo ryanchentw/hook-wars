@@ -35,13 +35,13 @@ pnpm dev            # single player, http://localhost:5183
 pnpm dev:online     # the page plus a game server, for rooms
 ```
 
-For online play, open the page, choose "Create a room", and open the link it gives you in a second browser window.
+For online play, open the page, choose the "With friends" tab, then "Create a room", and open the link it gives you in a second browser window.
 
 Useful query switches for the page: `?roster=3v3` starts a match straight away, `?scene=victoria|golden-gate|daan|harbour` picks a scene, `?fog=on` turns fog on, `?opponent=idle` swaps the enemy for a practice dummy, `?gold=2000` starts rich.
 
 ## Tune the look
 
-The picture has two quality settings, High and Low, on the main menu and in the pause menu. High adds glow around lights and reflections in the water. The page picks one on the first visit and remembers what you choose. `?quality=high` or `?quality=low` sets it for one visit.
+The picture has two quality settings, High and Low, under Settings on the main menu, in the lobby and in the pause menu. High adds glow around lights and reflections in the water. The page picks one on the first visit and remembers what you choose. `?quality=high` or `?quality=low` sets it for one visit.
 
 `pnpm dev` adds a panel for tuning each scene's look while a match runs. It is not in the production build.
 
