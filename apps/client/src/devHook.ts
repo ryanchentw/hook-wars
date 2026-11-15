@@ -1,5 +1,5 @@
 import { spawnPickup, TICK_DT } from '@hookwars/sim';
-import type { GameState, PickupSpawn, PlayerId, TeamView, Vec2 } from '@hookwars/sim';
+import type { GameState, PickupSpawn, PlayerId, PlayerInput, TeamView, Vec2 } from '@hookwars/sim';
 import type { Session } from './game/session';
 import type { Renderer, RenderStats } from './render/renderer';
 import type { SceneId } from './render/scenes/types';
@@ -29,6 +29,8 @@ export type DevHook = {
   fastForward(seconds: number): void;
   /** Puts a pickup of the asked-for kind on the water now, at the end and lane asked for, through the sim's own spawn. */
   spawnPickup(spawn: PickupSpawn): void;
+  /** Sends an input for any fighter, as a bot would, so a test can make a dummy act. */
+  queueInput(input: PlayerInput): void;
 };
 
 declare global {
@@ -71,6 +73,9 @@ export function installDevHook(session: Session, renderer: Renderer, restart: ()
     },
     spawnPickup(spawn) {
       session.editState((state) => spawnPickup(state, spawn));
+    },
+    queueInput(input) {
+      session.queueInput(input);
     },
   };
   window.__hookwars = hook;

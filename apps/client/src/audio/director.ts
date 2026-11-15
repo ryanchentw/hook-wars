@@ -1,10 +1,10 @@
 import type { RoomState } from '@hookwars/room';
 import type { AppView } from '../app/appCore';
 import type { Store } from '../app/store';
-import { createEffects, type EffectRequest } from './effects';
+import { createEffects, type EffectRequest, type Effects } from './effects';
 import { attachMatchAudio } from './matchAudio';
 import type { TrackId } from './manifest';
-import { createMusic } from './music';
+import { createMusic, type Music } from './music';
 import type { AudioOutput } from './output';
 import { bindButtonClicks, bindGestures, bindMuteKey, bindVisibility, whenIdle } from './pageHooks';
 import { volumeGain, type SettingsStore } from './settings';
@@ -41,68 +41,87 @@ function clicks(view: AppView, button: HTMLButtonElement): boolean {
   return view.route.screen !== 'match' || button.closest('dialog, [role="dialog"]') !== null;
 }
 
-/** Everything the page plays: music for the screen on show, a match's sounds, and the menus' clicks. */
-export function createAudioDirector({ output, settings, app, window: win, base, random }: DirectorDeps): () => void {
-  const effects = createEffects(output, base, random);
-  const music = createMusic(output, base);
+type Ducker = { sting(): void; pause(paused: boolean): void; dispose(): void };
+
+/** Dips the music under the end-of-match sting for a moment, and under a paused offline match for as long as it waits. */
+function createDucker(output: AudioOutput, win: Window): Ducker {
   let ducks: Ducks = { sting: false, pause: false };
+  let stingTimer: number | undefined;
+  const set = (next: Ducks): void => {
+    const level = Math.min(next.sting ? DUCK.sting : 1, next.pause ? DUCK.pause : 1);
+    output.setLevel('duck', level, level < 1 ? DUCK_IN : DUCK_OUT);
+    ducks = next;
+  };
+  return {
+    sting() {
+      set({ ...ducks, sting: true });
+      win.clearTimeout(stingTimer);
+      stingTimer = win.setTimeout(() => set({ ...ducks, sting: false }), STING_HOLD_MS);
+    },
+    pause: (pause) => set({ ...ducks, pause }),
+    dispose: () => win.clearTimeout(stingTimer),
+  };
+}
+
+const plain = (sound: EffectRequest['sound']): readonly EffectRequest[] => [{ sound, gain: 1, pan: 0 }];
+
+/** Follows the app: the music for the screen on show, the match on show, and seats filling in the lobby. */
+function followApp(deps: DirectorDeps, effects: Effects, music: Music, ducker: Ducker): { sync(): void; dispose(): void } {
+  const { app, window: win } = deps;
   let detachMatch: (() => void) | null = null;
   let shownMatch: AppView['match'] = null;
   let seats = seatsFilled(app.getSnapshot().room);
-  let stingTimer: number | undefined;
+  const sink = { play: effects.play, sting: ducker.sting, paused: ducker.pause };
+  return {
+    sync() {
+      const view = app.getSnapshot();
+      music.want(trackFor(view));
+      if (view.match !== shownMatch) {
+        detachMatch?.();
+        shownMatch = view.match;
+        detachMatch = view.match === null ? null : attachMatchAudio({ match: view.match, sink, hidden: () => win.document.hidden });
+      }
+      const filled = seatsFilled(view.room);
+      if (view.route.screen === 'lobby' && filled > seats) effects.play(plain('seat'));
+      seats = filled;
+    },
+    dispose: () => detachMatch?.(),
+  };
+}
 
+/** Everything the page plays: music for the screen on show, a match's sounds, and the menus' clicks. */
+export function createAudioDirector(deps: DirectorDeps): () => void {
+  const { output, settings, app, window: win, base, random } = deps;
+  const effects = createEffects(output, base, random);
+  const music = createMusic(output, base);
+  const ducker = createDucker(output, win);
+  const follower = followApp(deps, effects, music, ducker);
   const applySettings = (): void => {
     const s = settings.getSnapshot();
     output.setLevel('master', s.muted ? 0 : 1, LEVEL_RAMP);
     output.setLevel('music', volumeGain(s.music), LEVEL_RAMP);
     output.setLevel('effects', volumeGain(s.effects), LEVEL_RAMP);
   };
-  const setDucks = (next: Ducks): void => {
-    const level = Math.min(next.sting ? DUCK.sting : 1, next.pause ? DUCK.pause : 1);
-    output.setLevel('duck', level, level < 1 ? DUCK_IN : DUCK_OUT);
-    ducks = next;
-  };
-  const play = (requests: readonly EffectRequest[]): void => effects.play(requests);
-  const sting = (): void => {
-    setDucks({ ...ducks, sting: true });
-    win.clearTimeout(stingTimer);
-    stingTimer = win.setTimeout(() => setDucks({ ...ducks, sting: false }), STING_HOLD_MS);
-  };
-
-  const followMatch = (view: AppView): void => {
-    if (view.match === shownMatch) return;
-    detachMatch?.();
-    shownMatch = view.match;
-    detachMatch = view.match === null ? null : attachMatchAudio({ match: view.match, sink: { play, sting, paused: (pause) => setDucks({ ...ducks, pause }) }, hidden: () => win.document.hidden });
-  };
-  const followApp = (): void => {
-    const view = app.getSnapshot();
-    music.want(trackFor(view));
-    followMatch(view);
-    const filled = seatsFilled(view.room);
-    if (view.route.screen === 'lobby' && filled > seats) play([{ sound: 'seat', gain: 1, pan: 0 }]);
-    seats = filled;
-  };
 
   applySettings();
-  followApp();
+  follower.sync();
   const timer = win.setInterval(music.tick, TICK_MS);
   const unbinders = [
     settings.subscribe(applySettings),
-    app.subscribe(followApp),
+    app.subscribe(follower.sync),
     bindGestures(win, () => {
       output.unlock();
       music.tick();
     }),
     bindVisibility(win.document, (hidden) => output.setHidden(hidden)),
     bindMuteKey(win, () => settings.update((s) => ({ ...s, muted: !s.muted }))),
-    bindButtonClicks(win.document, (button) => clicks(app.getSnapshot(), button), () => play([{ sound: 'uiClick', gain: 1, pan: 0 }])),
+    bindButtonClicks(win.document, (button) => clicks(app.getSnapshot(), button), () => effects.play(plain('uiClick'))),
   ];
   whenIdle(win, () => void effects.load().then(music.load));
   return () => {
     win.clearInterval(timer);
-    win.clearTimeout(stingTimer);
-    detachMatch?.();
+    ducker.dispose();
+    follower.dispose();
     unbinders.forEach((unbind) => unbind());
   };
 }

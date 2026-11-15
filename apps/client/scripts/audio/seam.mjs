@@ -65,8 +65,8 @@ for (const track of TRACKS) {
   const bodyRms = windowsRms(body).sort((a, b) => a - b);
   const headRms = windowsRms(body.subarray(0, AROUND * RATE));
   const peak = mix.reduce((m, x) => Math.max(m, Math.abs(x)), 0);
-  console.log(
+  process.stdout.write(
     `${track.file}: padding ${lead.toFixed(3)}s head, ${tail.toFixed(3)}s tail; seam quietest 20ms ${db(Math.min(...seamRms))} dBFS, ` +
-      `the track's own first ${AROUND}s quietest ${db(Math.min(...headRms))} dBFS, its 1st percentile ${db(bodyRms[Math.floor(bodyRms.length * 0.01)])} dBFS, median ${db(bodyRms[Math.floor(bodyRms.length / 2)])} dBFS; seam peak ${peak.toFixed(3)}`,
+      `the track's own first ${AROUND}s quietest ${db(Math.min(...headRms))} dBFS, its 1st percentile ${db(bodyRms[Math.floor(bodyRms.length * 0.01)])} dBFS, median ${db(bodyRms[Math.floor(bodyRms.length / 2)])} dBFS; seam peak ${peak.toFixed(3)}\n`,
   );
 }
