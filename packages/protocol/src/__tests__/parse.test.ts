@@ -115,7 +115,7 @@ describe('server messages', () => {
       { t: 'snap', ack: 4, view },
       { t: 'matchStart', match: { matchId: 1, you: 'west-0' as PlayerId, scene: 'daan', startsInMs: 3000, resumed: false, arena: state.arena, view } },
       { t: 'room', lobby: { room: createRoom(), away: [] } },
-      { t: 'welcome', v: PROTOCOL_VERSION, code: 'ABCDEF', you: 'm1' as MemberId, token: TOKEN, lobby: { room: createRoom(), away: [] }, match: null },
+      { t: 'welcome', v: PROTOCOL_VERSION, code: 'ABCDEF', you: 'm1' as MemberId, token: TOKEN, lobby: { room: createRoom(), away: [] }, match: null, chat: [] },
       { t: 'pong', id: 1 },
       { t: 'error', code: 'room-full' },
     ];

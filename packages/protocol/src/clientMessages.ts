@@ -1,5 +1,6 @@
 import { KILL_TARGETS, parseName, SCENE_IDS, type MemberId, type PlayerName, type RoomAction } from '@hookwars/room';
 import { z } from 'zod';
+import { CHAT_CHANNELS, CHAT_MAX_UNITS } from './chatText';
 import { pointSchema, purchaseSchema, slotRefSchema } from './common';
 import { MAX_ACTS_PER_INPUT, MAX_SEQ, RAW_NAME_MAX_LENGTH, REJOIN_TOKEN_PATTERN, ROOM_CODE_PATTERN } from './limits';
 
@@ -67,6 +68,8 @@ export const clientMessageSchema = z.discriminatedUnion('t', [
     acts: z.array(actSchema).max(MAX_ACTS_PER_INPUT),
   }),
   z.strictObject({ t: z.literal('ping'), id: z.number().int().min(0).max(MAX_SEQ) }),
+  /** Raw as typed: the server trims, cleans and measures it, and drops a line that comes out empty or too long. */
+  z.strictObject({ t: z.literal('chat'), channel: z.enum(CHAT_CHANNELS), text: z.string().max(CHAT_MAX_UNITS) }),
   /** Gives the seat up for good, where closing the socket only starts the rejoin clock. */
   z.strictObject({ t: z.literal('leave') }),
 ]);

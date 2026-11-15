@@ -1,15 +1,33 @@
 import { KILL_TARGETS, SCENE_IDS, type MemberId, type PlayerName, type RoomState } from '@hookwars/room';
 import type { PlayerId } from '@hookwars/sim';
 import { z } from 'zod';
-import { idOf } from './common';
+import { CHAT_CHANNELS, CHAT_HISTORY_MAX, CHAT_MAX_UNITS } from './chatText';
+import { idOf, teamSchema } from './common';
 import { MAX_SEQ, REJOIN_TOKEN_PATTERN, ROOM_CODE_PATTERN } from './limits';
 import { arenaSchema, snapViewSchema } from './view';
 
 const memberId = idOf<MemberId>();
 
+const playerName = z.string().min(1).max(64) as unknown as z.ZodType<PlayerName>;
+
+/**
+ * One thing said. `team` is the speaker's side when they spoke, `fighter` their fighter when a match was on, so a bubble
+ * can be drawn over it. `seq` counts the room's lines, so a line heard twice is shown once.
+ */
+const chatLineSchema = z.object({
+  seq: z.number().int().min(1).max(MAX_SEQ),
+  from: memberId,
+  name: playerName,
+  team: teamSchema.nullable(),
+  fighter: idOf<PlayerId>().nullable(),
+  channel: z.enum(CHAT_CHANNELS),
+  text: z.string().min(1).max(CHAT_MAX_UNITS),
+});
+export type ChatLine = z.infer<typeof chatLineSchema>;
+
 const slotSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('empty') }),
-  z.object({ kind: z.literal('human'), memberId, name: z.string().min(1).max(64) as unknown as z.ZodType<PlayerName> }),
+  z.object({ kind: z.literal('human'), memberId, name: playerName }),
   z.object({ kind: z.literal('bot') }),
 ]);
 const teamSlots = z.array(slotSchema).length(3);
@@ -70,12 +88,17 @@ export const serverMessageSchema = z.discriminatedUnion('t', [
     token: z.string().regex(REJOIN_TOKEN_PATTERN),
     lobby: roomViewSchema,
     match: matchStartSchema.nullable(),
+    /** The recent lines a returning member may read; empty for someone new to the room. */
+    chat: z.array(chatLineSchema).max(CHAT_HISTORY_MAX),
   }),
   z.object({ t: z.literal('room'), lobby: roomViewSchema }),
   z.object({ t: z.literal('matchStart'), match: matchStartSchema }),
   /** `ack` is the last input `seq` the server had applied for this client when it took the snapshot. */
   z.object({ t: z.literal('snap'), ack: z.number().int().min(0).max(MAX_SEQ), view: snapViewSchema }),
   z.object({ t: z.literal('pong'), id: z.number().int().min(0).max(MAX_SEQ) }),
+  z.object({ t: z.literal('chat'), line: chatLineSchema }),
+  /** Your last line was dropped for coming too fast. Said once, until a line of yours gets through again. */
+  z.object({ t: z.literal('chatLimited') }),
   /** The last thing said before the server closes the socket. */
   z.object({ t: z.literal('error'), code: z.enum(ERROR_CODES) }),
 ]);

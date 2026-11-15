@@ -1,5 +1,5 @@
 /** Checked at connect: a client and a server that disagree do not talk. Raise it with any change to a message. */
-export const PROTOCOL_VERSION = 3;
+export const PROTOCOL_VERSION = 4;
 
 /** No client message comes near this; the server's socket refuses anything longer before it is read. */
 export const MAX_CLIENT_MESSAGE_BYTES = 2048;
