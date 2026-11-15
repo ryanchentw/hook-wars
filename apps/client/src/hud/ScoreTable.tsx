@@ -20,7 +20,6 @@ function Row({ row }: { readonly row: ScoreRow }) {
       <th scope="row" className={`hud-${row.team}`}>
         {row.name}
         {row.isLocal && <span className="score-tag">you</span>}
-        {row.isBot && <span className="score-tag">bot</span>}
       </th>
       <td>{row.kills}</td>
       <td>{row.deaths}</td>

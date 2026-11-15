@@ -41,12 +41,13 @@ export async function matchUp(page: Page): Promise<void> {
 }
 
 /** Two players in one room, a side each, in a match the first of them started. */
-export async function startDuel(browser: Browser, options: { query?: string; beforeStart?: (host: Page) => Promise<void> } = {}) {
+export async function startDuel(browser: Browser, options: { query?: string; guestName?: string; beforeStart?: (host: Page) => Promise<void> } = {}) {
   const [host, guest] = [await player(browser), await player(browser)];
   const query = options.query ?? '';
+  const guestName = options.guestName ?? 'Bo';
   const code = await createRoom(host, 'Ada', query === '' ? '' : `?${query}`);
-  await joinByLink(guest, code, 'Bo', query === '' ? '' : `&${query}`);
-  await expect(host.locator('.team-east .slot-human')).toContainText('Bo');
+  await joinByLink(guest, code, guestName, query === '' ? '' : `&${query}`);
+  await expect(host.locator('.team-east .slot-human')).toContainText(guestName);
   await options.beforeStart?.(host);
   await host.getByRole('button', { name: 'Start match' }).click();
   await Promise.all([matchUp(host), matchUp(guest)]);

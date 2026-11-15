@@ -20,6 +20,8 @@
   --flash-time: 900ms;
   --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-display: Georgia, 'Times New Roman', serif;
+  /* Half the score bar's width: the kill feed beside it is kept clear of it. */
+  --score-half-width: 220px;
 }
 
 html,
@@ -98,6 +100,9 @@ body {
   gap: 16px;
   padding: 5px 22px;
   white-space: nowrap;
+  box-sizing: border-box;
+  min-width: calc(2 * var(--score-half-width));
+  justify-content: center;
 }
 
 .hud-team {
@@ -131,6 +136,8 @@ body {
   position: absolute;
   top: 10px;
   right: 16px;
+  /* Stops short of the centred score bar, so long names wrap instead of running under it. */
+  max-width: calc(50% - var(--score-half-width) - 24px);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -373,8 +380,13 @@ body {
     display: none;
   }
 
+  .hud-score {
+    min-width: 0;
+  }
+
   .hud-feed {
     top: 64px;
+    max-width: calc(100% - 32px);
   }
 
   .hud-hp {
