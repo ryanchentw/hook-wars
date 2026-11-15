@@ -13,7 +13,7 @@ export const settleEconomy: Stage = (state, { t, dt }) => {
   const players = state.players.map((p) => {
     const stale = p.recentDamage.some((d) => d.at < since);
     if (income === 0 && !stale) return p;
-    return { ...p, gold: p.gold + income, recentDamage: stale ? p.recentDamage.filter((d) => d.at >= since) : p.recentDamage };
+    return { ...p, gold: p.gold + income, earned: p.earned + income, recentDamage: stale ? p.recentDamage.filter((d) => d.at >= since) : p.recentDamage };
   });
   return { state: { ...state, players }, events: [] };
 };
@@ -34,10 +34,12 @@ export function reward(player: Player, kills: readonly KillRecord[]): Player {
   const credited = kills.filter((k) => k.killerId === player.id).length;
   const assisted = kills.filter((k) => k.assistIds.includes(player.id)).length;
   if (credited === 0 && assisted === 0) return player;
+  const bounty = credited * ECONOMY.killGold + assisted * ECONOMY.assistGold;
   return {
     ...player,
     kills: player.kills + credited,
     assists: player.assists + assisted,
-    gold: player.gold + credited * ECONOMY.killGold + assisted * ECONOMY.assistGold,
+    gold: player.gold + bounty,
+    earned: player.earned + bounty,
   };
 }

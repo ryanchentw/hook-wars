@@ -64,6 +64,8 @@ export type Player = {
   readonly assists: number;
   /** Always an integer. */
   readonly gold: number;
+  /** Every coin paid to this fighter this match, starting gold included; spending never lowers it. */
+  readonly earned: number;
   /** Levels bought, starting at 0. */
   readonly upgrades: Readonly<Record<UpgradeId, number>>;
   readonly items: Items;
@@ -228,8 +230,8 @@ export type PlayerCard = {
   readonly kills: number;
   readonly deaths: number;
   readonly assists: number;
-  /** Null for an enemy under fog. */
-  readonly gold: number | null;
+  /** Shown under fog too: it follows from kills, assists and the clock, which every team sees. */
+  readonly earned: number;
 };
 
 /** `ropeFrom` is where the visible rope starts when its owner is out of sight; null runs it from the owner's hand. */

@@ -51,6 +51,7 @@ const seenPlayerSchema = z.object({
   deaths: count,
   assists: count,
   gold: count.nullable(),
+  earned: count,
   upgrades: z.object({ damage: count, range: count, speed: count, size: count }),
   items: itemsSchema,
   recentDamage: z.array(z.object({ from: playerId, at: num })).max(MAX_FIGHTERS),
@@ -64,7 +65,7 @@ const cardSchema = z.object({
   kills: count,
   deaths: count,
   assists: count,
-  gold: count.nullable(),
+  earned: count,
 });
 
 const hookSchema = z.object({

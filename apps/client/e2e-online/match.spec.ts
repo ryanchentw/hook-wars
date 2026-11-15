@@ -92,7 +92,7 @@ test('with fog on, a client is never sent the enemy it cannot see', async ({ bro
     page.evaluate((id) => {
       const frames = window.__hookbrawlNet!.received();
       const views = frames.flatMap((m) => (m.t === 'snap' ? [m.view] : m.t === 'matchStart' ? [m.match.view] : []));
-      return { snapshots: views.length, withEnemy: views.filter((v) => v.players.some((p) => p.id === id)).length, purses: views.filter((v) => v.roster.some((c) => c.id === id && c.gold !== null)).length };
+      return { snapshots: views.length, withEnemy: views.filter((v) => v.players.some((p) => p.id === id)).length, purses: views.filter((v) => v.roster.some((c) => c.id === id && 'gold' in c) || v.players.some((p) => p.id === id && p.gold !== null)).length };
     }, enemy);
 
   await guest.waitForFunction(() => window.__hookbrawlNet!.received().filter((m) => m.t === 'snap').length > 60);

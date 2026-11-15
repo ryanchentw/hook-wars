@@ -126,4 +126,9 @@ describe('server messages', () => {
     expect(parseServerMessage(frame({ t: 'error', code: 'because' })).ok).toBe(false);
     expect(parseServerMessage('nonsense').ok).toBe(false);
   });
+
+  it('refuses a roster card without gold earned, as a server from before it was added would send', () => {
+    const roster = view.roster.map(({ earned: _earned, ...card }) => ({ ...card, gold: null }));
+    expect(parseServerMessage(frame({ t: 'snap', ack: 0, view: { ...view, roster } })).ok).toBe(false);
+  });
 });

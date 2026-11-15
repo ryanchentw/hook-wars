@@ -47,8 +47,7 @@ export type ScoreRow = {
   readonly kills: number;
   readonly deaths: number;
   readonly assists: number;
-  /** Null for an enemy under fog. */
-  readonly gold: number | null;
+  readonly earned: number;
   readonly isLocal: boolean;
 };
 
@@ -126,7 +125,7 @@ const scoreRow = (p: PlayerCard, localId: PlayerId): ScoreRow => ({
   kills: p.kills,
   deaths: p.deaths,
   assists: p.assists,
-  gold: p.gold,
+  earned: p.earned,
   isLocal: p.id === localId,
 });
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { ECONOMY, step, TICK_DT, TUNING } from '../index';
+import { createMatch, ECONOMY, ITEMS, step, TICK_DT, TUNING } from '../index';
 import type { GameState, Vec2 } from '../index';
-import { at, match, ofKind, pid, player, run, withPlayer } from './helpers';
+import { at, buy, match, ofKind, pid, player, run, withPlayer } from './helpers';
 
 const FAR: Readonly<Record<string, Vec2>> = {
   w1: at(100, 100),
@@ -111,5 +111,29 @@ describe('kill bounty', () => {
     expect(player(dropped, 'e').recentDamage.map((d) => d.from)).toEqual(['w1']);
     const killed = finish(dropped, 'w2', 'e');
     expect(ofKind(killed.events, 'kill')[0]?.assistIds).toEqual(['w1']);
+  });
+});
+
+describe('earned gold', () => {
+  it('starts at the starting gold, the match config included', () => {
+    expect(squad().players.map((p) => p.earned)).toEqual([150, 150, 150, 150, 150]);
+    const players = [pid('w'), pid('e')].map((id, i) => ({ id, name: id, team: i === 0 ? ('west' as const) : ('east' as const), isBot: false }));
+    const rich = createMatch({ killTarget: 5, startingGold: 1000, players });
+    expect(rich.players.map((p) => p.earned)).toEqual([1000, 1000]);
+  });
+
+  it('counts passive income, kills and assists', () => {
+    const killed = finish(strike(squad(), 'w1', 'e'), 'w2', 'e');
+    expect(player(killed, 'w2').earned).toBe(150 + ECONOMY.killGold);
+    expect(player(killed, 'w1').earned).toBe(150 + ECONOMY.assistGold);
+    expect(player(run(squad(), 30).state, 'e').earned).toBe(150 + ECONOMY.passiveGold);
+  });
+
+  it('is the same for two fighters with the same income, however differently they spend', () => {
+    const spent = step(squad(), [buy('w1', { kind: 'item', id: 'grapple' })], TICK_DT);
+    const later = run(spent, 60).state;
+    expect(player(later, 'w1').gold).toBe(player(later, 'w2').gold - ITEMS.grapple.cost);
+    expect(player(later, 'w1').earned).toBe(player(later, 'w2').earned);
+    expect(player(later, 'w1').earned).toBe(150 + 2 * ECONOMY.passiveGold);
   });
 });

@@ -117,7 +117,7 @@ describe('fog of war', () => {
     expect(sawEnemy(h, east, WEST)).toBe(false);
     expect(sawEnemy(h, west, EAST)).toBe(false);
     expect(JSON.stringify(h.sentTo(east, 'snap'))).not.toContain('"x":420');
-    expect(h.last(east, 'snap').view.roster.find((c) => c.id === WEST)?.gold).toBeNull();
+    expect(h.last(east, 'snap').view.roster.find((c) => c.id === WEST)).not.toHaveProperty('gold');
     expect(h.last(east, 'matchStart').match.view.players.map((p) => p.id)).toEqual([EAST]);
   });
 

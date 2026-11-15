@@ -13,9 +13,9 @@ function seenPlayer(player: Player, fogged: boolean): SeenPlayer {
   return { ...player, gold: null, move: redactMove(player.move, player.pos) };
 }
 
-function card(player: Player, goldShown: boolean): PlayerCard {
-  const { id, name, team, isBot, kills, deaths, assists, gold } = player;
-  return { id, name, team, isBot, kills, deaths, assists, gold: goldShown ? gold : null };
+function card(player: Player): PlayerCard {
+  const { id, name, team, isBot, kills, deaths, assists, earned } = player;
+  return { id, name, team, isBot, kills, deaths, assists, earned };
 }
 
 /** The chain as it lies now: from the thrower, through the bounces still in play, to the head. */
@@ -56,7 +56,7 @@ export function viewFor(state: GameState, team: TeamId): TeamView {
     killTarget: state.killTarget,
     phase: state.phase,
     players: state.players.filter((p) => sight.players.has(p.id)).map((p) => seenPlayer(p, fogged && p.team !== team)),
-    roster: state.players.map((p) => card(p, !fogged || p.team === team)),
+    roster: state.players.map(card),
     hooks: state.hooks.filter((h) => sight.hooks.has(h.id)).map((h) => seenHook(h, byId.get(h.ownerId), sight)),
     grapples: state.grapples.filter((g) => sight.grapples.has(g.id)).map((g) => seenGrapple(g, byId.get(g.ownerId), sight)),
     events: seenEvents(state.events, sight, (id) => byId.get(id)?.team),

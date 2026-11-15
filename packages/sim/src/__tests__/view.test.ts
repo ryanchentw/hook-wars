@@ -25,7 +25,7 @@ describe('viewFor', () => {
     const view = viewFor(s, 'west');
     expect(view.players.map((p) => p.id)).toEqual(['w', 'e']);
     expect(view.players[1]?.pos).toEqual(FAR);
-    expect(view.roster.find((c) => c.id === 'e')?.gold).toBe(999);
+    expect(view.roster.find((c) => c.id === 'e')?.earned).toBe(150);
     expect(view.players[1]?.move).toEqual(s.players[1]?.move);
   });
 
@@ -36,12 +36,15 @@ describe('viewFor', () => {
     expect(view).not.toHaveProperty('nextHookSeq');
   });
 
-  it('keeps every fighter on the roster, with an enemy purse hidden and its own shown', () => {
-    const view = viewFor(hidden(), 'west');
-    expect(view.roster.map((c) => [c.id, c.gold])).toEqual([
+  it('keeps every fighter on the roster with what they earned, and no fighter\'s purse', () => {
+    const s = withPlayer(hidden(), 'e', { earned: 550, kills: 2 });
+    const view = viewFor(s, 'west');
+    expect(view.roster.map((c) => [c.id, c.earned])).toEqual([
       ['w', 150],
-      ['e', null],
+      ['e', 550],
     ]);
+    expect(view.roster[1]).not.toHaveProperty('gold');
+    expect(JSON.stringify(view)).not.toContain('999');
   });
 
   it('shows a seen enemy without its gold or where it is walking to', () => {

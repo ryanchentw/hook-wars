@@ -31,9 +31,9 @@ describe('deriveHud', () => {
     expect(deriveHud(fakeView({ players }), HUMAN, []).end).toBeNull();
   });
 
-  it('lists every fighter by side with kills, deaths, assists and gold', () => {
+  it('lists every fighter by side with kills, deaths, assists and gold earned', () => {
     const roster = [
-      fakePlayer({ id: HUMAN, name: 'You', kills: 2, deaths: 1, assists: 3, gold: 40 }),
+      fakePlayer({ id: HUMAN, name: 'You', kills: 2, deaths: 1, assists: 3, gold: 40, earned: 900 }),
       fakePlayer({ id: BOT, name: 'Pike', team: 'east', isBot: true }),
       fakePlayer({ id: 'ally' as PlayerId, name: 'Gull', isBot: true, assists: 4 }),
     ];
@@ -42,18 +42,21 @@ describe('deriveHud', () => {
       ['You', true],
       ['Gull (bot)', false],
     ]);
-    expect(board.west[0]).toMatchObject({ kills: 2, deaths: 1, assists: 3, gold: 40 });
+    expect(board.west[0]).toMatchObject({ kills: 2, deaths: 1, assists: 3, earned: 900 });
     expect(board.east.map((r) => r.name)).toEqual(['Pike (bot)']);
   });
 
-  it('keeps hidden enemies on the board under fog, with their gold hidden and ours shown', () => {
-    const far = [fakePlayer({ id: HUMAN, gold: 40 }), fakePlayer({ id: BOT, name: 'Pike', team: 'east', pos: { x: 2000, y: 0 }, kills: 3 })];
+  it('keeps hidden enemies on the board under fog with what they earned, and only our own purse to spend', () => {
+    const far = [
+      fakePlayer({ id: HUMAN, gold: 40 }),
+      fakePlayer({ id: BOT, name: 'Pike', team: 'east', pos: { x: 2000, y: 0 }, kills: 3, gold: 77, earned: 750 }),
+    ];
     const view = fakeView({ players: far, vision: { kind: 'fog', radius: 900 } });
     expect(view.players.map((p) => p.id)).toEqual([HUMAN]);
-    const board = deriveHud(view, HUMAN, []).scoreboard;
-    expect(board.east[0]).toMatchObject({ name: 'Pike', kills: 3, gold: null });
-    expect(board.west[0]?.gold).toBe(40);
-    expect(deriveHud(view, HUMAN, []).local?.gold).toBe(40);
+    const hud = deriveHud(view, HUMAN, []);
+    expect(hud.scoreboard.east[0]).toMatchObject({ name: 'Pike', kills: 3, earned: 750 });
+    expect(JSON.stringify(hud)).not.toContain('77');
+    expect(hud.local?.gold).toBe(40);
   });
 
   it('shows the local gold, the shop and the grapple slot', () => {

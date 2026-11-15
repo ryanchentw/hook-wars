@@ -70,7 +70,9 @@ test('under fog an idle dummy across the water is not given to the renderer unti
   expect(await seen(page, target.id)).toEqual({ inView: false, drawn: false });
   const view = await page.evaluate(() => window.__hookbrawl!.getView());
   expect(view.vision.kind).toBe('fog');
-  expect(view.roster.find((c) => c.id === target.id)?.gold).toBeNull();
+  const card = view.roster.find((c) => c.id === target.id);
+  expect(card).not.toHaveProperty('gold');
+  expect(view.players.some((p) => p.id === target.id)).toBe(false);
 
   await walkTo(page, 900, 500);
   expect(await seen(page, target.id)).toEqual({ inView: false, drawn: false });

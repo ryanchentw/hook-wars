@@ -4,16 +4,6 @@ import { TEAM_LABEL } from './labels';
 
 const SIDES: readonly TeamId[] = ['west', 'east'];
 
-/** An enemy's purse under fog: shown as unknown, and said so to a screen reader. */
-function HiddenGold() {
-  return (
-    <span className="score-hidden" title="Hidden by the fog">
-      <span aria-hidden="true">?</span>
-      <span className="hud-sr">hidden</span>
-    </span>
-  );
-}
-
 function Row({ row }: { readonly row: ScoreRow }) {
   return (
     <tr className={row.isLocal ? 'is-local' : undefined}>
@@ -24,7 +14,7 @@ function Row({ row }: { readonly row: ScoreRow }) {
       <td>{row.kills}</td>
       <td>{row.deaths}</td>
       <td>{row.assists}</td>
-      <td>{row.gold ?? <HiddenGold />}</td>
+      <td>{row.earned}</td>
     </tr>
   );
 }
@@ -46,7 +36,10 @@ export function ScoreTable({ board, caption }: { readonly board: Scoreboard; rea
           <th scope="col">
             <abbr title="Assists">A</abbr>
           </th>
-          <th scope="col">Gold</th>
+          <th scope="col" title="Gold earned this match">
+            <span aria-hidden="true">Earned</span>
+            <span className="hud-sr">Gold earned</span>
+          </th>
         </tr>
       </thead>
       {SIDES.map((side) => (
