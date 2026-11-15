@@ -8,15 +8,20 @@ import { announce, isMemberOnline } from './view';
 /** Keeps a stand-in's seed clear of the seeds the room plan gives its bots. */
 const STAND_IN_SEED_OFFSET = 1000;
 
+/** The fighters a computer drives, less `takingBack`: a returning member's own fighter is theirs from the first frame. */
+const botDriven = (match: MatchRun, takingBack: Fighter['id'] | null) =>
+  new Set(match.fighters.filter((f) => f.drivenBy === 'bot' && f.id !== takingBack).map((f) => f.id));
+
 export function matchStartFor(match: MatchRun, fighter: Fighter, now: number, resumed: boolean): MatchStart {
+  const state = withBotControl(match.state, botDriven(match, fighter.id));
   return {
     matchId: match.id,
     you: fighter.id,
     scene: match.scene,
     startsInMs: Math.max(0, match.startAt - now),
     resumed,
-    arena: match.state.arena,
-    view: { ...toSnapView(viewFor(match.state, fighter.team)), events: [] },
+    arena: state.arena,
+    view: { ...toSnapView(viewFor(state, fighter.team)), events: [] },
   };
 }
 
@@ -106,14 +111,14 @@ function collectEvents(match: MatchRun, state: GameState): MatchRun['pending'] {
 /** One step of the sim, and a snapshot to every connected fighter's member when one is owed. */
 export function tick(room: Room, match: MatchRun, rules: RoomRules): { readonly match: MatchRun; readonly out: readonly Outbound[] } {
   const driven = match.fighters.map((f) => (f.owner !== null && isMemberOnline(room, f.owner) ? driveByMember(f, rules) : driveByBot(f, match.state)));
-  const bots = new Set(driven.filter((d) => d.fighter.drivenBy === 'bot').map((d) => d.fighter.id));
-  const state = step(withBotControl(match.state, bots), driven.flatMap((d) => d.inputs), TICK_DT);
+  const fighters = driven.map((d) => d.fighter);
+  const state = step(withBotControl(match.state, botDriven({ ...match, fighters }, null)), driven.flatMap((d) => d.inputs), TICK_DT);
   const debt = match.snapshotDebt + rules.snapshotHz;
   const owed = debt >= TICK_RATE || state.phase.kind === 'ended';
   const ticked: MatchRun = {
     ...match,
     state,
-    fighters: driven.map((d) => d.fighter),
+    fighters,
     ticksRun: match.ticksRun + 1,
     pending: collectEvents(match, state),
     snapshotDebt: owed ? Math.max(0, debt - TICK_RATE) : debt,

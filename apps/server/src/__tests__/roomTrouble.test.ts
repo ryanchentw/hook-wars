@@ -30,6 +30,7 @@ describe('dropping out of a match', () => {
     h.run(1000);
     expect(shownAsBot()).toBe(true);
     h.rejoin(h.tokenOf(east));
+    expect(h.last(east, 'welcome').match!.view.roster.find((p) => p.id === EAST)!.isBot).toBe(false);
     h.run(1000);
     expect(shownAsBot()).toBe(false);
     expect(h.last(east, 'snap').view.players.find((p) => p.id === EAST)!.isBot).toBe(false);
