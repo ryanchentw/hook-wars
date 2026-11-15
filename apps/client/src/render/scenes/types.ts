@@ -74,13 +74,13 @@ export type ReflectionSpec = {
   readonly distortion: number;
 };
 
-/** Glow around whatever is brighter than `threshold`, drawn only at high quality. */
+/** Glow around the scene's light sources, drawn only at high quality. Lit surfaces, however bright, never glow. */
 export type BloomSpec = {
   readonly on: boolean;
   readonly strength: number;
   /** 0..1: how far the glow spreads. */
   readonly radius: number;
-  /** Scene light before exposure; lit ground must stay under it or the whole picture hazes over. */
+  /** Scene light a source must be brighter than to glow: 1 is white, and a lamp or a neon tube is drawn well past it. */
   readonly threshold: number;
 };
 

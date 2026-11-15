@@ -119,10 +119,10 @@ export const VICTORIA_LOOK: SceneLook = {
     rim: { color: 0xc45ad0, intensity: 0.3, from: { x: 0.3, y: 0.5, z: -1 } },
     fill: { sky: C.skyFill, ground: C.waterFill, intensity: 1.5 },
   },
-  water: { level: VICTORIA_SIZES.waterLevel, color: C.water, roughness: 0.36, metalness: 0.15, swellSize: 20, ripple: 1, drift: { x: 0.006, y: 0.012 }, reflection: { on: true, strength: 0.5, distortion: 0.03 } },
+  water: { level: VICTORIA_SIZES.waterLevel, color: C.water, roughness: 0.36, metalness: 0.15, swellSize: 20, ripple: 1, drift: { x: 0.006, y: 0.012 }, reflection: { on: true, strength: 0.5, distortion: 0.005 } },
   fogOfWar: { color: 0x101626, opacity: 0.72, edge: 140 },
-  bloom: { on: true, strength: 0.6, radius: 0.5, threshold: 0.9 },
-  fighterRim: { on: true, strength: 1.2, color: 0xcfd8ff, power: 2.5, team: 0.5 },
+  bloom: { on: true, strength: 1.0, radius: 0.8, threshold: 0.55 },
+  fighterRim: { on: true, strength: 0.6, color: 0xcfd8ff, power: 3, team: 0.85 },
   tints: {
     iron: 0xb9c0ca,
     chainGlow: 0.22,

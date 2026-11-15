@@ -13,6 +13,7 @@ import {
   TorusGeometry,
   type Texture,
 } from 'three';
+import { emits } from '../../post/emitters';
 import { simToWorld, toWorldLength } from '../../space';
 import { createRust } from '../../textures';
 import type { Animated } from '../types';
@@ -32,7 +33,7 @@ export function createBuoy(arena: Arena, softDot: Texture): Animated {
   rust.repeat.set(3, 1);
   const iron = new MeshStandardMaterial({ map: rust, roughness: 0.92, metalness: 0.25 });
   const dark = new MeshStandardMaterial({ color: COLORS.rustDark, roughness: 0.8, metalness: 0.4 });
-  const lamp = new MeshBasicMaterial({ color: COLORS.buoyLamp });
+  const lamp = emits(new MeshBasicMaterial({ color: COLORS.buoyLamp }));
 
   const group = new Group();
   const drumHeight = SHAPE.shoulder - SHAPE.keel;

@@ -1,4 +1,5 @@
 import { BufferGeometry, DoubleSide, Float32BufferAttribute, Group, Mesh, MeshBasicMaterial } from 'three';
+import { emits } from '../post/emitters';
 import { simToWorld } from '../space';
 import { COLORS, SLASH, TEAM_COLORS } from '../theme';
 import { slashGlow, slashTurn, type Slash } from './slash';
@@ -44,7 +45,7 @@ function createCrescent(): BufferGeometry {
 }
 
 function createArc(geometry: BufferGeometry): Mesh<BufferGeometry, MeshBasicMaterial> {
-  const material = new MeshBasicMaterial({
+  const material = emits(new MeshBasicMaterial({
     vertexColors: true,
     transparent: true,
     depthTest: false,
@@ -52,7 +53,7 @@ function createArc(geometry: BufferGeometry): Mesh<BufferGeometry, MeshBasicMate
     side: DoubleSide,
     fog: false,
     toneMapped: false,
-  });
+  }));
   const arc = new Mesh(geometry, material);
   arc.renderOrder = RENDER_ORDER;
   arc.frustumCulled = false;
