@@ -13,6 +13,8 @@ import { createBootScreen } from './boot/bootScreen';
 import { loadAssets } from './render/assets/loadAssets';
 import { createBackdrop } from './render/backdrop';
 import { createGraphics } from './render/graphics';
+import type { LookTap } from './render/lookTap';
+import { QUALITY_PARAM } from './render/quality';
 
 const ASSET_BASE = `${import.meta.env.BASE_URL}assets/kaykit/`;
 
@@ -25,12 +27,16 @@ function mountPoint(id: string): HTMLElement {
 const stage = mountPoint('stage');
 const boot = createBootScreen(mountPoint('boot'));
 const hud = mountPoint('hud');
+const storage = (): Storage => window.localStorage;
+// Behind the DEV flag as a whole, so the look panel and its library are not in a production build at all. Once per
+// page, not per start: "Try again" must not leave a second panel behind.
+const lookTap: Promise<LookTap | null> = import.meta.env.DEV ? import('./dev/look').then((dev) => dev.installLookTuner(storage)) : Promise.resolve(null);
 
 /** Models load once for the whole visit; every match and the menu's scenery draw with them. */
 async function start(): Promise<void> {
   stage.dataset.state = 'loading';
   const assets = await loadAssets(ASSET_BASE, boot.showLoading);
-  const graphics = createGraphics(stage, assets);
+  const graphics = createGraphics(stage, assets, { storage, askedQuality: new URLSearchParams(window.location.search).get(QUALITY_PARAM), tap: await lookTap });
   const page = pageOptionsFromQuery(window.location.search, Date.now());
   try {
     const router = createRouter(window, page.direct === null ? 'menu' : 'match');
@@ -41,7 +47,7 @@ async function start(): Promise<void> {
     const app = createApp({
       router,
       page,
-      names: createNameStore(() => window.localStorage),
+      names: createNameStore(storage),
       makeBackdrop: (scene) => createBackdrop(graphics, scene, context),
       startMatch: (source, view, rematch) => startMatch({ graphics, source, view, router, hudElement: hud, context, rematch }),
       online: browserOnline(window),
@@ -52,7 +58,7 @@ async function start(): Promise<void> {
         else boot.hide();
       },
     });
-    createRoot(hud).render(<App app={app} />);
+    createRoot(hud).render(<App app={app} quality={graphics.kit.quality} />);
     startAudio(window, app, import.meta.env.BASE_URL);
   } catch (error) {
     // Leave nothing half-started behind, so "Try again" begins from a clean page.

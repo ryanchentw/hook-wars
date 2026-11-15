@@ -5,6 +5,7 @@ import type { CharacterAsset } from '../assets/loadAssets';
 import { CAPE_SUFFIX, FACE_SUFFIX, HAND_BONE, ITEM_SLOT_BONES, OFF_HAND_BONE } from '../assets/manifest';
 import type { Tints } from '../scenes/types';
 import { COLORS, SIZES, type TeamPalette } from '../theme';
+import type { RimLight } from './rim';
 
 export type CharacterModel = {
   readonly root: Object3D;
@@ -56,7 +57,7 @@ function isItem(node: Object3D): boolean {
  * Clones the template and dresses it for a team: weapons and shields hidden, the texture leaned warm or cold,
  * and the cape recoloured in the team's signal colour.
  */
-export function instantiateCharacter(asset: CharacterAsset, team: TeamId, tints: Tints): CharacterModel {
+export function instantiateCharacter(asset: CharacterAsset, team: TeamId, tints: Tints, rim: RimLight): CharacterModel {
   const root = cloneSkinned(asset.scene);
   const palette = tints.teams[team];
   const materials: MeshStandardMaterial[] = [];
@@ -70,6 +71,7 @@ export function instantiateCharacter(asset: CharacterAsset, team: TeamId, tints:
     }
     const source = (Array.isArray(node.material) ? node.material[0] : node.material) as MeshStandardMaterial;
     const material = dress(node.name, source, palette, tints.characterSelfLight);
+    rim.light(material, palette.glow);
     node.material = material;
     materials.push(material);
     node.castShadow = true;

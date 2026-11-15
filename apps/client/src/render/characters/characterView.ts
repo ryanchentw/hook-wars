@@ -26,6 +26,7 @@ import { createFlourishView, type FlourishView } from './flourishView';
 import { createHeldHook } from './heldHook';
 import { createHitReaction } from './hitReaction';
 import { instantiateCharacter } from './model';
+import type { RimLight } from './rim';
 
 export type CharacterUpdate = {
   readonly player: SeenPlayer;
@@ -187,7 +188,7 @@ type Rig = {
 };
 
 /** What every character draws with and nobody but the renderer disposes of. */
-export type SharedLooks = { readonly hookGeometry: BufferGeometry; readonly softDot: Texture; readonly tints: Tints };
+export type SharedLooks = { readonly hookGeometry: BufferGeometry; readonly softDot: Texture; readonly tints: Tints; readonly rim: RimLight };
 
 /**
  * The figure's scene nodes. `group` is always the true sim position and carries the rings;
@@ -222,7 +223,7 @@ function tiltFor(status: SeenPlayer['status']['kind'], hauled: boolean): Tilt {
 }
 
 export function createCharacterView(asset: CharacterAsset, looks: SharedLooks, player: SeenPlayer, isLocal: boolean): CharacterView {
-  const model = instantiateCharacter(asset, player.team, looks.tints);
+  const model = instantiateCharacter(asset, player.team, looks.tints, looks.rim);
   const heldHook = createHeldHook(looks.hookGeometry, player.team, looks.tints);
   model.hand.add(heldHook.mesh);
   const materials = [...model.materials, heldHook.material];

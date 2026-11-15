@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef } from 'react';
 import { AudioSettings } from '../audio/AudioSettings';
+import type { QualitySetting } from '../render/quality';
+import { QualityPicker } from '../screens/QualityPicker';
 import { CreditsLink } from './labels';
 
 type Props = {
@@ -8,19 +10,26 @@ type Props = {
   readonly holds: boolean;
   /** What the way out is called: back to the lobby from a local match, out of the room from an online one. */
   readonly leaveLabel: string;
+  readonly quality: QualitySetting;
   readonly onResume: () => void;
   readonly onLeave: () => void;
 };
 
 /** A native modal: Escape and the Resume button both close it, and the browser keeps focus inside while it is open. */
-export function PauseMenu({ open, holds, leaveLabel, onResume, onLeave }: Props) {
+export function PauseMenu({ open, holds, leaveLabel, quality, onResume, onLeave }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
+  const resume = useRef<HTMLButtonElement>(null);
   const titleId = useId();
 
   useEffect(() => {
     const dialog = ref.current;
     if (dialog === null) return;
-    if (open && !dialog.open) dialog.showModal();
+    if (open && !dialog.open) {
+      dialog.showModal();
+      // A modal focuses whatever comes first in it; said outright, the way back into the match stays under Space
+      // and Enter whatever else the menu grows.
+      resume.current?.focus();
+    }
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
@@ -30,7 +39,7 @@ export function PauseMenu({ open, holds, leaveLabel, onResume, onLeave }: Props)
       <p className="pause-note">{holds ? 'The match waits for you.' : 'An online match cannot be paused: it goes on while this is open.'}</p>
       <div className="pause-actions">
         <form method="dialog">
-          <button type="submit" className="hud-primary" autoFocus>
+          <button ref={resume} type="submit" className="hud-primary">
             Resume
           </button>
         </form>
@@ -39,6 +48,7 @@ export function PauseMenu({ open, holds, leaveLabel, onResume, onLeave }: Props)
         </button>
         <CreditsLink />
       </div>
+      <QualityPicker setting={quality} />
       <AudioSettings />
     </dialog>
   );

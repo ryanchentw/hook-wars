@@ -1,0 +1,81 @@
+/* The development-only look panel and its button. Never part of a production build. */
+.look-toggle {
+  position: fixed;
+  inset-block-start: 8px;
+  inset-inline-start: 8px;
+  z-index: 40;
+  min-block-size: 28px;
+  padding: 2px 10px;
+  border: 1px solid #5a5f6a;
+  border-radius: 4px;
+  background: #1c1e24e6;
+  color: #e8e6df;
+  font: 600 12px/1.4 system-ui, sans-serif;
+  cursor: pointer;
+}
+
+.look-toggle:focus-visible {
+  outline: 2px solid #ffd27a;
+  outline-offset: 2px;
+}
+
+/* Lit whenever any override is in force, open or not: what is on screen is then not what ships. */
+.look-toggle[data-overrides='on'] {
+  border-color: #ffb020;
+  background: #5a3a00e6;
+  color: #ffd27a;
+}
+
+.look-panel {
+  position: fixed;
+  inset-block-start: 8px;
+  z-index: 40;
+  max-block-size: calc(100dvh - 16px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.look-panel[data-dock='right'] {
+  inset-inline-end: 8px;
+}
+
+.look-panel[data-dock='left'] {
+  inset-inline-start: 8px;
+  inset-block-start: 44px;
+  max-block-size: calc(100dvh - 52px);
+}
+
+.look-panel[hidden] {
+  display: none;
+}
+
+.look-mark {
+  margin: 0;
+  padding: 4px 8px;
+  background: #5a3a00;
+  color: #ffd27a;
+  font: 600 11px/1.4 system-ui, sans-serif;
+}
+
+.look-panel .look-changed .lil-name::before {
+  content: '● ';
+  color: #ffb020;
+}
+
+.look-paste {
+  box-sizing: border-box;
+  inline-size: calc(100% - 12px);
+  margin: 4px 6px;
+  border: 1px solid #5a5f6a;
+  background: #0f1014;
+  color: #e8e6df;
+  font: 11px/1.4 ui-monospace, monospace;
+  resize: vertical;
+}
+
+.look-status {
+  min-block-size: 1.4em;
+  margin: 0 6px 6px;
+  color: #ffd27a;
+  font: 11px/1.4 system-ui, sans-serif;
+}

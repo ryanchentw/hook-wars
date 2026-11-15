@@ -39,6 +39,29 @@ For online play, open the page, choose "Create a room", and open the link it giv
 
 Useful query switches for the page: `?roster=3v3` starts a match straight away, `?scene=victoria|golden-gate|daan|harbour` picks a scene, `?fog=on` turns fog on, `?opponent=idle` swaps the enemy for a practice dummy, `?gold=2000` starts rich.
 
+## Tune the look
+
+The picture has two quality settings, High and Low, on the main menu and in the pause menu. High adds glow around lights and reflections in the water. The page picks one on the first visit and remembers what you choose. `?quality=high` or `?quality=low` sets it for one visit.
+
+`pnpm dev` adds a panel for tuning each scene's look while a match runs. It is not in the production build.
+
+1. Start a match in the scene you want, for example `http://localhost:5183/?scene=victoria&roster=3v3&quality=high`.
+2. Press `` ` `` or click "Look" in the top-left corner.
+3. Drag the sliders. The match changes at once and keeps running. Every changed control gets an orange dot.
+4. To hand the values on, click "Copy changed values as JSON". To try someone else's values, paste them into the box and click "Apply the JSON below".
+
+Your changes stay in this browser's `localStorage` until you reset them. While any are in force the "Look" button turns orange and reads "overrides on", so what you see is not what ships.
+
+To make values permanent, edit the scene's look file. The copied JSON is keyed by scene id and then by the property's path in that file:
+
+```json
+{ "victoria": { "bloom.strength": 1.2, "water.reflection.strength": 0.4, "atmosphere.fog.color": "#0b0d1c" } }
+```
+
+`bloom.strength` under `victoria` is `VICTORIA_LOOK.bloom.strength` in `apps/client/src/render/scenes/victoria/look.ts`. The other scenes are `goldenGate/look.ts`, `daan/look.ts` and `harbour/look.ts`. A colour `"#0b0d1c"` is written `0x0b0d1c` there. Then click "Reset every scene" so the panel shows the shipped values again.
+
+To add a control, add one line to `KNOBS` in `apps/client/src/dev/look/knobs.ts`. A unit test fails if the path is not a real property of every scene. If the scene does not already re-read that property in `applyLook` or `Stage.retune` (`apps/client/src/render/stage.ts`), apply it there too, or the slider only takes effect on the next match.
+
 ## Check your changes
 
 ```sh

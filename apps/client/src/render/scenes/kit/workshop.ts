@@ -22,6 +22,7 @@ import {
   type Texture,
 } from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { emits } from '../../post/emitters';
 import type { Paint, TextureDef } from './paint';
 import { partMatrix, type Part, type Shape } from './parts';
 
@@ -71,7 +72,7 @@ function createMaterial(spec: Paint, textureOf: (name: string) => Texture): Mate
     alphaTest: spec.cutout ? CUTOUT : 0,
     colorWrite: !spec.unseen,
   };
-  if (spec.surface === 'glow') return new MeshBasicMaterial(common);
+  if (spec.surface === 'glow') return emits(new MeshBasicMaterial(common));
   return new MeshStandardMaterial({
     ...common,
     roughness: spec.roughness,

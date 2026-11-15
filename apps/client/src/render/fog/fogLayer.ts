@@ -7,6 +7,8 @@ import { toWorldLength } from '../space';
 export type FogLayer = {
   readonly mesh: Mesh;
   update(frame: RenderFrame, dt: number): void;
+  /** Takes the veil's colour and opacity as they now are. */
+  retune(look: FogOfWarLook): void;
   dispose(): void;
 };
 
@@ -106,6 +108,10 @@ export function createFogLayer({ arena, viewer, radius, look, fadeSeconds }: Fog
         const c = slots[i];
         v.set(c?.x ?? 0, c?.z ?? 0, c?.open ?? 0);
       });
+    },
+    retune(next) {
+      uniforms.opacity.value = next.opacity;
+      uniforms.color.value.set(next.color);
     },
     dispose() {
       geometry.dispose();
