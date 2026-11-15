@@ -109,6 +109,7 @@ export function describeOutcome(slot: ShopSlotView, outcome: PurchaseOutcome): s
 /** Gold from kills and assists this tick. Passive income is left out so it never flashes the purse. */
 export function bountyEarned(state: TeamView, localId: PlayerId): number {
   return state.events.reduce((sum, e) => {
+    if (e.kind === 'pickupCollected') return e.playerId === localId ? sum + e.gold : sum;
     if (e.kind !== 'kill') return sum;
     if (e.killerId === localId) return sum + ECONOMY.killGold;
     return e.assistIds.includes(localId) ? sum + ECONOMY.assistGold : sum;

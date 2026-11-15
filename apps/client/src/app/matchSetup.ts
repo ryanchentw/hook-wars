@@ -9,7 +9,7 @@ export const MAX_STARTING_GOLD = 100_000;
 const WHOLE_NUMBER = /^\d+$/;
 const ROSTER = /^([1-3])v([1-3])$/;
 /** Any of these in the address skips the menu and the lobby, so tests and tuning open a match directly. */
-const DIRECT_PARAMS = ['seed', 'opponent', 'gold', 'scene', 'intro', 'roster', 'fog'] as const;
+const DIRECT_PARAMS = ['seed', 'opponent', 'gold', 'scene', 'intro', 'roster', 'fog', 'pickups'] as const;
 /** Steps between the seeds of one match and the next, so a rematch is not a replay. */
 const SEED_STRIDE = 7919;
 const DUMMY_NAME = 'Dummy';
@@ -24,8 +24,8 @@ export type Overrides = {
 };
 
 export type Roster = Readonly<Record<TeamId, number>>;
-/** `fog` comes from `?fog=on`. */
-export type DirectMatch = { readonly roster: Roster; readonly scene: SceneChoice; readonly fog: boolean };
+/** `fog` comes from `?fog=on` and `pickups` from `?pickups=on`: both stay off otherwise, so a test sees only what it asks for. */
+export type DirectMatch = { readonly roster: Roster; readonly scene: SceneChoice; readonly fog: boolean; readonly pickups: boolean };
 
 export type PageOptions = {
   readonly seed: number;
@@ -55,7 +55,9 @@ export function pageOptionsFromQuery(search: string, now: number): PageOptions {
     seed: Number.isFinite(parsed) ? parsed : Math.floor(now) % SEED_RANGE,
     intro: params.get('intro') !== 'off',
     overrides: { idleOpponent: params.get('opponent') === 'idle', startingGold: parseGold(params.get('gold')) },
-    direct: direct ? { roster: parseRoster(params.get('roster')), scene: parseScene(params.get('scene')) ?? 'rotate', fog: params.get('fog') === 'on' } : null,
+    direct: direct
+      ? { roster: parseRoster(params.get('roster')), scene: parseScene(params.get('scene')) ?? 'rotate', fog: params.get('fog') === 'on', pickups: params.get('pickups') === 'on' }
+      : null,
   };
 }
 
@@ -68,6 +70,7 @@ export function directRoom(direct: DirectMatch, member: MemberId): RoomState {
     ...[...slots('west', direct.roster.west), ...slots('east', direct.roster.east)].map((slot): RoomAction => ({ kind: 'addBot', by: member, slot })),
     { kind: 'setScene', by: member, scene: direct.scene },
     { kind: 'setFog', by: member, fog: direct.fog },
+    { kind: 'setPickups', by: member, pickups: direct.pickups },
     { kind: 'startMatch', by: member },
   ];
   return actions.reduce(reduce, createRoom());

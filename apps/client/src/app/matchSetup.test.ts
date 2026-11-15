@@ -59,7 +59,7 @@ describe('pageOptionsFromQuery', () => {
 
 describe('directRoom', () => {
   it('puts the local player first on the west against one bot, first to ten, already in play', () => {
-    const room = directRoom({ roster: { west: 1, east: 1 }, scene: 'rotate', fog: false }, ME);
+    const room = directRoom({ roster: { west: 1, east: 1 }, scene: 'rotate', fog: false, pickups: false }, ME);
     expect(room.phase.kind).toBe('in-match');
     const { config, scene } = planOf(room);
     expect(config.killTarget).toBe(10);
@@ -74,19 +74,26 @@ describe('directRoom', () => {
     expect(pageOptionsFromQuery('?fog=on', 0).direct?.fog).toBe(true);
     expect(pageOptionsFromQuery('?fog=yes', 0).direct?.fog).toBe(false);
     expect(pageOptionsFromQuery('?seed=1', 0).direct?.fog).toBe(false);
-    expect(planOf(directRoom({ roster: { west: 1, east: 1 }, scene: 'rotate', fog: true }, ME)).config.fog).toBe(true);
-    expect(planOf(directRoom({ roster: { west: 1, east: 1 }, scene: 'rotate', fog: false }, ME)).config.fog).toBe(false);
+    expect(planOf(directRoom({ roster: { west: 1, east: 1 }, scene: 'rotate', fog: true, pickups: false }, ME)).config.fog).toBe(true);
+    expect(planOf(directRoom({ roster: { west: 1, east: 1 }, scene: 'rotate', fog: false, pickups: false }, ME)).config.fog).toBe(false);
+  });
+
+  it('keeps river pickups off on the direct path unless ?pickups=on, though a lobby room has them on', () => {
+    expect(pageOptionsFromQuery('?pickups=on', 0).direct?.pickups).toBe(true);
+    expect(pageOptionsFromQuery('?seed=1', 0).direct?.pickups).toBe(false);
+    expect(planOf(directRoom({ roster: { west: 1, east: 1 }, scene: 'rotate', fog: false, pickups: false }, ME)).config.pickups).toBe(false);
+    expect(planOf(directRoom({ roster: { west: 1, east: 1 }, scene: 'rotate', fog: false, pickups: true }, ME)).config.pickups).toBe(true);
   });
 
   it('fills a 3v3 and keeps a chosen scene', () => {
-    const plan = planOf(directRoom({ roster: { west: 3, east: 3 }, scene: 'daan', fog: false }, ME));
+    const plan = planOf(directRoom({ roster: { west: 3, east: 3 }, scene: 'daan', fog: false, pickups: false }, ME));
     expect(plan.config.players.filter((p) => p.isBot)).toHaveLength(5);
     expect(plan.scene).toBe('daan');
   });
 });
 
 describe('sessionSetupFor', () => {
-  const duel = planOf(directRoom({ roster: { west: 2, east: 2 }, scene: 'rotate', fog: false }, ME), 9);
+  const duel = planOf(directRoom({ roster: { west: 2, east: 2 }, scene: 'rotate', fog: false, pickups: false }, ME), 9);
 
   it('drives every bot with its own seed and finds the local fighter', () => {
     const setup = sessionSetupFor(duel, ME, NO_OVERRIDES);

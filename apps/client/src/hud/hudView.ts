@@ -1,16 +1,20 @@
 import { TUNING } from '@hookwars/sim';
 import { fighterName } from '../game/fighterName';
-import type { Player, PlayerCard, PlayerId, TeamId, TeamView } from '@hookwars/sim';
+import type { EffectKind, PickupKind, Player, PlayerCard, PlayerId, SeenEvent, TeamId, TeamView } from '@hookwars/sim';
 import { grappleView, shopSlots, type GrappleView, type ShopSlotView, type SlotId, type PurchaseOutcome } from './shopView';
 
 export type Named = { readonly name: string; readonly team: TeamId };
 
-export type KillFeedEntry = {
-  readonly key: string;
-  readonly killer: Named;
-  readonly victim: Named;
-  readonly assisters: readonly Named[];
-};
+export type FeedEntry =
+  | { readonly kind: 'kill'; readonly key: string; readonly killer: Named; readonly victim: Named; readonly assisters: readonly Named[] }
+  /** Everyone hears who brought a pickup home; `gold` is what it paid, 0 for an effect. */
+  | { readonly kind: 'pickup'; readonly key: string; readonly collector: Named; readonly pickup: PickupKind; readonly gold: number };
+
+/** A pickup's name as the feed and the HUD print it. */
+export const PICKUP_NAMES: Readonly<Record<PickupKind, string>> = { gold: 'Gold', gale: 'Gale', storm: 'Storm' };
+
+/** An effect in force on the local fighter, with the whole seconds it has left rounded up. */
+export type ActiveEffect = { readonly kind: EffectKind; readonly name: string; readonly secondsLeft: number };
 
 /** `seq` changes on every press, so the same outcome twice in a row still replays its flash. */
 export type SlotFeedback = { readonly outcome: PurchaseOutcome; readonly seq: number };
@@ -38,6 +42,7 @@ export type LocalView = {
   readonly respawnIn: number | null;
   readonly gold: number;
   readonly grapple: GrappleView;
+  readonly effects: readonly ActiveEffect[];
 };
 
 export type ScoreRow = {
@@ -63,7 +68,7 @@ export type HudView = {
   /** Empty when the local player is missing. */
   readonly shop: readonly ShopSlotView[];
   readonly feedback: Feedback;
-  readonly killFeed: readonly KillFeedEntry[];
+  readonly killFeed: readonly FeedEntry[];
   readonly scoreboard: Scoreboard;
   readonly end: EndView | null;
 };
@@ -78,16 +83,23 @@ export function ownPlayer(state: TeamView, localId: PlayerId): Player | undefine
   return me === undefined || me.gold === null ? undefined : { ...me, gold: me.gold };
 }
 
-export function appendKills(feed: readonly KillFeedEntry[], state: TeamView): readonly KillFeedEntry[] {
+function feedEntry(e: SeenEvent, state: TeamView): readonly FeedEntry[] {
   const byId = (id: PlayerId): PlayerCard | undefined => state.roster.find((p) => p.id === id);
-  const fresh = state.events.flatMap((e): readonly KillFeedEntry[] => {
-    if (e.kind !== 'kill') return [];
-    const killer = byId(e.killerId);
-    const victim = byId(e.victimId);
-    if (killer === undefined || victim === undefined) return [];
-    const assisters = e.assistIds.flatMap((id) => byId(id) ?? []).map(named);
-    return [{ key: `${state.tick}-${e.killerId}-${e.victimId}`, killer: named(killer), victim: named(victim), assisters }];
-  });
+  if (e.kind === 'pickupCollected') {
+    const collector = byId(e.playerId);
+    return collector === undefined ? [] : [{ kind: 'pickup', key: `${state.tick}-${e.pickupId}`, collector: named(collector), pickup: e.pickupKind, gold: e.gold }];
+  }
+  if (e.kind !== 'kill') return [];
+  const killer = byId(e.killerId);
+  const victim = byId(e.victimId);
+  if (killer === undefined || victim === undefined) return [];
+  const assisters = e.assistIds.flatMap((id) => byId(id) ?? []).map(named);
+  return [{ kind: 'kill', key: `${state.tick}-${e.killerId}-${e.victimId}`, killer: named(killer), victim: named(victim), assisters }];
+}
+
+/** Kills and collected pickups, newest first. */
+export function appendFeed(feed: readonly FeedEntry[], state: TeamView): readonly FeedEntry[] {
+  const fresh = state.events.flatMap((e) => feedEntry(e, state));
   // The store can be handed the same state more than once; a kill already listed must not be listed again.
   const seen = new Set(feed.map((entry) => entry.key));
   const unseen = fresh.filter((entry) => !seen.has(entry.key));
@@ -115,6 +127,7 @@ function localView(state: TeamView, me: Player): LocalView {
     respawnIn: me.status.kind === 'dead' ? Math.max(0, me.status.respawnAt - state.time) : null,
     gold: me.gold,
     grapple: grappleView(state, me),
+    effects: me.effects.map((e) => ({ kind: e.kind, name: PICKUP_NAMES[e.kind], secondsLeft: Math.max(0, Math.ceil(e.until - state.time)) })),
   };
 }
 
@@ -143,7 +156,7 @@ function endView(state: TeamView): EndView | null {
 export function deriveHud(
   state: TeamView,
   localId: PlayerId,
-  killFeed: readonly KillFeedEntry[],
+  killFeed: readonly FeedEntry[],
   feedback: Feedback = NO_FEEDBACK,
 ): HudView {
   const me = ownPlayer(state, localId);

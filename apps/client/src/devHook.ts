@@ -1,5 +1,5 @@
-import { TICK_DT } from '@hookwars/sim';
-import type { GameState, PlayerId, TeamView, Vec2 } from '@hookwars/sim';
+import { spawnPickup, TICK_DT } from '@hookwars/sim';
+import type { GameState, PickupSpawn, PlayerId, TeamView, Vec2 } from '@hookwars/sim';
 import type { Session } from './game/session';
 import type { Renderer, RenderStats } from './render/renderer';
 import type { SceneId } from './render/scenes/types';
@@ -27,6 +27,8 @@ export type DevHook = {
   freeze(frozen: boolean): void;
   /** Runs the match ahead by up to `seconds` of sim time at once, stopping when it ends; a test reaches the end panel without waiting a match out. */
   fastForward(seconds: number): void;
+  /** Puts a pickup of the asked-for kind on the water now, at the end and lane asked for, through the sim's own spawn. */
+  spawnPickup(spawn: PickupSpawn): void;
 };
 
 declare global {
@@ -66,6 +68,9 @@ export function installDevHook(session: Session, renderer: Renderer, restart: ()
     freeze: (frozen) => renderer.setFrozen(frozen),
     fastForward(seconds) {
       for (let t = 0; t < seconds && session.getState().phase.kind === 'playing'; t += TICK_DT) session.advance(TICK_DT);
+    },
+    spawnPickup(spawn) {
+      session.editState((state) => spawnPickup(state, spawn));
     },
   };
   window.__hookwars = hook;

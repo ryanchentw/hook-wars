@@ -11,6 +11,7 @@ import { INTRO_TIMING, introHaze, introPose } from './intro/intro';
 import { createOpening, type Opening } from './intro/opening';
 import { trackPresence, type PresenceTrack } from './fog/presence';
 import { createWorldOverlay } from './overlay/worldOverlay';
+import { createGoldPops } from './pickups/goldPop';
 import type { SceneId } from './scenes/types';
 import { createSceneShow, type SceneShow } from './sceneShow';
 import { simToWorld, worldToSim, type Vec3 } from './space';
@@ -87,6 +88,7 @@ type PictureParts = {
 /** Keeps the picture in step with the session: collects each tick's events and draws. */
 function createPicture({ gl, session, surface, show, rig, opening, intro, calm }: PictureParts) {
   const overlay = createWorldOverlay(surface.overlay);
+  const goldPops = createGoldPops(surface.overlay, calm);
   let pending: readonly SeenEvent[] = [];
   let elapsed = 0;
   let stats: RenderStats = { calls: 0, triangles: 0, geometries: 0, textures: 0 };
@@ -117,6 +119,7 @@ function createPicture({ gl, session, surface, show, rig, opening, intro, calm }
     stage.update({ frame, events: tickEvents, impacts, dt, elapsed, camera: rig.camera });
     overlay.setVisible(intro === null);
     overlay.update(frame, impacts, { project, viewport: surface.viewport() }, dt);
+    goldPops.update(tickEvents, frame, project, dt);
   };
   const present = (): void => {
     rig.shaken(() => gl.render(show.scene, rig.camera));
@@ -151,6 +154,7 @@ function createPicture({ gl, session, surface, show, rig, opening, intro, calm }
       unsubscribe();
       overlay.setVisible(true);
       overlay.clear();
+      goldPops.clear();
     },
   };
 }

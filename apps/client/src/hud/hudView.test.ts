@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { TUNING } from '@hookwars/sim';
-import type { HookId, PlayerId } from '@hookwars/sim';
+import type { HookId, PickupId, PlayerId } from '@hookwars/sim';
 import { BOT, fakePlayer, fakeView, HUMAN } from '../game/fakeSim';
-import { appendKills, cooldownLabel, deriveHud, KILL_FEED_SIZE } from './hudView';
+import { appendFeed, cooldownLabel, deriveHud, KILL_FEED_SIZE, type FeedEntry } from './hudView';
+
+const kills = (feed: readonly FeedEntry[]) => feed.flatMap((e) => (e.kind === 'kill' ? [e] : []));
 
 const players = [
   fakePlayer({ id: HUMAN, name: 'You', hookReadyAt: 10.6 }),
@@ -75,22 +77,22 @@ describe('deriveHud', () => {
   });
 });
 
-describe('appendKills', () => {
+describe('appendFeed', () => {
   it('puts the newest kill first and keeps the feed short', () => {
     const killState = (tick: number) =>
       fakeView({ tick, players, events: [{ kind: 'kill', killerId: HUMAN, victimId: BOT, assistIds: [], at: { x: 0, y: 0 } }] });
-    let feed = appendKills([], killState(1));
-    for (let t = 2; t <= 10; t += 1) feed = appendKills(feed, killState(t));
+    let feed = appendFeed([], killState(1));
+    for (let t = 2; t <= 10; t += 1) feed = appendFeed(feed, killState(t));
     expect(feed).toHaveLength(KILL_FEED_SIZE);
     expect(feed[0]?.key.startsWith('10-')).toBe(true);
-    expect(feed[0]?.killer.name).toBe('You');
-    expect(feed[0]?.victim.name).toBe('Bot (bot)');
+    expect(kills(feed)[0]?.killer.name).toBe('You');
+    expect(kills(feed)[0]?.victim.name).toBe('Bot (bot)');
   });
 
   it('lists a kill once even when the same state is seen twice', () => {
     const state = fakeView({ tick: 7, players, events: [{ kind: 'kill', killerId: HUMAN, victimId: BOT, assistIds: [], at: { x: 0, y: 0 } }] });
-    const once = appendKills([], state);
-    expect(appendKills(once, state)).toEqual(once);
+    const once = appendFeed([], state);
+    expect(appendFeed(once, state)).toEqual(once);
   });
 
   it('names everyone who assisted', () => {
@@ -99,7 +101,20 @@ describe('appendKills', () => {
       players: [...players, ally],
       events: [{ kind: 'kill', killerId: HUMAN, victimId: BOT, assistIds: [ally.id], at: { x: 0, y: 0 } }],
     });
-    expect(appendKills([], state)[0]?.assisters).toEqual([{ name: 'Ally', team: 'west' }]);
+    expect(kills(appendFeed([], state))[0]?.assisters).toEqual([{ name: 'Ally', team: 'west' }]);
+  });
+
+  it('adds a line for a collected pickup, naming a bot collector with its suffix', () => {
+    const state = fakeView({ tick: 3, players, events: [{ kind: 'pickupCollected', pickupId: 'p2' as PickupId, pickupKind: 'storm', playerId: BOT, gold: 0 }] });
+    expect(appendFeed([], state)).toEqual([{ kind: 'pickup', key: '3-p2', collector: { name: 'Bot (bot)', team: 'east' }, pickup: 'storm', gold: 0 }]);
+  });
+});
+
+describe('active effects', () => {
+  it('lists each effect on the local fighter with the whole seconds it has left', () => {
+    const galed = [fakePlayer({ id: HUMAN, effects: [{ kind: 'gale', source: HUMAN, since: 9, until: 17 }] }), players[1]!];
+    expect(deriveHud(fakeView({ time: 10.2, players: galed }), HUMAN, []).local?.effects).toEqual([{ kind: 'gale', name: 'Gale', secondsLeft: 7 }]);
+    expect(deriveHud(fakeView({ players }), HUMAN, []).local?.effects).toEqual([]);
   });
 });
 

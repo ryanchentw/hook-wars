@@ -1,6 +1,6 @@
 import type { Purchase } from '@hookwars/sim';
 import type { SessionView } from '../game/session';
-import { appendKills, deriveHud, NO_FEEDBACK, ownPlayer, type Feedback, type HudView, type KillFeedEntry } from './hudView';
+import { appendFeed, deriveHud, NO_FEEDBACK, ownPlayer, type Feedback, type FeedEntry, type HudView } from './hudView';
 import { bountyEarned, describeOutcome, resolvePurchases, shopSlots, type ResolvedPurchase } from './shopView';
 
 export type HudStore = {
@@ -42,13 +42,13 @@ function applyBounty(tracked: Tracked, amount: number): Tracked {
 export function createHudStore(session: SessionView): HudStore {
   const listeners = new Set<() => void>();
   const localId = session.localPlayerId;
-  let feed: readonly KillFeedEntry[] = [];
+  let feed: readonly FeedEntry[] = [];
   let pending: readonly Sent[] = [];
   let tracked: Tracked = { feedback: NO_FEEDBACK, seq: 0 };
   let snapshot = deriveHud(session.getView(), localId, feed, tracked.feedback);
 
   session.subscribe((state) => {
-    feed = appendKills(feed, state);
+    feed = appendFeed(feed, state);
     // Online the answer to a buy comes a round trip later; until then it is neither bought nor refused.
     const through = session.answeredThrough();
     const answered = pending.filter((sent) => sent.ticket <= through).map((sent) => sent.purchase);
