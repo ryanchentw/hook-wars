@@ -58,7 +58,7 @@
 .settings::backdrop {
   overflow: hidden;
   overscroll-behavior: contain;
-  background: rgba(3, 2, 2, 0.6);
+  background: rgba(3, 2, 2, 0.75);
 }
 
 .settings-title {
