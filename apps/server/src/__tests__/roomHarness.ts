@@ -1,6 +1,6 @@
-import type { ClientMessageOf, LobbyAction, ServerMessage, ServerMessageOf } from '@hookwars/protocol';
+import type { ChatChannel, ClientMessageOf, LobbyAction, ServerMessage, ServerMessageOf } from '@hookwars/protocol';
 import { DEFAULT_SETTINGS, type MemberId, type PlayerName } from '@hookwars/room';
-import { advance, createRoomCore, disconnect, input, join, leave, lobbyAction, rejoin, type Outbound, type Room, type RoomRules, type Step } from '../rooms/core';
+import { advance, chat, createRoomCore, disconnect, input, join, leave, lobbyAction, rejoin, type Outbound, type Room, type RoomRules, type Step } from '../rooms/core';
 
 export const TICK_MS = 1000 / 30;
 
@@ -51,6 +51,7 @@ export function harness(rules: RoomRules = RULES) {
     leave: (member: MemberId) => take(leave(room, member, now)),
     act: (member: MemberId, action: LobbyAction) => take(lobbyAction(room, member, action, now, rules, entropy)),
     input: (member: MemberId, message: Omit<ClientMessageOf<'input'>, 't'>) => take(input(room, member, { t: 'input', ...message }, now, rules)),
+    say: (member: MemberId, channel: ChatChannel, text: string) => take(chat(room, member, channel, text)),
     /** Moves the clock on in steps of `stepMs`, waking the room at each as its timer would. */
     run(ms: number, stepMs: number = TICK_MS): void {
       const end = now + ms;

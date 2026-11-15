@@ -6,7 +6,7 @@ import { WebSocket, WebSocketServer, type RawData } from 'ws';
 import { clientAddress, createAdmission, originAllowed, type Admission } from './admission';
 import type { ServerConfig } from './config';
 import type { Logger } from './logger';
-import { fullBucket, takeToken, type Bucket, type BucketRule } from './rateLimit';
+import { fullBucket, openChatGate, passChat, takeToken, type Bucket, type BucketRule, type ChatGate } from './rateLimit';
 import type { Clock, Registry, Sink } from './rooms/registry';
 
 export const WS_PATH = '/ws';
@@ -15,6 +15,7 @@ const CLOSE_GOING_AWAY = 1001;
 /** The cheapest setting: snapshots are small and alike, and the machine's CPU is worth more than the last few bytes. */
 const DEFLATE_LEVEL = 1;
 const DEFLATE_THRESHOLD_BYTES = 128;
+const SECONDS_PER_MINUTE = 60;
 
 type Seat = { readonly code: string; readonly member: MemberId };
 
@@ -24,6 +25,8 @@ type Connection = {
   readonly sink: Sink;
   seat: Seat | null;
   bucket: Bucket;
+  /** Chat's own allowance, so a chatty player never eats into the inputs the bucket above is sized for. */
+  chat: ChatGate;
   /** Messages dropped for arriving too fast. A client that keeps at it is cut off. */
   strikes: number;
   /** Cleared when a heartbeat goes out and set when its answer comes back. */
@@ -32,7 +35,7 @@ type Connection = {
 
 export type Gateway = { connections(): number; close(code: ErrorCode): void };
 
-type Deps = { readonly config: ServerConfig; readonly registry: Registry; readonly clock: Clock; readonly log: Logger };
+type Deps = { readonly config: ServerConfig; readonly registry: Registry; readonly clock: Clock; readonly log: Logger; readonly chatRule: BucketRule };
 
 function refuseUpgrade(socket: Duplex, status: string): void {
   socket.end(`HTTP/1.1 ${status}\r\nConnection: close\r\n\r\n`);
@@ -66,6 +69,14 @@ function hello(conn: Connection, message: ClientMessageOf<'hello'>, deps: Deps, 
   conn.seat = { code, member: entry.member };
 }
 
+/** A line over the allowance is dropped; the first of a run is answered once, so the player knows why. */
+function chat(conn: Connection, seat: Seat, message: ClientMessageOf<'chat'>, deps: Deps): void {
+  const passed = passChat(conn.chat, deps.chatRule, deps.clock.now());
+  conn.chat = passed.gate;
+  if (passed.verdict === 'send') return deps.registry.chat(seat.code, seat.member, message.channel, message.text);
+  if (passed.verdict === 'tell') conn.sink.send({ t: 'chatLimited' });
+}
+
 function dispatch(conn: Connection, message: ClientMessage, deps: Deps, admission: Admission): void {
   if (message.t === 'hello') return hello(conn, message, deps, admission);
   const { seat } = conn;
@@ -77,6 +88,8 @@ function dispatch(conn: Connection, message: ClientMessage, deps: Deps, admissio
       return deps.registry.lobby(seat.code, seat.member, message.action);
     case 'input':
       return deps.registry.input(seat.code, seat.member, message);
+    case 'chat':
+      return chat(conn, seat, message, deps);
     case 'leave':
       conn.seat = null;
       deps.registry.leave(seat.code, seat.member);
@@ -112,8 +125,9 @@ function startHeartbeat(connections: Set<Connection>, intervalMs: number): NodeJ
 }
 
 /** Sockets in, typed messages to the registry, and nothing else: no rule of the game or the lobby lives here. */
-export function attachGateway(server: Server, deps: Deps): Gateway {
-  const { config, registry, clock, log } = deps;
+export function attachGateway(server: Server, base: Omit<Deps, 'chatRule'>): Gateway {
+  const { config, registry, clock, log } = base;
+  const deps: Deps = { ...base, chatRule: { capacity: config.chatBurst, perSecond: config.chatPerMinute / SECONDS_PER_MINUTE } };
   const admission = createAdmission(config);
   const connections = new Set<Connection>();
   const rule: BucketRule = { capacity: config.messageBurst, perSecond: config.messagesPerSecond };
@@ -124,7 +138,7 @@ export function attachGateway(server: Server, deps: Deps): Gateway {
   });
 
   const accept = (ws: WebSocket, address: string): void => {
-    const conn: Connection = { ws, address, sink: makeSink(ws, config.maxBufferedBytes), seat: null, bucket: fullBucket(rule, clock.now()), strikes: 0, alive: true };
+    const conn: Connection = { ws, address, sink: makeSink(ws, config.maxBufferedBytes), seat: null, bucket: fullBucket(rule, clock.now()), chat: openChatGate(deps.chatRule, clock.now()), strikes: 0, alive: true };
     connections.add(conn);
     const helloTimer = setTimeout(() => {
       if (conn.seat === null) conn.sink.close('bad-message');

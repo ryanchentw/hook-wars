@@ -136,6 +136,23 @@ describe('hostile and broken clients', () => {
     await ada.next('pong');
   });
 
+  it('passes chat between two clients, drops a burst past the chat allowance and says so once, and keeps the line up', async () => {
+    const { ada, bo } = await pair();
+    for (let i = 1; i <= 6; i += 1) bo.send({ t: 'chat', channel: 'all', text: `taunt ${i}` });
+    await bo.next('chatLimited');
+    ada.send({ t: 'chat', channel: 'team', text: 'west only' });
+    await ada.next('chat', (m) => m.line.text === 'west only');
+    ada.send({ t: 'ping', id: 9 });
+    await ada.next('pong');
+    await wait(50);
+    const heard = ada.received.flatMap((m) => (m.t === 'chat' ? [m.line.text] : []));
+    expect(heard).toEqual(['taunt 1', 'taunt 2', 'taunt 3', 'west only']);
+    expect(bo.received.filter((m) => m.t === 'chatLimited')).toHaveLength(1);
+    expect(bo.received.flatMap((m) => (m.t === 'chat' ? [m.line.text] : []))).not.toContain('west only');
+    bo.send({ t: 'ping', id: 1 });
+    await bo.next('pong');
+  });
+
   it('limits how often one address may knock', async () => {
     const reasons: string[] = [];
     for (let i = 0; i < 14; i += 1) {

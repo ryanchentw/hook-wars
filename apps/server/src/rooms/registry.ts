@@ -1,7 +1,7 @@
-import type { ClientMessageOf, ErrorCode, LobbyAction, ServerMessage } from '@hookwars/protocol';
+import type { ChatChannel, ClientMessageOf, ErrorCode, LobbyAction, ServerMessage } from '@hookwars/protocol';
 import type { MemberId, PlayerName } from '@hookwars/room';
 import type { Logger } from '../logger';
-import { advance, createRoomCore, disconnect, input, isAbandoned, join, leave, lobbyAction, rejoin, wakeAt, type Seated } from './core';
+import { advance, chat, createRoomCore, disconnect, input, isAbandoned, join, leave, lobbyAction, rejoin, wakeAt, type Seated } from './core';
 import type { Entropy, Room, RoomRules, Step } from './types';
 
 /** Where a member's messages go: one connection. */
@@ -34,6 +34,7 @@ export type Registry = {
   leave(code: string, member: MemberId): void;
   lobby(code: string, member: MemberId, action: LobbyAction): void;
   input(code: string, member: MemberId, message: ClientMessageOf<'input'>): void;
+  chat(code: string, member: MemberId, channel: ChatChannel, text: string): void;
   stats(): { readonly rooms: number; readonly matches: number };
   /** Tells every member why, and stops every room's clock. */
   shutdown(code: ErrorCode): void;
@@ -134,6 +135,7 @@ export function createRegistry(deps: RegistryDeps): Registry {
     },
     lobby: (code, member, action) => withRoom(code, (room, now) => lobbyAction(room, member, action, now, rules, entropy)),
     input: (code, member, message) => withRoom(code, (room, now) => input(room, member, message, now, rules)),
+    chat: (code, member, channel, text) => withRoom(code, (room) => chat(room, member, channel, text)),
     stats: () => ({ rooms: rooms.size, matches: [...rooms.values()].filter((live) => live.room.match !== null).length }),
     shutdown(code) {
       rooms.forEach((live) => {

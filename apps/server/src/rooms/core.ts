@@ -5,11 +5,12 @@ import { expireAway, rejoinDeadline } from './membership';
 import type { Entropy, Outbound, Room, RoomRules, Step } from './types';
 import { announce, findMember } from './view';
 
+export { chat } from './chat';
 export { disconnect, join, leave, rejoin, type Seated } from './membership';
 export type { Entropy, Member, Outbound, Room, RoomRules, Step } from './types';
 
 export function createRoomCore(code: string, now: number): Room {
-  return { code, lobby: createRoom(), members: [], match: null, nextMemberSeq: 1, emptySince: now };
+  return { code, lobby: createRoom(), members: [], match: null, nextMemberSeq: 1, emptySince: now, chat: [], nextChatSeq: 1 };
 }
 
 /** A member's lobby action, stamped with who they are by the server. An action the room refuses changes nothing and says nothing. */

@@ -2,6 +2,7 @@ import { timingSafeEqual } from 'node:crypto';
 import type { ErrorCode, ServerMessage } from '@hookwars/protocol';
 import { PROTOCOL_VERSION } from '@hookwars/protocol';
 import { allSlots, reduce, type MemberId, type PlayerName } from '@hookwars/room';
+import { historyFor } from './chat';
 import { fighterOf, matchStartFor } from './match';
 import type { Entropy, Member, Room, RoomRules, Step } from './types';
 import { announce, findMember, isMemberOnline, isOnline, roomView } from './view';
@@ -28,7 +29,7 @@ function ensureHost(room: Room): Room {
   return heir === undefined ? room : { ...room, lobby: reduce(room.lobby, { kind: 'passHost', by: host, to: heir }) };
 }
 
-function welcome(room: Room, member: Member, now: number): ServerMessage {
+function welcome(room: Room, member: Member, now: number, returning: boolean): ServerMessage {
   const fighter = fighterOf(room.match, member.id);
   return {
     t: 'welcome',
@@ -38,6 +39,8 @@ function welcome(room: Room, member: Member, now: number): ServerMessage {
     token: member.token,
     lobby: roomView(room),
     match: room.match !== null && fighter !== undefined ? matchStartFor(room.match, fighter, now, true) : null,
+    // Someone new hears only what is said from now on; someone returning catches up on what they were part of.
+    chat: returning ? [...historyFor(room, member.id)] : [],
   };
 }
 
@@ -48,7 +51,7 @@ export function join(room: Room, name: PlayerName, now: number, entropy: Entropy
   if (lobby === room.lobby) return { ok: false, code: 'room-full' };
   const member: Member = { id, token: entropy.token(), name, awaySince: null };
   const next = ensureHost({ ...room, lobby, members: [...room.members, member], nextMemberSeq: room.nextMemberSeq + 1, emptySince: null });
-  return { ok: true, member: id, step: { room: next, out: [{ kind: 'send', to: id, message: welcome(next, member, now) }, ...announce(next, id)] } };
+  return { ok: true, member: id, step: { room: next, out: [{ kind: 'send', to: id, message: welcome(next, member, now, false) }, ...announce(next, id)] } };
 }
 
 /** Gives a returning member their seat back, and their fighter with it: its input clock starts over with the new connection. */
@@ -58,7 +61,7 @@ export function rejoin(room: Room, token: string, now: number): Seated {
   const back: Member = { ...member, awaySince: null };
   const match = room.match === null ? null : { ...room.match, fighters: room.match.fighters.map((f) => (f.owner === member.id ? { ...f, queue: [], ack: 0 } : f)) };
   const next = ensureHost({ ...room, match, members: room.members.map((m) => (m.id === member.id ? back : m)) });
-  return { ok: true, member: member.id, step: { room: next, out: [{ kind: 'send', to: member.id, message: welcome(next, back, now) }, ...announce(next, member.id)] } };
+  return { ok: true, member: member.id, step: { room: next, out: [{ kind: 'send', to: member.id, message: welcome(next, back, now, true) }, ...announce(next, member.id)] } };
 }
 
 /** The connection dropped: the seat is held, and a bot plays the fighter, until the member returns or the window closes. */

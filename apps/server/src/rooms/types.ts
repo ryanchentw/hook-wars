@@ -1,4 +1,4 @@
-import type { Act, ErrorCode, ServerMessage } from '@hookwars/protocol';
+import type { Act, ChatLine, ErrorCode, ServerMessage } from '@hookwars/protocol';
 import type { MemberId, PlayerName, RoomState, SceneId } from '@hookwars/room';
 import type { BotBrain, GameState, PlayerId, SeenEvent, TeamId, Vec2 } from '@hookwars/sim';
 
@@ -67,6 +67,9 @@ export type Room = {
   readonly nextMemberSeq: number;
   /** Since when the room has had no members at all. */
   readonly emptySince: number | null;
+  /** The last few lines said, kept only for a member who drops and comes back. */
+  readonly chat: readonly ChatLine[];
+  readonly nextChatSeq: number;
 };
 
 export type Outbound =

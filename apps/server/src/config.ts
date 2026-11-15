@@ -36,6 +36,9 @@ const envSchema = z.object({
   HOOKWARS_JOINS_PER_MINUTE: whole(30, 1, 10_000),
   HOOKWARS_MESSAGES_PER_SECOND: whole(60, 1, 1000),
   HOOKWARS_MESSAGE_BURST: whole(120, 1, 10_000),
+  /** Chat lines per connection: two every three seconds, with room for a quick reply or two. */
+  HOOKWARS_CHAT_PER_MINUTE: whole(40, 1, 6000),
+  HOOKWARS_CHAT_BURST: whole(3, 1, 100),
   HOOKWARS_HELLO_TIMEOUT_MS: whole(5000, 100, MINUTE),
   HOOKWARS_HEARTBEAT_MS: whole(10_000, 100, MINUTE),
   /** Past this much unsent data a client is sent no more snapshots until it catches up. */
@@ -60,6 +63,8 @@ export type ServerConfig = {
   readonly joinsPerMinute: number;
   readonly messagesPerSecond: number;
   readonly messageBurst: number;
+  readonly chatPerMinute: number;
+  readonly chatBurst: number;
   readonly helloTimeoutMs: number;
   readonly heartbeatMs: number;
   readonly maxBufferedBytes: number;
@@ -103,6 +108,8 @@ export function loadConfig(env: Env): ServerConfig {
     joinsPerMinute: e.HOOKWARS_JOINS_PER_MINUTE,
     messagesPerSecond: e.HOOKWARS_MESSAGES_PER_SECOND,
     messageBurst: e.HOOKWARS_MESSAGE_BURST,
+    chatPerMinute: e.HOOKWARS_CHAT_PER_MINUTE,
+    chatBurst: e.HOOKWARS_CHAT_BURST,
     helloTimeoutMs: e.HOOKWARS_HELLO_TIMEOUT_MS,
     heartbeatMs: e.HOOKWARS_HEARTBEAT_MS,
     maxBufferedBytes: e.HOOKWARS_MAX_BUFFERED_BYTES,
