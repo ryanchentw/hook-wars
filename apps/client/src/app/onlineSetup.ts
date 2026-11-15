@@ -1,4 +1,4 @@
-import { parseWithoutCodeGeneration, type ServerMessage } from '@hookbrawl/protocol';
+import type { ServerMessage } from '@hookbrawl/protocol';
 import { createConnection, type Connection, type ConnStatus, type Timers } from '../net/connection';
 import { lagRulesFromQuery } from '../net/lagSim';
 import { NET } from '../net/netConfig';
@@ -35,7 +35,6 @@ const serverUrl = (location: Location): string => `${location.protocol === 'http
 
 /** How this page reaches rooms on the server. In a dev build `?netlag=` and `?netloss=` put a worse line in between. */
 export function browserOnline(win: Window): OnlineDeps {
-  parseWithoutCodeGeneration();
   const timers: Timers = {
     now: () => performance.now(),
     setTimeout: (run, ms) => win.setTimeout(run, ms),

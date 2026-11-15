@@ -1,15 +1,6 @@
 import { z } from 'zod';
 import { COORD_LIMIT, MAX_ID_LENGTH } from './limits';
 
-/**
- * For the browser to call before it parses anything. Zod otherwise tests whether it may compile its parsers with
- * `new Function`; the page's content policy forbids that, and the test alone is reported as a violation in every
- * player's console. The server has no such policy and keeps the compiled parsers, which are the faster ones.
- */
-export function parseWithoutCodeGeneration(): void {
-  z.config({ jitless: true });
-}
-
 /** An identifier of one of the workspace's branded kinds. The brand is the schema's word that it was checked here. */
 export const idOf = <T extends string>(): z.ZodType<T> => z.string().min(1).max(MAX_ID_LENGTH).regex(/^[\w-]+$/) as unknown as z.ZodType<T>;
 
