@@ -18,6 +18,7 @@ Hook Wars is an original game inspired by the Warcraft III custom map Pudge Wars
 | Buy an upgrade or item | `1` to `6` |
 | Scoreboard | hold `Tab` |
 | Menu | `Esc` |
+| Chat | `Enter` to open and send, `Tab` for All or Team, `Esc` to cancel |
 
 - A hook that lands deals damage and drags its target back to you. The target is staggered for a moment when set down, so the thrower gets the first blow.
 - Next to an enemy, your fighter swings the hook on its own. You cannot swing while your hook is out.
