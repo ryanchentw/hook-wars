@@ -62,6 +62,37 @@ export type WaterSpec = {
   readonly ripple: number;
   /** Texture repeats per second the swell slides by. */
   readonly drift: { readonly x: number; readonly y: number };
+  readonly reflection: ReflectionSpec;
+};
+
+/** The scene mirrored in the water, drawn only at high quality. */
+export type ReflectionSpec = {
+  readonly on: boolean;
+  /** 0..1: how much of the water's own shading the mirror image replaces. */
+  readonly strength: number;
+  /** How far the swell pushes the image about, as a fraction of the screen. */
+  readonly distortion: number;
+};
+
+/** Glow around whatever is brighter than `threshold`, drawn only at high quality. */
+export type BloomSpec = {
+  readonly on: boolean;
+  readonly strength: number;
+  /** 0..1: how far the glow spreads. */
+  readonly radius: number;
+  /** Scene light before exposure; lit ground must stay under it or the whole picture hazes over. */
+  readonly threshold: number;
+};
+
+/** A light on the edges of each fighter's silhouette, so a dark pelt never sinks into dark ground. */
+export type FighterRim = {
+  readonly on: boolean;
+  readonly strength: number;
+  readonly color: number;
+  /** Higher keeps the light to a thinner edge. */
+  readonly power: number;
+  /** 0..1: how far the light leans from `color` to the fighter's own team glow. */
+  readonly team: number;
 };
 
 export type WaterSheet = { readonly centre: Vec3; readonly width: number; readonly depth: number };
@@ -146,6 +177,8 @@ export type SceneLook = {
   /** Things adrift in the air: fog banks, motes. */
   readonly ambient: readonly Drift[];
   readonly fogOfWar: FogOfWarLook;
+  readonly bloom: BloomSpec;
+  readonly fighterRim: FighterRim;
 };
 
 export type SetContext = { readonly arena: Arena; readonly assets: Assets; readonly softDot: Texture };

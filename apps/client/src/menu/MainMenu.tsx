@@ -3,7 +3,9 @@ import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import type { Invite } from '../app/onlineMode';
 import { parseRoomCode } from '../app/roomAddress';
 import { CreditsLink } from '../hud/labels';
+import type { QualitySetting } from '../render/quality';
 import { Notice } from '../screens/Notice';
+import { QualityPicker } from '../screens/QualityPicker';
 
 type Props = {
   readonly name: string;
@@ -12,6 +14,7 @@ type Props = {
   readonly invite: Invite | null;
   /** A room has been asked for and the server has not answered yet. */
   readonly connecting: boolean;
+  readonly quality: QualitySetting;
   /** Each returns why the name was refused, or null once the player is on their way. */
   readonly onPlay: (name: string) => string | null;
   readonly onCreate: (name: string) => string | null;
@@ -78,7 +81,7 @@ function JoinForm({ invite, connecting, onJoin, button }: JoinProps) {
 }
 
 /** Title, name, and the three ways in. The name is checked once the player leaves the field or presses a way in, never while typing. */
-export function MainMenu({ name, notice, invite, connecting, onPlay, onCreate, onJoin }: Props) {
+export function MainMenu({ name, notice, invite, connecting, quality, onPlay, onCreate, onJoin }: Props) {
   const [draft, setDraft] = useState(name);
   const [error, setError] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -155,6 +158,7 @@ export function MainMenu({ name, notice, invite, connecting, onPlay, onCreate, o
             Create a room
           </button>
         </section>
+        <QualityPicker setting={quality} />
         <Notice text={notice} />
         <div className="menu-links">
           <CreditsLink />

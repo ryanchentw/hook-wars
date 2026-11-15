@@ -213,3 +213,41 @@
   font-style: italic;
   color: var(--muted);
 }
+
+/* Graphics quality: on the menu and in the pause menu */
+
+.quality {
+  margin: 18px 0 0;
+  padding: 0;
+  border: 0;
+  text-align: left;
+}
+
+.quality-options {
+  display: flex;
+  gap: 20px;
+  margin-top: 6px;
+}
+
+.quality-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  font-size: 16px;
+}
+
+.quality-option input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--gold);
+}
+
+.quality-hint {
+  margin: 4px 0 0;
+}
+
+.pause .quality {
+  margin: 0 0 18px;
+}

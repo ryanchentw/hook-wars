@@ -1,6 +1,11 @@
 import { AdditiveBlending, DirectionalLight, Group, HemisphereLight, PointLight, Sprite, SpriteMaterial, type Texture } from 'three';
 import type { Animated, Lamp, LightRig, SunSpec } from '../types';
 
+export type Lighting = Animated & {
+  /** Takes the key's and the fill's colours and strengths as they now are; nothing is rebuilt. */
+  retune(rig: LightRig): void;
+};
+
 const SUN_DISTANCE = 90;
 const SHADOW_MARGIN = 14;
 
@@ -39,7 +44,7 @@ function castShadows(key: DirectionalLight, shadow: LightRig['key']['shadow'], s
 }
 
 /** One shadow-casting key light, an optional rim, a sky fill, and the scene's lamps, which cast none. */
-export function createLighting(rig: LightRig, lamps: readonly Lamp[], size: { readonly w: number; readonly d: number }, softDot: Texture): Animated {
+export function createLighting(rig: LightRig, lamps: readonly Lamp[], size: { readonly w: number; readonly d: number }, softDot: Texture): Lighting {
   const group = new Group();
   const centre = { x: size.w / 2, z: size.d / 2 };
   const key = createSun(rig.key, centre);
@@ -49,7 +54,8 @@ export function createLighting(rig: LightRig, lamps: readonly Lamp[], size: { re
     const rim = createSun(rig.rim, centre);
     group.add(rim, rim.target);
   }
-  group.add(new HemisphereLight(rig.fill.sky, rig.fill.ground, rig.fill.intensity));
+  const fill = new HemisphereLight(rig.fill.sky, rig.fill.ground, rig.fill.intensity);
+  group.add(fill);
 
   const glowMaterials = new Map<number, SpriteMaterial>();
   const glowFor = (color: number): SpriteMaterial => {
@@ -76,6 +82,13 @@ export function createLighting(rig: LightRig, lamps: readonly Lamp[], size: { re
         light.intensity = lamp.intensity * f;
         glow.scale.setScalar(lamp.glowSize * (0.9 + 0.2 * f));
       });
+    },
+    retune(next) {
+      key.color.set(next.key.color);
+      key.intensity = next.key.intensity;
+      fill.color.set(next.fill.sky);
+      fill.groundColor.set(next.fill.ground);
+      fill.intensity = next.fill.intensity;
     },
     dispose() {
       glowMaterials.forEach((material) => material.dispose());

@@ -2,6 +2,10 @@ import type { BufferGeometry, Texture } from 'three';
 import { ACESFilmicToneMapping, PCFShadowMap, WebGLRenderer } from 'three';
 import type { Assets } from './assets/loadAssets';
 import { createHookGeometry } from './hook/hookGeometry';
+import type { LookTap } from './lookTap';
+import { createPipeline } from './post/pipeline';
+import { createQualitySetting, type Capabilities } from './quality';
+import type { ShowKit } from './sceneShow';
 import { createSurface, type Surface } from './surface';
 import { createSoftDot } from './textures';
 
@@ -16,6 +20,7 @@ export type Graphics = {
   readonly assets: Assets;
   readonly softDot: Texture;
   readonly hookGeometry: BufferGeometry;
+  readonly kit: ShowKit;
   dispose(): void;
 };
 
@@ -25,6 +30,8 @@ function createWebGL(): WebGLRenderer {
     gl.toneMapping = ACESFilmicToneMapping;
     gl.shadowMap.enabled = true;
     gl.shadowMap.type = PCFShadowMap;
+    // A frame can be several renders; whoever draws it resets the counts once, at its start.
+    gl.info.autoReset = false;
     return gl;
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
@@ -32,8 +39,24 @@ function createWebGL(): WebGLRenderer {
   }
 }
 
-export function createGraphics(host: HTMLElement, assets: Assets): Graphics {
+function capabilitiesOf(gl: WebGLRenderer): Capabilities {
+  const context = gl.getContext();
+  const named = context.getExtension('WEBGL_debug_renderer_info');
+  const renderer: unknown = context.getParameter(named === null ? context.RENDERER : named.UNMASKED_RENDERER_WEBGL);
+  return { renderer: String(renderer), maxTextureSize: gl.capabilities.maxTextureSize, cores: navigator.hardwareConcurrency };
+}
+
+export type GraphicsOptions = {
+  readonly storage: () => Storage;
+  /** The quality the address asks for, if any. */
+  readonly askedQuality: string | null;
+  readonly tap: LookTap | null;
+};
+
+export function createGraphics(host: HTMLElement, assets: Assets, { storage, askedQuality, tap }: GraphicsOptions): Graphics {
   const gl = createWebGL();
+  const pipeline = createPipeline(gl);
+  const quality = createQualitySetting({ storage, asked: askedQuality, capabilities: capabilitiesOf(gl) });
   const surface = createSurface(host, gl);
   const softDot = createSoftDot();
   const hookGeometry = createHookGeometry();
@@ -44,7 +67,9 @@ export function createGraphics(host: HTMLElement, assets: Assets): Graphics {
     assets,
     softDot,
     hookGeometry,
+    kit: { pipeline, quality, tap },
     dispose() {
+      pipeline.dispose();
       softDot.dispose();
       hookGeometry.dispose();
       gl.dispose();

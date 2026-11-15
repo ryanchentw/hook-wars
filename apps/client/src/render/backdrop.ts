@@ -36,7 +36,7 @@ function along(elapsed: number, calm: boolean): number {
 /** The scene behind the menu and the lobby, seen from its establishing shot with the water and lamps still moving. */
 export async function createBackdrop(graphics: Graphics, sceneId: SceneId, events: ContextEvents): Promise<Backdrop> {
   const { gl, surface, host, assets, softDot, hookGeometry } = graphics;
-  const show = createSceneShow(gl, host, { arena: DEFAULT_ARENA, assets, softDot, hookGeometry, localPlayerId: NOBODY, fog: null }, sceneId);
+  const show = createSceneShow(gl, host, { arena: DEFAULT_ARENA, assets, softDot, hookGeometry, localPlayerId: NOBODY, fog: null }, sceneId, graphics.kit);
   const shot = show.stage.theme.intro;
   const camera = new PerspectiveCamera();
   const frame = emptyFrame();
@@ -49,7 +49,7 @@ export async function createBackdrop(graphics: Graphics, sceneId: SceneId, event
     applyPose(camera, introPose(shot, poseFor({ x: 0, z: 0 }, surface.viewport()), shown));
     show.setHaze(introHaze(shot, shown));
     show.stage.update({ frame, events: [], impacts: [], dt, elapsed, camera });
-    gl.render(show.scene, camera);
+    show.render(camera);
   };
   const loop = createFrameLoop(surface.canvas, events, draw);
   const dispose = (): void => {

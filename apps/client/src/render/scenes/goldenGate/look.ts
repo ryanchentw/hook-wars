@@ -94,8 +94,10 @@ export const GATE_LOOK: SceneLook = {
     rim: null,
     fill: { sky: C.skyFill, ground: C.bounce, intensity: 1.35 },
   },
-  water: { level: GATE_SIZES.waterLevel, color: C.water, roughness: 0.34, metalness: 0.1, swellSize: 16, ripple: 1.3, drift: { x: 0.01, y: 0.016 } },
+  water: { level: GATE_SIZES.waterLevel, color: C.water, roughness: 0.34, metalness: 0.1, swellSize: 16, ripple: 1.3, drift: { x: 0.01, y: 0.016 }, reflection: { on: true, strength: 0.5, distortion: 0.03 } },
   fogOfWar: { color: 0x1c2740, opacity: 0.84, edge: 140 },
+  bloom: { on: true, strength: 0.4, radius: 0.4, threshold: 1.4 },
+  fighterRim: { on: true, strength: 0.9, color: 0xffe6c0, power: 2.5, team: 0.5 },
   tints: {
     iron: 0xc3c8d0,
     chainGlow: 0.2,

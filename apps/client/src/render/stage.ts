@@ -2,6 +2,7 @@ import type { Arena, PlayerId, SeenEvent, TeamId } from '@hookwars/sim';
 import { Color, FogExp2, Group, type BufferGeometry, type Camera, type Scene, type Texture, type Vector3, type WebGLRenderer } from 'three';
 import type { Assets } from './assets/loadAssets';
 import { createCharactersView } from './characters/charactersView';
+import { createRimLight } from './characters/rim';
 import { createEffectsView } from './effects/effectsView';
 import { createFogLayer } from './fog/fogLayer';
 import { createGrapplesView } from './grapple/grapplesView';
@@ -9,9 +10,9 @@ import { createHooksView } from './hook/hooksView';
 import type { Impact } from './impact/impacts';
 import type { PlayerFrame, RenderFrame } from './interpolate';
 import { createDrift } from './scenes/kit/drift';
-import { createLighting } from './scenes/kit/lighting';
+import { createLighting, type Lighting } from './scenes/kit/lighting';
 import { createSky } from './scenes/kit/sky';
-import { createWater } from './scenes/kit/water';
+import { createWater, type Water } from './scenes/kit/water';
 import type { Animated, SceneLook, SceneTheme } from './scenes/types';
 import { toWorldLength } from './space';
 
@@ -41,28 +42,32 @@ export type Stage = {
   readonly theme: SceneTheme;
   readonly group: Group;
   update(input: StageUpdate): void;
+  /** Takes `look`'s lights, water, veil and rim as they now are, without rebuilding anything. `reflect` is whether this picture draws reflections at all. */
+  retune(look: SceneLook, reflect: boolean): void;
+  /** Redraws the water's mirror image for the frame about to be drawn from `camera`. */
+  mirror(gl: WebGLRenderer, scene: Scene, camera: Camera): void;
   handPosition(playerId: PlayerId): Vector3 | null;
   dispose(): void;
 };
 
-function backdrop(theme: SceneTheme, shared: StageShared): readonly Animated[] {
+type Backdrop = { readonly parts: readonly Animated[]; readonly water: Water; readonly lighting: Lighting };
+
+function backdrop(theme: SceneTheme, shared: StageShared): Backdrop {
   const { arena, assets, softDot } = shared;
   const size = { w: toWorldLength(arena.width), d: toWorldLength(arena.height) };
   const { layout, set } = theme.buildSet({ arena, assets, softDot });
   const sky = theme.atmosphere.sky;
-  return [
-    set,
-    createWater(theme.water, layout.water),
-    createLighting(theme.lights, layout.lamps, size, softDot),
-    ...(sky === null ? [] : [createSky(sky, { x: size.w / 2, z: size.d / 2 })]),
-    ...theme.ambient.map((drift) => createDrift(drift, softDot)),
-  ];
+  const water = createWater(theme.water, layout.water);
+  const lighting = createLighting(theme.lights, layout.lamps, size, softDot);
+  const parts = [set, water, lighting, ...(sky === null ? [] : [createSky(sky, { x: size.w / 2, z: size.d / 2 })]), ...theme.ambient.map((drift) => createDrift(drift, softDot))];
+  return { parts, water, lighting };
 }
 
 export function createStage(theme: SceneTheme, shared: StageShared): Stage {
   const { assets, softDot, hookGeometry, localPlayerId } = shared;
-  const scenery = backdrop(theme, shared);
-  const characters = createCharactersView(assets, { hookGeometry, softDot, tints: theme.tints }, localPlayerId);
+  const { parts: scenery, water, lighting } = backdrop(theme, shared);
+  const rim = createRimLight(theme.fighterRim);
+  const characters = createCharactersView(assets, { hookGeometry, softDot, tints: theme.tints, rim }, localPlayerId);
   const hooks = createHooksView(hookGeometry, softDot, theme.tints, shared.fog?.fadeSeconds ?? 0);
   const grapples = createGrapplesView(softDot, theme.tints);
   const effects = createEffectsView(softDot);
@@ -82,6 +87,18 @@ export function createStage(theme: SceneTheme, shared: StageShared): Stage {
       hooks.update(frame, characters.handPosition, dt);
       grapples.update(frame, characters.offHandPosition);
       effects.update(events, impacts, dt, camera, (id) => frameOf(id)?.player.facing ?? null);
+    },
+    retune(look, reflect) {
+      lighting.retune(look.lights);
+      water.retune(look.water, reflect && look.water.reflection.on);
+      rim.retune(look.fighterRim);
+      fog?.retune(look.fogOfWar);
+    },
+    mirror(gl, scene, camera) {
+      // The veil lies over the water; seen from below it would be drawn into the image it is there to dim.
+      if (fog !== null) fog.mesh.visible = false;
+      water.mirror(gl, scene, camera);
+      if (fog !== null) fog.mesh.visible = true;
     },
     handPosition: characters.handPosition,
     dispose() {

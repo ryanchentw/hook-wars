@@ -77,8 +77,11 @@ export const HARBOUR_LOOK: SceneLook = {
     swellSize: 22,
     ripple: 0.9,
     drift: { x: 0.004, y: 0.011 },
+    reflection: { on: true, strength: 0.5, distortion: 0.03 },
   },
   fogOfWar: { color: 0x101626, opacity: 0.68, edge: 140 },
+  bloom: { on: true, strength: 0.6, radius: 0.5, threshold: 0.9 },
+  fighterRim: { on: true, strength: 1.2, color: 0xcfd8ff, power: 2.5, team: 0.5 },
   tints: {
     iron: COLORS.iron,
     chainGlow: 0.16,

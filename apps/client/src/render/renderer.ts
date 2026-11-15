@@ -119,7 +119,7 @@ function createPicture({ gl, session, surface, show, rig, opening, intro, calm }
     overlay.update(frame, impacts, { project, viewport: surface.viewport() }, dt);
   };
   const present = (): void => {
-    rig.shaken(() => gl.render(show.scene, rig.camera));
+    rig.shaken(() => show.render(rig.camera));
     const { render, memory } = gl.info;
     stats = { calls: render.calls, triangles: render.triangles, geometries: memory.geometries, textures: memory.textures };
   };
@@ -167,7 +167,7 @@ export async function createRenderer(graphics: Graphics, session: SessionView, v
   const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const fog = vision.kind === 'fog' ? { viewer: session.localTeam, radius: vision.radius, fadeSeconds: calm ? 0 : SIGHT_FADE } : null;
   const shared: StageShared = { arena, assets, softDot, hookGeometry, localPlayerId: session.localPlayerId, fog };
-  const show = createSceneShow(gl, host, shared, view.scene);
+  const show = createSceneShow(gl, host, shared, view.scene, graphics.kit);
   const rig = createCameraRig(arena, session.localPlayerId);
   const opening = createOpening(surface.overlay, calm ? INTRO_TIMING.reduced : INTRO_TIMING.full, events.onIntro);
   const picture = createPicture({ gl, session, surface, show, rig, opening, intro: view.intro, calm });

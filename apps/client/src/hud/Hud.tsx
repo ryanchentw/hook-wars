@@ -1,5 +1,6 @@
 import { Fragment, useSyncExternalStore } from 'react';
 import type { MatchHandle } from '../app/matchHost';
+import type { QualitySetting } from '../render/quality';
 import { SHOP_SLOTS } from '../game/bindings';
 import { EndPanel } from './EndPanel';
 import { LeaveConfirm } from './LeaveConfirm';
@@ -69,6 +70,7 @@ function Hint() {
 
 type HudProps = {
   readonly match: MatchHandle;
+  readonly quality: QualitySetting;
   /** Null when this player may not start the rematch. */
   readonly onRematch: (() => void) | null;
   /** Leaves a match that is over, or a local one at any time. */
@@ -77,7 +79,7 @@ type HudProps = {
   readonly onLeave: () => void;
 };
 
-export function Hud({ match, onRematch, onLobby, onLeave }: HudProps) {
+export function Hud({ match, quality, onRematch, onLobby, onLeave }: HudProps) {
   const view = useSyncExternalStore(match.hud.subscribe, match.hud.getSnapshot);
   const ui = useSyncExternalStore(match.ui.subscribe, match.ui.getSnapshot);
   const respawnIn = view.local?.respawnIn ?? null;
@@ -112,6 +114,7 @@ export function Hud({ match, onRematch, onLobby, onLeave }: HudProps) {
         open={ui.paused}
         holds={match.holds.menu}
         leaveLabel={match.online ? 'Leave match' : 'Back to lobby'}
+        quality={quality}
         onResume={() => match.setPaused(false)}
         onLeave={match.online ? () => match.setLeaving(true) : onLobby}
       />
