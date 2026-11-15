@@ -37,7 +37,7 @@ function VolumeSlider({ which, label, value }: { readonly which: Volume; readonl
   );
 }
 
-/** Music and effects volume and a mute switch, remembered across visits. Shown on the main menu and in the pause menu. */
+/** Music and effects volume and a mute switch, remembered across visits. Part of the settings dialog. */
 export function AudioSettings() {
   const settings = useSyncExternalStore(audioSettings.subscribe, audioSettings.getSnapshot);
   const titleId = useId();

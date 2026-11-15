@@ -20,7 +20,7 @@ function Screen({ view, app, quality }: Props & { readonly view: AppView }) {
     case 'menu':
       return <MainMenu name={view.name} notice={view.notice} invite={view.invite} connecting={view.connecting} quality={quality} onPlay={app.play} onCreate={app.createRoom} onJoin={app.joinRoom} />;
     case 'lobby':
-      return <Lobby view={view} app={app} />;
+      return <Lobby view={view} app={app} quality={quality} />;
     case 'match':
       return view.match === null ? null : <Hud match={view.match} quality={quality} onRematch={mayRematch(view) ? () => void app.rematch() : null} onLobby={app.leaveMatch} onLeave={app.leaveMatch} />;
   }

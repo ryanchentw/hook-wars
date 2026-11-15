@@ -3,7 +3,9 @@ import type { SlotRef } from '@hookwars/room';
 import { useEffect, useId, useRef } from 'react';
 import type { App, AppView, LocalAction } from '../app/controller';
 import { CreditsLink } from '../hud/labels';
+import type { QualitySetting } from '../render/quality';
 import { Notice } from '../screens/Notice';
+import { Settings } from '../settings/Settings';
 import { LobbySettings } from './LobbySettings';
 import { RoomShare } from './RoomShare';
 import { TeamColumn } from './TeamColumn';
@@ -72,7 +74,7 @@ function LobbyActions({ view, app, act }: Props & { readonly act: (action: Local
 }
 
 /** Who fights on which side, and how the match is set up. Online, the room's code and link sit under the title. */
-export function Lobby({ view, app }: Props) {
+export function Lobby({ view, app, quality }: Props & { readonly quality: QualitySetting }) {
   const heading = useRef<HTMLHeadingElement>(null);
   const titleId = useId();
   const keeper = useFocusKeeper();
@@ -91,7 +93,10 @@ export function Lobby({ view, app }: Props) {
         <h1 ref={heading} id={titleId} tabIndex={-1} className="lobby-title">
           Lobby
         </h1>
-        <CreditsLink />
+        <div className="lobby-head-end">
+          <Settings quality={quality} />
+          <CreditsLink />
+        </div>
       </header>
       {view.online !== null && <RoomShare code={view.online.code} link={view.online.link} />}
       <div className="lobby-teams">

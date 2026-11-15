@@ -39,6 +39,12 @@
   text-transform: uppercase;
 }
 
+.lobby-head-end {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* The heading takes focus only so a screen reader announces the new screen; it is not a control. */
 .lobby-title:focus {
   outline: none;
@@ -345,8 +351,24 @@
 }
 
 @container (max-width: 560px) {
+  /* Too narrow for both button groups beside the title: it takes a row of its own above them. */
+  .lobby-head {
+    grid-template-columns: auto 1fr;
+    grid-template-areas: 'title title' 'back end';
+  }
+
+  .lobby-head > :first-child {
+    grid-area: back;
+  }
+
   .lobby-title {
+    grid-area: title;
     font-size: 26px;
+    text-align: center;
+  }
+
+  .lobby-head-end {
+    grid-area: end;
   }
 
   .lobby-settings {

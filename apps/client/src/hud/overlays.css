@@ -136,6 +136,14 @@
   display: contents;
 }
 
+.pause-actions .settings-control {
+  display: flex;
+}
+
+.pause-actions .settings-control > .hud-button {
+  flex: 1;
+}
+
 .pause-actions > * {
   text-align: center;
 }

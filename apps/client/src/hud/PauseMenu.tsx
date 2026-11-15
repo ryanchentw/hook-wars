@@ -1,7 +1,6 @@
 import { useEffect, useId, useRef } from 'react';
-import { AudioSettings } from '../audio/AudioSettings';
 import type { QualitySetting } from '../render/quality';
-import { QualityPicker } from '../screens/QualityPicker';
+import { Settings } from '../settings/Settings';
 import { CreditsLink } from './labels';
 
 type Props = {
@@ -34,7 +33,15 @@ export function PauseMenu({ open, holds, leaveLabel, quality, onResume, onLeave 
   }, [open]);
 
   return (
-    <dialog ref={ref} className="pause hud-plate" aria-labelledby={titleId} onClose={onResume}>
+    <dialog
+      ref={ref}
+      className="pause hud-plate"
+      aria-labelledby={titleId}
+      // React passes the settings dialog's close up to this one; only this dialog closing means resume.
+      onClose={(event) => {
+        if (event.target === event.currentTarget) onResume();
+      }}
+    >
       <h2 id={titleId}>{holds ? 'Paused' : 'Menu'}</h2>
       <p className="pause-note">{holds ? 'The match waits for you.' : 'An online match cannot be paused: it goes on while this is open.'}</p>
       <div className="pause-actions">
@@ -46,10 +53,9 @@ export function PauseMenu({ open, holds, leaveLabel, quality, onResume, onLeave 
         <button type="button" className="hud-button" onClick={onLeave}>
           {leaveLabel}
         </button>
+        <Settings quality={quality} />
         <CreditsLink />
       </div>
-      <QualityPicker setting={quality} />
-      <AudioSettings />
     </dialog>
   );
 }

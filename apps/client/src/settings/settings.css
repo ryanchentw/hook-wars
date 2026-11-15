@@ -1,0 +1,82 @@
+/* Graphics and sound, in one modal shared by the menu, the lobby and the pause menu. */
+
+.settings-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mute-toggle {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 32px;
+  block-size: 32px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.mute-toggle:hover {
+  border-color: var(--iron);
+}
+
+.mute-toggle[aria-pressed='true'] {
+  color: var(--bad);
+}
+
+.mute-toggle:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.speaker-icon {
+  inline-size: 20px;
+  block-size: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* The dialog may sit inside the pause menu in the page, so it states everything it would otherwise inherit. */
+.settings {
+  box-sizing: border-box;
+  inline-size: min(380px, 100% - 32px);
+  padding: 22px 24px 18px;
+  color: var(--text);
+  font: 16px var(--font);
+  text-align: start;
+}
+
+.settings:modal {
+  overscroll-behavior: contain;
+}
+
+.settings::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: rgba(3, 2, 2, 0.6);
+}
+
+.settings-title {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.settings :is(button, input):focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* Styled through the button: inside the pause menu, its rules turn every form there into display: contents. */
+.settings-done > button {
+  display: block;
+  margin: 16px auto 0;
+}

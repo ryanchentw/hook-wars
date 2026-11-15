@@ -33,6 +33,9 @@ export function parseSettings(raw: string | null): AudioSettings {
   };
 }
 
+/** What `M` and the speaker button do. */
+export const toggleMuted = (settings: AudioSettings): AudioSettings => ({ ...settings, muted: !settings.muted });
+
 /** The linear gain a slider position stands for. */
 export const volumeGain = (volume: number): number => volume ** VOLUME_CURVE;
 

@@ -4,9 +4,9 @@ import { CREDITS_HASH } from '../app/route';
 /** Named for the side of the screen, so the same words fit a harbour, a bridge and a park. */
 export const TEAM_LABEL: Readonly<Record<TeamId, string>> = { west: 'West Side', east: 'East Side' };
 
-export function CreditsLink() {
+export function CreditsLink({ className = 'hud-button' }: { readonly className?: string }) {
   return (
-    <a className="hud-button" href={CREDITS_HASH}>
+    <a className={className} href={CREDITS_HASH}>
       Credits
     </a>
   );

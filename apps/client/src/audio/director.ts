@@ -7,7 +7,7 @@ import type { TrackId } from './manifest';
 import { createMusic, type Music } from './music';
 import type { AudioOutput } from './output';
 import { bindButtonClicks, bindGestures, bindMuteKey, bindVisibility, whenIdle } from './pageHooks';
-import { volumeGain, type SettingsStore } from './settings';
+import { toggleMuted, volumeGain, type SettingsStore } from './settings';
 import type { Random } from './variation';
 
 export type DirectorDeps = {
@@ -114,7 +114,7 @@ export function createAudioDirector(deps: DirectorDeps): () => void {
       music.tick();
     }),
     bindVisibility(win.document, (hidden) => output.setHidden(hidden)),
-    bindMuteKey(win, () => settings.update((s) => ({ ...s, muted: !s.muted }))),
+    bindMuteKey(win, () => settings.update(toggleMuted)),
     bindButtonClicks(win.document, (button) => clicks(app.getSnapshot(), button), () => effects.play(plain('uiClick'))),
   ];
   whenIdle(win, () => void effects.load().then(music.load));
