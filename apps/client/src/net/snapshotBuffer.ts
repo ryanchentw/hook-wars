@@ -1,4 +1,4 @@
-import type { TeamView } from '@hookbrawl/sim';
+import type { TeamView } from '@hookwars/sim';
 
 /** One snapshot as it arrived: the team's view, and the last of this client's inputs the server had applied in it. */
 export type Snap = { readonly view: TeamView; readonly ack: number };

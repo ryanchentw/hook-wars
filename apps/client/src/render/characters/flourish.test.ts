@@ -1,4 +1,4 @@
-import type { GameEvent } from '@hookbrawl/sim';
+import type { GameEvent } from '@hookwars/sim';
 import { describe, expect, it } from 'vitest';
 import { BOT, fakePlayer, HUMAN } from '../../game/fakeSim';
 import { FLOURISH } from '../theme';

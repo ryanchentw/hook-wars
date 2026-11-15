@@ -1,4 +1,4 @@
-import type { Arena, PlayerId, TeamId } from '@hookbrawl/sim';
+import type { Arena, PlayerId, TeamId } from '@hookwars/sim';
 import { AddEquation, Color, CustomBlending, DstColorFactor, Mesh, PlaneGeometry, ShaderMaterial, Vector3, ZeroFactor } from 'three';
 import type { RenderFrame } from '../interpolate';
 import type { FogOfWarLook } from '../scenes/types';

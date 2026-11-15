@@ -3,13 +3,13 @@ import { expect, test, type Page } from '@playwright/test';
 const SHOT_DIR = 'test-results';
 
 async function tick(page: Page): Promise<number> {
-  return page.evaluate(() => window.__hookbrawl!.getState().tick);
+  return page.evaluate(() => window.__hookwars!.getState().tick);
 }
 
 test('credits open from the HUD, pause the match, and close with Escape', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 720 });
   await page.goto('/?seed=1&intro=off');
-  await page.waitForFunction(() => window.__hookbrawl !== undefined);
+  await page.waitForFunction(() => window.__hookwars !== undefined);
   await expect.poll(() => tick(page)).toBeGreaterThan(5);
 
   const opener = page.getByRole('link', { name: 'Credits' });
@@ -36,7 +36,7 @@ test('credits open from the HUD, pause the match, and close with Escape', async 
 
 test('a shared credits link opens paused and the back button closes it', async ({ page }) => {
   await page.goto('/?seed=1&intro=off#/credits');
-  await page.waitForFunction(() => window.__hookbrawl !== undefined);
+  await page.waitForFunction(() => window.__hookwars !== undefined);
   const dialog = page.getByRole('dialog', { name: '致敬' });
   await expect(dialog).toBeVisible();
   expect(await tick(page)).toBe(0);
@@ -55,21 +55,21 @@ test('a shared credits link opens paused and the back button closes it', async (
 
 async function localX(page: Page): Promise<number> {
   return page.evaluate(() => {
-    const hb = window.__hookbrawl!;
+    const hb = window.__hookwars!;
     return hb.getState().players.find((p) => p.id === hb.getLocalPlayerId())!.pos.x;
   });
 }
 
 async function localHooks(page: Page): Promise<number> {
   return page.evaluate(() => {
-    const hb = window.__hookbrawl!;
+    const hb = window.__hookwars!;
     return hb.getState().hooks.filter((h) => h.ownerId === hb.getLocalPlayerId()).length;
   });
 }
 
 test('a key released behind the credits dialog does not leave the player walking, and Space is a game key again once it closes', async ({ page }) => {
   await page.goto('/?opponent=idle&intro=off');
-  await page.waitForFunction(() => window.__hookbrawl !== undefined);
+  await page.waitForFunction(() => window.__hookwars !== undefined);
   const startX = await localX(page);
 
   await page.keyboard.down('d');

@@ -1,5 +1,5 @@
-import { upcomingScene } from '@hookbrawl/room';
-import type { MemberId, RoomAction, RoomState } from '@hookbrawl/room';
+import { upcomingScene } from '@hookwars/room';
+import type { MemberId, RoomAction, RoomState } from '@hookwars/room';
 import type { Backdrop } from '../render/backdrop';
 import { playsIntro } from '../render/intro/intro';
 import type { MatchView } from '../render/renderer';

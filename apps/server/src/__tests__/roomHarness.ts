@@ -1,5 +1,5 @@
-import type { ClientMessageOf, LobbyAction, ServerMessage, ServerMessageOf } from '@hookbrawl/protocol';
-import { DEFAULT_SETTINGS, type MemberId, type PlayerName } from '@hookbrawl/room';
+import type { ClientMessageOf, LobbyAction, ServerMessage, ServerMessageOf } from '@hookwars/protocol';
+import { DEFAULT_SETTINGS, type MemberId, type PlayerName } from '@hookwars/room';
 import { advance, createRoomCore, disconnect, input, join, leave, lobbyAction, rejoin, type Outbound, type Room, type RoomRules, type Step } from '../rooms/core';
 
 export const TICK_MS = 1000 / 30;

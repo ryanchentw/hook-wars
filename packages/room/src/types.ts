@@ -1,4 +1,4 @@
-import type { MatchConfig, PlayerId, TeamId } from '@hookbrawl/sim';
+import type { MatchConfig, PlayerId, TeamId } from '@hookwars/sim';
 
 /** In rotation order: a room set to rotate plays them one match after another, starting with the first. */
 export const SCENE_IDS = ['victoria', 'golden-gate', 'daan', 'harbour'] as const;

@@ -1,5 +1,5 @@
-import { KILL_TARGETS, SCENE_IDS, type MemberId, type PlayerName, type RoomState } from '@hookbrawl/room';
-import type { PlayerId } from '@hookbrawl/sim';
+import { KILL_TARGETS, SCENE_IDS, type MemberId, type PlayerName, type RoomState } from '@hookwars/room';
+import type { PlayerId } from '@hookwars/sim';
 import { z } from 'zod';
 import { idOf } from './common';
 import { MAX_SEQ, REJOIN_TOKEN_PATTERN, ROOM_CODE_PATTERN } from './limits';

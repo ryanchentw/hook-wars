@@ -1,4 +1,4 @@
-import type { PlayerId, TeamId, Vec2 } from '@hookbrawl/sim';
+import type { PlayerId, TeamId, Vec2 } from '@hookwars/sim';
 import { hpLevel } from '../../game/health';
 import { startLoss, stepLoss, type HpLoss } from './hpLoss';
 

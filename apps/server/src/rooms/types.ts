@@ -1,6 +1,6 @@
-import type { Act, ErrorCode, ServerMessage } from '@hookbrawl/protocol';
-import type { MemberId, PlayerName, RoomState, SceneId } from '@hookbrawl/room';
-import type { BotBrain, GameState, PlayerId, SeenEvent, TeamId, Vec2 } from '@hookbrawl/sim';
+import type { Act, ErrorCode, ServerMessage } from '@hookwars/protocol';
+import type { MemberId, PlayerName, RoomState, SceneId } from '@hookwars/room';
+import type { BotBrain, GameState, PlayerId, SeenEvent, TeamId, Vec2 } from '@hookwars/sim';
 
 /** The timings and sizes a room runs by. All of them come from the server's configuration. */
 export type RoomRules = {

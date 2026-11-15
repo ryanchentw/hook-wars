@@ -1,5 +1,5 @@
-import { TUNING } from '@hookbrawl/sim';
-import type { SeenEvent, PlayerId, Vec2 } from '@hookbrawl/sim';
+import { TUNING } from '@hookwars/sim';
+import type { SeenEvent, PlayerId, Vec2 } from '@hookwars/sim';
 import { contactPoint, type Impact } from '../impact/impacts';
 import { simToWorld, type Vec3 } from '../space';
 import { COLORS, SIZES } from '../theme';

@@ -1,4 +1,4 @@
-import type { Arena } from '@hookbrawl/sim';
+import type { Arena } from '@hookwars/sim';
 import { PROP_BOUNDS, type PropName } from '../../assets/manifest';
 import { toWorldLength, type Vec3 } from '../../space';
 import type { Footprint, SceneLayout } from '../types';

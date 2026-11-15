@@ -1,4 +1,4 @@
-import type { PlayerId, TeamId } from '@hookbrawl/sim';
+import type { PlayerId, TeamId } from '@hookwars/sim';
 import {
   AdditiveBlending,
   CylinderGeometry,

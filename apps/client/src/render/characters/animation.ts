@@ -1,4 +1,4 @@
-import type { SeenEvent, Grapple, Hook, SeenPlayer, PlayerId } from '@hookbrawl/sim';
+import type { SeenEvent, Grapple, Hook, SeenPlayer, PlayerId } from '@hookwars/sim';
 
 export type AnimState = 'idle' | 'run' | 'throw' | 'hold' | 'swing' | 'flinch' | 'dragged' | 'stagger' | 'brace' | 'haul' | 'death';
 

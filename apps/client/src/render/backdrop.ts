@@ -1,5 +1,5 @@
-import { createMatch, DEFAULT_ARENA, viewFor } from '@hookbrawl/sim';
-import type { PlayerId } from '@hookbrawl/sim';
+import { createMatch, DEFAULT_ARENA, viewFor } from '@hookwars/sim';
+import type { PlayerId } from '@hookwars/sim';
 import { PerspectiveCamera } from 'three';
 import { poseFor } from './camera/framing';
 import { applyPose } from './camera/projection';

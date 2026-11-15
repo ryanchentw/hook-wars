@@ -1,4 +1,4 @@
-import { roomCodeSchema } from '@hookbrawl/protocol';
+import { roomCodeSchema } from '@hookwars/protocol';
 
 const PARAM = 'room';
 

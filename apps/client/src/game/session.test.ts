@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import * as sim from '@hookbrawl/sim';
-import { TICK_DT } from '@hookbrawl/sim';
-import type { MatchConfig } from '@hookbrawl/sim';
+import * as sim from '@hookwars/sim';
+import { TICK_DT } from '@hookwars/sim';
+import type { MatchConfig } from '@hookwars/sim';
 import { BOT, createFakeSim, HUMAN } from './fakeSim';
 import { createSession } from './session';
 

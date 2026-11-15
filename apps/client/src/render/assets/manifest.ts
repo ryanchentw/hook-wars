@@ -1,4 +1,4 @@
-import type { TeamId } from '@hookbrawl/sim';
+import type { TeamId } from '@hookwars/sim';
 
 /** KayKit models (CC0, Kay Lousberg), served from `public/assets/kaykit/`. */
 export const CHARACTER_FILES: Readonly<Record<TeamId, string>> = {

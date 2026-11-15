@@ -1,4 +1,4 @@
-import type { PlayerId, Vec2 } from '@hookbrawl/sim';
+import type { PlayerId, Vec2 } from '@hookwars/sim';
 import type { Impact } from '../impact/impacts';
 import { popScale } from '../impact/timing';
 import { simToWorld, type Vec3 } from '../space';

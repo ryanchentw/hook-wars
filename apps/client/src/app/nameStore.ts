@@ -1,4 +1,4 @@
-const KEY = 'hookbrawl.name';
+const KEY = 'hookwars.name';
 
 /** Remembers the name typed on the menu. Storage can be blocked or full, and a forgotten name is only a convenience lost. */
 export type NameStore = { load(): string; save(name: string): void };

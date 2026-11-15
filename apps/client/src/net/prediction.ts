@@ -1,4 +1,4 @@
-import { steerIntent, TICK_DT, walkPlayer, type Arena, type SeenPlayer, type Vec2 } from '@hookbrawl/sim';
+import { steerIntent, TICK_DT, walkPlayer, type Arena, type SeenPlayer, type Vec2 } from '@hookwars/sim';
 
 /** One tick of the local player's held direction, sent to the server and not yet acknowledged. */
 export type PendingInput = { readonly seq: number; readonly steer: Vec2 };

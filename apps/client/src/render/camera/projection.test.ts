@@ -1,4 +1,4 @@
-import { DEFAULT_ARENA } from '@hookbrawl/sim';
+import { DEFAULT_ARENA } from '@hookwars/sim';
 import { PerspectiveCamera } from 'three';
 import { describe, expect, it } from 'vitest';
 import { simToWorld, worldToSim } from '../space';

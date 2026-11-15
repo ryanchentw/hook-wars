@@ -1,5 +1,5 @@
-import { stampLobbyAction, type ClientMessageOf, type LobbyAction } from '@hookbrawl/protocol';
-import { createRoom, reduce, type MemberId } from '@hookbrawl/room';
+import { stampLobbyAction, type ClientMessageOf, type LobbyAction } from '@hookwars/protocol';
+import { createRoom, reduce, type MemberId } from '@hookwars/room';
 import { dueTicks, nextTickAt, queueInput, startMatch, tick } from './match';
 import { expireAway, rejoinDeadline } from './membership';
 import type { Entropy, Outbound, Room, RoomRules, Step } from './types';

@@ -1,4 +1,4 @@
-import type { MatchPlayerConfig, PlayerId } from '@hookbrawl/sim';
+import type { MatchPlayerConfig, PlayerId } from '@hookwars/sim';
 import { allSlots, botName, sceneFor } from './selectors';
 import type { MatchPlan, RoomState, Seat, SlotRef } from './types';
 

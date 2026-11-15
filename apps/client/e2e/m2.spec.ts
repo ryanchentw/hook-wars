@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { ECONOMY, hookStats, ITEMS, TUNING, UPGRADES } from '@hookbrawl/sim';
-import type { GameState, Player, Vec2 } from '@hookbrawl/sim';
+import { ECONOMY, hookStats, ITEMS, TUNING, UPGRADES } from '@hookwars/sim';
+import type { GameState, Player, Vec2 } from '@hookwars/sim';
 import { SHOP_SLOTS } from '../src/game/bindings';
 import { SCENE_IDS } from '../src/render/scenes/types';
 
@@ -14,7 +14,7 @@ type Snapshot = { readonly time: number; readonly me: Player; readonly dummy: Pl
 
 async function snapshot(page: Page): Promise<Snapshot> {
   return page.evaluate(() => {
-    const hb = window.__hookbrawl!;
+    const hb = window.__hookwars!;
     const state = hb.getState();
     const me = state.players.find((p) => p.id === hb.getLocalPlayerId())!;
     const dummy = state.players.find((p) => p.team === 'east')!;
@@ -25,14 +25,14 @@ async function snapshot(page: Page): Promise<Snapshot> {
 /** Every match here skips its establishing shot, so nothing waits on it. */
 async function boot(page: Page, query: string): Promise<void> {
   await page.goto(`/${query}&intro=off`);
-  await page.waitForFunction(() => window.__hookbrawl !== undefined);
+  await page.waitForFunction(() => window.__hookwars !== undefined);
 }
 
 const passiveBetween = (t0: number, t1: number): number =>
   ECONOMY.passiveGold * (Math.floor(t1 + SLACK) - Math.floor(t0 + SLACK));
 
 async function toScreen(page: Page, p: Vec2): Promise<Vec2> {
-  return page.evaluate((world) => window.__hookbrawl!.worldToScreen(world), p);
+  return page.evaluate((world) => window.__hookwars!.worldToScreen(world), p);
 }
 
 /** Holds `key` until the local player's `axis` coordinate passes `mark` in the direction it moves. */
@@ -41,7 +41,7 @@ async function holdUntil(page: Page, key: string, axis: 'x' | 'y', mark: number)
   await page.keyboard.down(key);
   await page.waitForFunction(
     ([a, m, rising]) => {
-      const hb = window.__hookbrawl!;
+      const hb = window.__hookwars!;
       const p = hb.getState().players.find((q) => q.id === hb.getLocalPlayerId())!;
       return rising ? p.pos[a] >= m : p.pos[a] <= m;
     },
@@ -54,7 +54,7 @@ async function holdUntil(page: Page, key: string, axis: 'x' | 'y', mark: number)
 async function waitForArrivalEast(page: Page): Promise<void> {
   await page.waitForFunction(
     () => {
-      const hb = window.__hookbrawl!;
+      const hb = window.__hookwars!;
       const s = hb.getState();
       const p = s.players.find((q) => q.id === hb.getLocalPlayerId())!;
       return p.status.kind === 'alive' && p.pos.x > s.arena.canal.x1;
@@ -67,7 +67,7 @@ async function waitForArrivalEast(page: Page): Promise<void> {
 async function waitForGrappleCooldown(page: Page): Promise<void> {
   await page.waitForFunction(
     () => {
-      const hb = window.__hookbrawl!;
+      const hb = window.__hookwars!;
       const s = hb.getState();
       const p = s.players.find((q) => q.id === hb.getLocalPlayerId())!;
       return p.status.kind === 'alive' && p.items.grapple.kind === 'owned' && p.items.grapple.readyAt > s.time;
@@ -128,7 +128,7 @@ test('1 levels damage until maxed, a further press is refused, and the hook then
   await page.keyboard.press('Space');
   const hpOnLatch = await page.waitForFunction(
     () => {
-      const dummy = window.__hookbrawl!.getState().players.find((p) => p.team === 'east')!;
+      const dummy = window.__hookwars!.getState().players.find((p) => p.team === 'east')!;
       return dummy.status.kind === 'dragged' ? dummy.hp : null;
     },
     undefined,
@@ -176,7 +176,7 @@ async function worstUntil(page: Page, done: (state: GameState) => boolean, timeo
   const until = Date.now() + timeout;
   for (;;) {
     const { stats, state } = await page.evaluate(() => {
-      const hb = window.__hookbrawl!;
+      const hb = window.__hookwars!;
       return { stats: hb.renderStats(), state: hb.getState() };
     });
     worst = { calls: Math.max(worst.calls, stats.calls), triangles: Math.max(worst.triangles, stats.triangles) };
@@ -190,32 +190,32 @@ for (const scene of SCENE_IDS) {
   test(`in the ${scene} scene a grapple across the canal and a brawl on the far dock both draw within budget`, async ({ page }) => {
     await boot(page, `?opponent=idle&gold=500&scene=${scene}`);
     await page.keyboard.press('Digit5');
-    await page.waitForFunction(() => window.__hookbrawl!.getState().players.some((p) => !p.isBot && p.items.grapple.kind === 'owned'));
+    await page.waitForFunction(() => window.__hookwars!.getState().players.some((p) => !p.isBot && p.items.grapple.kind === 'owned'));
 
     const target = await page.evaluate(() => {
-      const hb = window.__hookbrawl!;
+      const hb = window.__hookwars!;
       const { arena } = hb.getState();
       return hb.worldToScreen({ x: arena.canal.x1 + 200, y: arena.height / 2 - 120 });
     });
     await page.mouse.move(target.x, target.y);
     await page.keyboard.press('KeyE');
-    await page.waitForFunction(() => window.__hookbrawl!.getState().grapples.length > 0);
+    await page.waitForFunction(() => window.__hookwars!.getState().grapples.length > 0);
     const grappling = await worstUntil(page, (s) => s.grapples.length === 0);
     // Set down on the far dock the player is staggered for a moment, and a hook asked for then is not thrown.
     await page.waitForFunction(() => {
-      const hb = window.__hookbrawl!;
+      const hb = window.__hookwars!;
       return hb.getState().players.find((p) => p.id === hb.getLocalPlayerId())!.status.kind === 'alive';
     });
 
     const dummy = await page.evaluate(() => {
-      const hb = window.__hookbrawl!;
+      const hb = window.__hookwars!;
       return hb.worldToScreen(hb.getState().players.find((p) => p.team === 'east')!.pos);
     });
     await page.mouse.move(dummy.x, dummy.y);
     await page.keyboard.press('Space');
     // Below what the hook alone takes, so the two are trading blows.
     const struck = TUNING.maxHp - TUNING.hookDamage;
-    await page.waitForFunction((hp) => window.__hookbrawl!.getState().players.some((p) => p.team === 'east' && p.hp < hp), struck, { timeout: 8_000 });
+    await page.waitForFunction((hp) => window.__hookwars!.getState().players.some((p) => p.team === 'east' && p.hp < hp), struck, { timeout: 8_000 });
     // Long enough to catch the slash, sparks and number of several blows in a row.
     const fightUntil = Date.now() + 1_500;
     const brawling = await worstUntil(page, () => Date.now() > fightUntil);

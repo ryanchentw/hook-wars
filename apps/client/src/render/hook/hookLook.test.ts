@@ -1,4 +1,4 @@
-import type { Hook, HookId, PlayerId } from '@hookbrawl/sim';
+import type { Hook, HookId, PlayerId } from '@hookwars/sim';
 import { describe, expect, it } from 'vitest';
 import { hookLook } from './hookLook';
 

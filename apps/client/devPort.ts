@@ -17,12 +17,12 @@ function portFrom(env: Env, name: string, fallback: number): number {
   return port;
 }
 
-/** `HOOKBRAWL_PORT` lets two checkouts run their dev servers and Playwright side by side. */
+/** `HOOKWARS_PORT` lets two checkouts run their dev servers and Playwright side by side. */
 export function devPort(env: Env = nodeEnv()): number {
-  return portFrom(env, 'HOOKBRAWL_PORT', DEFAULT_PORT);
+  return portFrom(env, 'HOOKWARS_PORT', DEFAULT_PORT);
 }
 
 /** Where the dev server finds the game server to pass `/ws` on to. The game server reads the same variable as `PORT`. */
 export function serverPort(env: Env = nodeEnv()): number {
-  return portFrom(env, 'HOOKBRAWL_SERVER_PORT', DEFAULT_SERVER_PORT);
+  return portFrom(env, 'HOOKWARS_SERVER_PORT', DEFAULT_SERVER_PORT);
 }

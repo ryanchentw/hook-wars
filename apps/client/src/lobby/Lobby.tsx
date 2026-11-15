@@ -1,5 +1,5 @@
-import { canStart, hasEmptySlot, TEAMS } from '@hookbrawl/room';
-import type { SlotRef } from '@hookbrawl/room';
+import { canStart, hasEmptySlot, TEAMS } from '@hookwars/room';
+import type { SlotRef } from '@hookwars/room';
 import { useEffect, useId, useRef } from 'react';
 import type { App, AppView, LocalAction } from '../app/controller';
 import { CreditsLink } from '../hud/labels';

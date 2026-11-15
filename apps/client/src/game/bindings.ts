@@ -1,5 +1,5 @@
-import { hookStats, ITEM_IDS, UPGRADE_IDS } from '@hookbrawl/sim';
-import type { SeenPlayer, Purchase, Vec2 } from '@hookbrawl/sim';
+import { hookStats, ITEM_IDS, UPGRADE_IDS } from '@hookwars/sim';
+import type { SeenPlayer, Purchase, Vec2 } from '@hookwars/sim';
 
 export type Direction = 'north' | 'south' | 'west' | 'east';
 

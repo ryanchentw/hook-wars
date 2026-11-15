@@ -1,4 +1,4 @@
-import type { ServerMessage } from '@hookbrawl/protocol';
+import type { ServerMessage } from '@hookwars/protocol';
 import { createConnection, type Connection, type ConnStatus, type Timers } from '../net/connection';
 import { lagRulesFromQuery } from '../net/lagSim';
 import { NET } from '../net/netConfig';
@@ -22,12 +22,12 @@ export type NetDevHook = {
 
 declare global {
   interface Window {
-    __hookbrawlNet?: NetDevHook;
+    __hookwarsNet?: NetDevHook;
   }
 }
 
 function installNetHook(conn: Connection): void {
-  window.__hookbrawlNet = { status: conn.status.getSnapshot, received: conn.dev.received, drop: conn.dev.drop, block: conn.dev.block };
+  window.__hookwarsNet = { status: conn.status.getSnapshot, received: conn.dev.received, drop: conn.dev.drop, block: conn.dev.block };
 }
 
 /** The server is wherever the page came from: one service serves both. */

@@ -1,5 +1,5 @@
-import { DEFAULT_ARENA, viewFor } from '@hookbrawl/sim';
-import type { GameState, Player, PlayerId, PlayerInput, TeamView } from '@hookbrawl/sim';
+import { DEFAULT_ARENA, viewFor } from '@hookwars/sim';
+import type { GameState, Player, PlayerId, PlayerInput, TeamView } from '@hookwars/sim';
 import type { SimApi } from './session';
 
 export const HUMAN = 'human' as PlayerId;

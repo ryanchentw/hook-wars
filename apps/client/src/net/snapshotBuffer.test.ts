@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { fakeState } from '../game/fakeSim';
-import { viewFor } from '@hookbrawl/sim';
+import { viewFor } from '@hookwars/sim';
 import { insertSnapshot, reached, sampleAt, type Snap, type SnapshotBuffer } from './snapshotBuffer';
 
 const TICK = 1 / 30;

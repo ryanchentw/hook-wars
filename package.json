@@ -1,17 +1,17 @@
 {
-  "name": "hook-brawl",
+  "name": "hook-wars",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
-    "dev": "pnpm --filter @hookbrawl/client dev",
-    "dev:server": "pnpm --filter @hookbrawl/server dev",
-    "dev:online": "pnpm --parallel --filter @hookbrawl/client --filter @hookbrawl/server dev",
-    "build": "pnpm --filter @hookbrawl/client --filter @hookbrawl/server build",
-    "start": "HOOKBRAWL_STATIC_DIR=apps/client/dist node apps/server/dist/server.js",
+    "dev": "pnpm --filter @hookwars/client dev",
+    "dev:server": "pnpm --filter @hookwars/server dev",
+    "dev:online": "pnpm --parallel --filter @hookwars/client --filter @hookwars/server dev",
+    "build": "pnpm --filter @hookwars/client --filter @hookwars/server build",
+    "start": "HOOKWARS_STATIC_DIR=apps/client/dist node apps/server/dist/server.js",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
-    "e2e": "pnpm --filter @hookbrawl/client e2e",
-    "e2e:online": "pnpm --filter @hookbrawl/client e2e:online"
+    "e2e": "pnpm --filter @hookwars/client e2e",
+    "e2e:online": "pnpm --filter @hookwars/client e2e:online"
   }
 }

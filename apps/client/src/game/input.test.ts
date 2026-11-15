@@ -1,4 +1,4 @@
-import type { PlayerInput, Purchase, Vec2 } from '@hookbrawl/sim';
+import type { PlayerInput, Purchase, Vec2 } from '@hookwars/sim';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { HUMAN } from './fakeSim';
 import { bindInput, type InputDeps } from './input';

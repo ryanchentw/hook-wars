@@ -1,4 +1,4 @@
-import type { Hook, PlayerId, SeenGrapple, SeenPlayer, TeamId, TeamView, Vec2 } from '@hookbrawl/sim';
+import type { Hook, PlayerId, SeenGrapple, SeenPlayer, TeamId, TeamView, Vec2 } from '@hookwars/sim';
 import type { Frame } from '../game/session';
 
 /** `presence` runs from 0 to 1 as a fighter comes into sight, and back down as one leaves it. */

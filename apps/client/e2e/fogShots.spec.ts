@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import type { TeamView } from '@hookbrawl/sim';
+import type { TeamView } from '@hookwars/sim';
 import { SCENE_IDS } from '../src/render/scenes/types';
 
 const SHOT_DIR = 'test-results';
@@ -13,7 +13,7 @@ type Moment = 'hookEmerging' | 'enemyAtEdge' | 'draggedInFog' | 'sharedSight';
 async function boot(page: Page, query: string): Promise<void> {
   await page.setViewportSize(DESKTOP);
   await page.goto(`/?intro=off&${query}`);
-  await page.waitForFunction(() => window.__hookbrawl !== undefined, null, { timeout: 30_000 });
+  await page.waitForFunction(() => window.__hookwars !== undefined, null, { timeout: 30_000 });
   await expect(page.locator('#stage')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
 }
 
@@ -22,7 +22,7 @@ async function freezeOn(page: Page, moment: Moment, timeout: number): Promise<vo
   await page.evaluate(
     ([wanted, ms]) =>
       new Promise<void>((resolve, reject) => {
-        const hb = window.__hookbrawl!;
+        const hb = window.__hookwars!;
         const dist = (a: { x: number; y: number }, b: { x: number; y: number }): number => Math.hypot(a.x - b.x, a.y - b.y);
         const sightOf = (v: TeamView) => v.players.filter((p) => p.team === v.viewer && p.status.kind !== 'dead');
         const nearest = (v: TeamView, at: { x: number; y: number }): number => Math.min(...sightOf(v).map((p) => dist(p.pos, at)));
@@ -65,7 +65,7 @@ async function shoot(page: Page, name: string): Promise<void> {
 }
 
 async function calls(page: Page): Promise<number> {
-  return page.evaluate(() => window.__hookbrawl!.renderStats().calls);
+  return page.evaluate(() => window.__hookwars!.renderStats().calls);
 }
 
 test('match start under fog in every scene, inside the draw budget', async ({ page }) => {
@@ -105,14 +105,14 @@ test('a hooked enemy is seen all the way in across the fog', async ({ page }) =>
   await page.keyboard.down('KeyW');
   // North-east, off the line through the buoy, which would bounce a straight throw home.
   await page.waitForFunction(() => {
-    const hb = window.__hookbrawl!;
+    const hb = window.__hookwars!;
     const me = hb.getView().players.find((p) => p.id === hb.getLocalPlayerId())!;
     return me.pos.x >= 720 && me.pos.y <= 520;
   });
   await page.keyboard.up('KeyW');
   await page.keyboard.up('KeyD');
-  const dummy = await page.evaluate(() => window.__hookbrawl!.getState().players.find((p) => p.team === 'east')!.pos);
-  const aim = await page.evaluate((p) => window.__hookbrawl!.worldToScreen(p), dummy);
+  const dummy = await page.evaluate(() => window.__hookwars!.getState().players.find((p) => p.team === 'east')!.pos);
+  const aim = await page.evaluate((p) => window.__hookwars!.worldToScreen(p), dummy);
   await page.mouse.move(aim.x, aim.y);
   const frozen = freezeOn(page, 'draggedInFog', 6_000);
   await page.keyboard.press('Space');

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { PROTOCOL_VERSION } from '@hookbrawl/protocol';
+import { PROTOCOL_VERSION } from '@hookwars/protocol';
 import { loadConfig } from '../config';
 import { createLogger } from '../logger';
 import { startServer, type RunningServer } from '../server';
@@ -8,14 +8,14 @@ import { connect, type WireClient } from './wireClient';
 const ENV = {
   PORT: '0',
   HOST: '127.0.0.1',
-  HOOKBRAWL_LOG_LEVEL: 'silent',
-  HOOKBRAWL_MATCH_COUNTDOWN_MS: '50',
-  HOOKBRAWL_REJOIN_WINDOW_MS: '400',
-  HOOKBRAWL_EMPTY_ROOM_GRACE_MS: '200',
-  HOOKBRAWL_HELLO_TIMEOUT_MS: '300',
-  HOOKBRAWL_MESSAGE_BURST: '40',
-  HOOKBRAWL_MESSAGES_PER_SECOND: '40',
-  HOOKBRAWL_JOINS_PER_MINUTE: '12',
+  HOOKWARS_LOG_LEVEL: 'silent',
+  HOOKWARS_MATCH_COUNTDOWN_MS: '50',
+  HOOKWARS_REJOIN_WINDOW_MS: '400',
+  HOOKWARS_EMPTY_ROOM_GRACE_MS: '200',
+  HOOKWARS_HELLO_TIMEOUT_MS: '300',
+  HOOKWARS_MESSAGE_BURST: '40',
+  HOOKWARS_MESSAGES_PER_SECOND: '40',
+  HOOKWARS_JOINS_PER_MINUTE: '12',
 };
 
 let server: RunningServer;
@@ -196,7 +196,7 @@ describe('shutting down', () => {
 describe('the server limits', () => {
   it('holds no more rooms than it is set to', async () => {
     await server.close();
-    await boot({ HOOKBRAWL_MAX_ROOMS: '1' });
+    await boot({ HOOKWARS_MAX_ROOMS: '1' });
     await pair();
     const extra = await open();
     extra.send({ t: 'hello', v: PROTOCOL_VERSION, name: 'Cy', room: { kind: 'create' } });
@@ -205,7 +205,7 @@ describe('the server limits', () => {
 
   it('refuses to start on a setting that makes no sense', () => {
     expect(() => loadConfig({ PORT: 'eighty' })).toThrow(/PORT/);
-    expect(() => loadConfig({ HOOKBRAWL_SNAPSHOT_HZ: '500' })).toThrow(/HOOKBRAWL_SNAPSHOT_HZ/);
+    expect(() => loadConfig({ HOOKWARS_SNAPSHOT_HZ: '500' })).toThrow(/HOOKWARS_SNAPSHOT_HZ/);
     expect(loadConfig({ PORT: '' }).port).toBe(8787);
   });
 });

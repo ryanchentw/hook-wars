@@ -1,7 +1,7 @@
 import { timingSafeEqual } from 'node:crypto';
-import type { ErrorCode, ServerMessage } from '@hookbrawl/protocol';
-import { PROTOCOL_VERSION } from '@hookbrawl/protocol';
-import { allSlots, reduce, type MemberId, type PlayerName } from '@hookbrawl/room';
+import type { ErrorCode, ServerMessage } from '@hookwars/protocol';
+import { PROTOCOL_VERSION } from '@hookwars/protocol';
+import { allSlots, reduce, type MemberId, type PlayerName } from '@hookwars/room';
 import { fighterOf, matchStartFor } from './match';
 import type { Entropy, Member, Room, RoomRules, Step } from './types';
 import { announce, findMember, isMemberOnline, isOnline, roomView } from './view';

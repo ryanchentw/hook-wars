@@ -1,5 +1,5 @@
-import { TUNING } from '@hookbrawl/sim';
-import type { PlayerId, Vec2 } from '@hookbrawl/sim';
+import { TUNING } from '@hookwars/sim';
+import type { PlayerId, Vec2 } from '@hookwars/sim';
 import type { Viewport } from '../camera/framing';
 import type { Impact } from '../impact/impacts';
 import type { RenderFrame } from '../interpolate';

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { TUNING } from '@hookbrawl/sim';
-import type { GameState } from '@hookbrawl/sim';
+import { TUNING } from '@hookwars/sim';
+import type { GameState } from '@hookwars/sim';
 import { SCENE_IDS, type SceneId } from '../src/render/scenes/types';
 
 const SHOT_DIR = 'test-results';
@@ -22,7 +22,7 @@ async function freezeOn(page: Page, moment: Moment, timeout = 15_000): Promise<v
   await page.evaluate(
     ([wanted, ms, blowBelow]) =>
       new Promise<void>((resolve, reject) => {
-        const hb = window.__hookbrawl!;
+        const hb = window.__hookwars!;
         const shows: Record<typeof wanted, (state: GameState) => boolean> = {
           hookOverStrip: (s) => s.hooks.some((h) => h.phase.kind === 'extending' && h.pos.x > s.arena.canal.x0 + (s.arena.canal.x1 - s.arena.canal.x0) * 0.7),
           // Below what the hook alone takes: the first blow of the brawl has just gone in.
@@ -50,14 +50,14 @@ async function freezeOn(page: Page, moment: Moment, timeout = 15_000): Promise<v
 
 async function shoot(page: Page, name: string): Promise<void> {
   await page.screenshot({ path: `${SHOT_DIR}/${name}.png` });
-  await page.evaluate(() => window.__hookbrawl!.freeze(false));
+  await page.evaluate(() => window.__hookwars!.freeze(false));
 }
 
 type Target = 'dummy' | 'eastDock';
 
 async function aimAt(page: Page, target: Target): Promise<void> {
   const screen = await page.evaluate((wanted) => {
-    const hb = window.__hookbrawl!;
+    const hb = window.__hookwars!;
     const s = hb.getState();
     return hb.worldToScreen(wanted === 'dummy' ? s.players.find((p) => p.team === 'east')!.pos : { x: s.arena.canal.x1 + 260, y: s.arena.height * 0.55 });
   }, target);
@@ -69,7 +69,7 @@ async function holdUntil(page: Page, key: string, axis: 'x' | 'y', mark: number,
   await page.keyboard.down(key);
   await page.waitForFunction(
     ([a, m, up]) => {
-      const hb = window.__hookbrawl!;
+      const hb = window.__hookwars!;
       const p = hb.getState().players.find((q) => q.id === hb.getLocalPlayerId())!;
       return up ? p.pos[a] >= m : p.pos[a] <= m;
     },
@@ -84,15 +84,15 @@ for (const scene of SCENE_IDS) {
     test.setTimeout(120_000);
     await page.setViewportSize({ width: 1280, height: 720 });
     await boot(page, scene);
-    expect(await page.evaluate(() => window.__hookbrawl!.introActive())).toBe(true);
+    expect(await page.evaluate(() => window.__hookwars!.introActive())).toBe(true);
     await page.waitForTimeout(ESTABLISHING_MS);
-    await page.evaluate(() => window.__hookbrawl!.freeze(true));
+    await page.evaluate(() => window.__hookwars!.freeze(true));
     await shoot(page, `scene-${scene}-1-establishing`);
 
     await boot(page, scene, '&intro=off');
-    const { arena } = await page.evaluate(() => window.__hookbrawl!.getState());
+    const { arena } = await page.evaluate(() => window.__hookwars!.getState());
     await page.waitForTimeout(400);
-    await page.evaluate(() => window.__hookbrawl!.freeze(true));
+    await page.evaluate(() => window.__hookwars!.freeze(true));
     await shoot(page, `scene-${scene}-2-start`);
 
     // The obstacle sits on the straight line between the two spawns, so throw from off that line.
@@ -110,7 +110,7 @@ for (const scene of SCENE_IDS) {
 
     await page.keyboard.press('Digit5');
     await page.waitForFunction(() => {
-      const hb = window.__hookbrawl!;
+      const hb = window.__hookwars!;
       return hb.getState().players.some((p) => p.id === hb.getLocalPlayerId() && p.items.grapple.kind === 'owned');
     });
     await aimAt(page, 'eastDock');
@@ -124,7 +124,7 @@ for (const scene of SCENE_IDS) {
       await page.setViewportSize({ width, height });
       await boot(page, scene, '&intro=off');
       await page.waitForTimeout(400);
-      await page.evaluate(() => window.__hookbrawl!.freeze(true));
+      await page.evaluate(() => window.__hookwars!.freeze(true));
       await shoot(page, `scene-${scene}-${n}-${width}x${height}`);
     });
   }

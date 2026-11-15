@@ -1,4 +1,4 @@
-import type { Arena, TeamId, Vec2 } from '@hookbrawl/sim';
+import type { Arena, TeamId, Vec2 } from '@hookwars/sim';
 import { simToWorld, toWorldLength, type Vec3 } from '../space';
 import { CAMERA, HUD_INSETS } from '../theme';
 

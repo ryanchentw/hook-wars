@@ -1,5 +1,5 @@
-import { TUNING } from '@hookbrawl/sim';
-import type { GameEvent, HookId, PlayerId, Vec2 } from '@hookbrawl/sim';
+import { TUNING } from '@hookwars/sim';
+import type { GameEvent, HookId, PlayerId, Vec2 } from '@hookwars/sim';
 import { describe, expect, it } from 'vitest';
 import { toWorldLength } from '../space';
 import { SLASH } from '../theme';

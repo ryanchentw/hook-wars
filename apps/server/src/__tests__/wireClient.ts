@@ -1,4 +1,4 @@
-import { encodeClientMessage, parseServerMessage, PROTOCOL_VERSION, type ClientMessageInput, type RoomRequest, type ServerMessage, type ServerMessageOf } from '@hookbrawl/protocol';
+import { encodeClientMessage, parseServerMessage, PROTOCOL_VERSION, type ClientMessageInput, type RoomRequest, type ServerMessage, type ServerMessageOf } from '@hookwars/protocol';
 import { WebSocket } from 'ws';
 
 const WAIT_MS = 5000;

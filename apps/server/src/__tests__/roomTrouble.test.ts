@@ -1,4 +1,4 @@
-import type { PlayerId } from '@hookbrawl/sim';
+import type { PlayerId } from '@hookwars/sim';
 import { describe, expect, it } from 'vitest';
 import { harness, RULES, started, TICK_MS } from './roomHarness';
 

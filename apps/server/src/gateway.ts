@@ -1,7 +1,7 @@
 import type { IncomingMessage, Server } from 'node:http';
 import type { Duplex } from 'node:stream';
-import { encodeServerMessage, MAX_CLIENT_MESSAGE_BYTES, parseClientMessage, PROTOCOL_VERSION, type ClientMessage, type ClientMessageOf, type ErrorCode } from '@hookbrawl/protocol';
-import type { MemberId } from '@hookbrawl/room';
+import { encodeServerMessage, MAX_CLIENT_MESSAGE_BYTES, parseClientMessage, PROTOCOL_VERSION, type ClientMessage, type ClientMessageOf, type ErrorCode } from '@hookwars/protocol';
+import type { MemberId } from '@hookwars/room';
 import { WebSocket, WebSocketServer, type RawData } from 'ws';
 import { clientAddress, createAdmission, originAllowed, type Admission } from './admission';
 import type { ServerConfig } from './config';

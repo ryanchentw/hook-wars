@@ -9,11 +9,11 @@ const LONG_MATCH = 3_000;
 type Memory = { readonly geometries: number; readonly textures: number };
 
 async function tick(page: Page): Promise<number> {
-  return page.evaluate(() => window.__hookbrawl!.getState().tick);
+  return page.evaluate(() => window.__hookwars!.getState().tick);
 }
 
 async function matchUp(page: Page): Promise<void> {
-  await page.waitForFunction(() => window.__hookbrawl !== undefined, null, { timeout: 30_000 });
+  await page.waitForFunction(() => window.__hookwars !== undefined, null, { timeout: 30_000 });
   await expect(page.locator('#stage')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
 }
 
@@ -37,12 +37,12 @@ async function tabTo(page: Page, name: string): Promise<void> {
 }
 
 async function skipIntro(page: Page): Promise<void> {
-  if (await page.evaluate(() => window.__hookbrawl!.introActive())) await page.keyboard.press('Enter');
-  await expect.poll(() => page.evaluate(() => window.__hookbrawl!.introActive())).toBe(false);
+  if (await page.evaluate(() => window.__hookwars!.introActive())) await page.keyboard.press('Enter');
+  await expect.poll(() => page.evaluate(() => window.__hookwars!.introActive())).toBe(false);
 }
 
 async function finishMatch(page: Page): Promise<void> {
-  await page.evaluate((s) => window.__hookbrawl!.fastForward(s), LONG_MATCH);
+  await page.evaluate((s) => window.__hookwars!.fastForward(s), LONG_MATCH);
   await expect(page.getByRole('dialog', { name: 'match over' })).toBeVisible();
 }
 
@@ -76,7 +76,7 @@ test('menu to lobby to a 3v3, to the end, a rematch and back to the lobby, with 
 
   await expect(page).toHaveURL(/#\/match$/);
   await matchUp(page);
-  expect(await page.evaluate(() => window.__hookbrawl!.getState().players.length)).toBe(6);
+  expect(await page.evaluate(() => window.__hookwars!.getState().players.length)).toBe(6);
   await skipIntro(page);
   await finishMatch(page);
   const table = page.getByRole('table', { name: 'Final scores' });
@@ -96,7 +96,7 @@ test('menu to lobby to a 3v3, to the end, a rematch and back to the lobby, with 
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/#\/lobby$/);
   await expect(page.getByRole('heading', { name: 'Lobby' })).toBeFocused();
-  expect(await page.evaluate(() => window.__hookbrawl === undefined)).toBe(true);
+  expect(await page.evaluate(() => window.__hookwars === undefined)).toBe(true);
   await expect(page.locator('.slot-bot')).toHaveCount(5);
 });
 
@@ -232,7 +232,7 @@ test('Back and Forward move between menu, lobby and match, and never into a matc
   await page.goBack();
   await expect(page).toHaveURL(/#\/lobby$/);
   await expect(page.getByRole('heading', { name: 'Lobby' })).toBeVisible();
-  await expect.poll(() => page.evaluate(() => window.__hookbrawl === undefined)).toBe(true);
+  await expect.poll(() => page.evaluate(() => window.__hookwars === undefined)).toBe(true);
 
   await page.goForward();
   await expect(page).toHaveURL(/#\/lobby$/);
@@ -257,7 +257,7 @@ test('three matches in a row, through the lobby each time, leave the GPU holding
     // Long enough for every fighter to have been drawn with everything it carries.
     await page.waitForTimeout(400);
     rounds.push(await page.evaluate(() => {
-      const { geometries, textures } = window.__hookbrawl!.renderStats();
+      const { geometries, textures } = window.__hookwars!.renderStats();
       return { geometries, textures };
     }));
     expect(await page.locator('#stage canvas').count()).toBe(1);

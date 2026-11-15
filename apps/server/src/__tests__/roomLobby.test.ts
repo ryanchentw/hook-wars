@@ -1,4 +1,4 @@
-import { seatOf } from '@hookbrawl/room';
+import { seatOf } from '@hookwars/room';
 import { describe, expect, it } from 'vitest';
 import { isAbandoned, wakeAt } from '../rooms/core';
 import { duel, harness, RULES } from './roomHarness';

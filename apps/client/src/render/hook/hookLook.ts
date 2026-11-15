@@ -1,4 +1,4 @@
-import type { Hook } from '@hookbrawl/sim';
+import type { Hook } from '@hookwars/sim';
 
 /**
  * How dangerous a hook in the air is to anyone it passes. `live` can still catch someone, `spent` is an empty hook

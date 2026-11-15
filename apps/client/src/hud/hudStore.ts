@@ -1,4 +1,4 @@
-import type { Purchase } from '@hookbrawl/sim';
+import type { Purchase } from '@hookwars/sim';
 import type { SessionView } from '../game/session';
 import { appendKills, deriveHud, NO_FEEDBACK, ownPlayer, type Feedback, type HudView, type KillFeedEntry } from './hudView';
 import { bountyEarned, describeOutcome, resolvePurchases, shopSlots, type ResolvedPurchase } from './shopView';

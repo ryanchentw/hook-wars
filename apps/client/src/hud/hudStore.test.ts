@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ECONOMY, TICK_DT } from '@hookbrawl/sim';
-import type { GameEvent, MatchConfig, PlayerInput, Purchase } from '@hookbrawl/sim';
+import { ECONOMY, TICK_DT } from '@hookwars/sim';
+import type { GameEvent, MatchConfig, PlayerInput, Purchase } from '@hookwars/sim';
 import { BOT, createFakeSim, HUMAN } from '../game/fakeSim';
 import { createSession, type SimApi } from '../game/session';
 import { createHudStore } from './hudStore';

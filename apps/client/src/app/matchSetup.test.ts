@@ -1,5 +1,5 @@
-import { toMatchConfig } from '@hookbrawl/room';
-import type { MatchPlan, MemberId, RoomState } from '@hookbrawl/room';
+import { toMatchConfig } from '@hookwars/room';
+import type { MatchPlan, MemberId, RoomState } from '@hookwars/room';
 import { describe, expect, it } from 'vitest';
 import { directRoom, matchSeed, MAX_STARTING_GOLD, pageOptionsFromQuery, sessionSetupFor } from './matchSetup';
 

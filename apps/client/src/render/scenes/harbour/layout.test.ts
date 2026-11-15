@@ -1,4 +1,4 @@
-import { DEFAULT_ARENA } from '@hookbrawl/sim';
+import { DEFAULT_ARENA } from '@hookwars/sim';
 import { describe, expect, it } from 'vitest';
 import { toWorldLength } from '../../space';
 import { layOutArena, propFootprint } from './layout';

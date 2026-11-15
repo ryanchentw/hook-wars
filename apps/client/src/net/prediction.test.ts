@@ -1,4 +1,4 @@
-import { createMatch, DEFAULT_ARENA, step, TICK_DT, viewFor, type GameState, type PlayerId, type PlayerInput, type SeenPlayer, type Vec2 } from '@hookbrawl/sim';
+import { createMatch, DEFAULT_ARENA, step, TICK_DT, viewFor, type GameState, type PlayerId, type PlayerInput, type SeenPlayer, type Vec2 } from '@hookwars/sim';
 import { describe, expect, it } from 'vitest';
 import { absorbCorrection, decayCorrection, reconcile, walkAhead, type PendingInput } from './prediction';
 

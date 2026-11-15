@@ -3,7 +3,7 @@ import { expect, test, type Page, type Route } from '@playwright/test';
 const MODELS = '**/assets/kaykit/**/*.glb';
 
 async function tick(page: Page): Promise<number> {
-  return page.evaluate(() => window.__hookbrawl!.getState().tick);
+  return page.evaluate(() => window.__hookwars!.getState().tick);
 }
 
 test('shows a loading panel, then a retryable error when a model fails, and starts the match after the retry', async ({ page }) => {
@@ -18,7 +18,7 @@ test('shows a loading panel, then a retryable error when a model fails, and star
   const status = page.getByRole('status');
   await expect(status).toContainText('Rigging the harbour');
   await expect(stage).toHaveAttribute('data-state', 'loading');
-  expect(await page.evaluate(() => window.__hookbrawl === undefined)).toBe(true);
+  expect(await page.evaluate(() => window.__hookwars === undefined)).toBe(true);
   await expect(page.locator('#stage canvas')).toHaveCount(0);
 
   await Promise.all(heldCharacters.map((route) => route.abort()));
@@ -33,7 +33,7 @@ test('shows a loading panel, then a retryable error when a model fails, and star
   await expect(alert).toBeVisible();
   await expect(retry).toBeVisible();
   await expect(status).toBeHidden();
-  expect(await page.evaluate(() => window.__hookbrawl === undefined)).toBe(true);
+  expect(await page.evaluate(() => window.__hookwars === undefined)).toBe(true);
 
   await page.unroute(MODELS);
   await retry.click();
@@ -48,7 +48,7 @@ test('survives losing and regaining the WebGL context', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/?seed=1&intro=off');
-  await page.waitForFunction(() => window.__hookbrawl !== undefined);
+  await page.waitForFunction(() => window.__hookwars !== undefined);
   await expect.poll(() => tick(page)).toBeGreaterThan(2);
 
   await page.evaluate(() => {

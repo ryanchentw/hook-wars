@@ -1,4 +1,4 @@
-import type { TeamId } from '@hookbrawl/sim';
+import type { TeamId } from '@hookwars/sim';
 import type { Scoreboard, ScoreRow } from './hudView';
 import { TEAM_LABEL } from './labels';
 

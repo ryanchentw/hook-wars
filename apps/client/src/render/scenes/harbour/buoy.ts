@@ -1,4 +1,4 @@
-import type { Arena } from '@hookbrawl/sim';
+import type { Arena } from '@hookwars/sim';
 import {
   AdditiveBlending,
   CylinderGeometry,

@@ -1,4 +1,4 @@
-import type { Vec2 } from '@hookbrawl/sim';
+import type { Vec2 } from '@hookwars/sim';
 
 export type LabelBox = { readonly width: number; readonly height: number };
 

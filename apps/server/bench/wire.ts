@@ -1,5 +1,5 @@
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
-import { encodeClientMessage, PROTOCOL_VERSION, type ClientMessageInput } from '@hookbrawl/protocol';
+import { encodeClientMessage, PROTOCOL_VERSION, type ClientMessageInput } from '@hookwars/protocol';
 import { WebSocket } from 'ws';
 
 /**
@@ -7,7 +7,7 @@ import { WebSocket } from 'ws';
  * receives per second on the wire, compressed and not, and the CPU time the server process spent, read from `ps`.
  * The clients press keys on a schedule rather than play well: they walk about and throw hooks across the water.
  *
- * Run after `pnpm build`: pnpm --filter @hookbrawl/server exec tsx bench/wire.ts
+ * Run after `pnpm build`: pnpm --filter @hookwars/server exec tsx bench/wire.ts
  */
 const PORT = Number(process.env.BENCH_PORT ?? 8795);
 const SECONDS = Number(process.env.BENCH_SECONDS ?? 30);
@@ -100,7 +100,7 @@ async function run(server: ChildProcess, fog: boolean, compress: boolean): Promi
 }
 
 const server = spawn('node', ['dist/server.js'], {
-  env: { ...process.env, PORT: String(PORT), HOST: '127.0.0.1', HOOKBRAWL_LOG_LEVEL: 'warn', HOOKBRAWL_MATCH_COUNTDOWN_MS: '100', HOOKBRAWL_EMPTY_ROOM_GRACE_MS: '100', HOOKBRAWL_JOINS_PER_MINUTE: '600' },
+  env: { ...process.env, PORT: String(PORT), HOST: '127.0.0.1', HOOKWARS_LOG_LEVEL: 'warn', HOOKWARS_MATCH_COUNTDOWN_MS: '100', HOOKWARS_EMPTY_ROOM_GRACE_MS: '100', HOOKWARS_JOINS_PER_MINUTE: '600' },
   stdio: 'inherit',
 });
 try {

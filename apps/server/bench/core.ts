@@ -1,6 +1,6 @@
-import { encodeServerMessage, type Act, type LobbyAction } from '@hookbrawl/protocol';
-import type { MemberId, PlayerName } from '@hookbrawl/room';
-import { botThink, createBotBrain, type BotBrain, type PlayerInput } from '@hookbrawl/sim';
+import { encodeServerMessage, type Act, type LobbyAction } from '@hookwars/protocol';
+import type { MemberId, PlayerName } from '@hookwars/room';
+import { botThink, createBotBrain, type BotBrain, type PlayerInput } from '@hookwars/sim';
 import { advance, createRoomCore, input, join, lobbyAction, type Room, type RoomRules, type Step } from '../src/rooms/core';
 
 /**
@@ -8,7 +8,7 @@ import { advance, createRoomCore, input, join, lobbyAction, type Room, type Room
  * inputs a browser sends, so the room does all the work it does for six real players. Prints the time one tick
  * takes and the size of what each client is sent, with the fog off and on.
  *
- * Run: pnpm --filter @hookbrawl/server exec tsx bench/core.ts
+ * Run: pnpm --filter @hookwars/server exec tsx bench/core.ts
  */
 const TICK_MS = 1000 / 30;
 const MATCH_SECONDS = 120;

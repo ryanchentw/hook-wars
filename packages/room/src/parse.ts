@@ -1,4 +1,4 @@
-import type { TeamId } from '@hookbrawl/sim';
+import type { TeamId } from '@hookwars/sim';
 import { KILL_TARGETS, SCENE_IDS, SLOTS_PER_TEAM, TEAMS, type KillTarget, type PlayerName, type SceneChoice, type SlotRef } from './types';
 
 export const NAME_MAX_LENGTH = 16;

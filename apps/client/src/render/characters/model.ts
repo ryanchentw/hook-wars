@@ -1,4 +1,4 @@
-import type { TeamId } from '@hookbrawl/sim';
+import type { TeamId } from '@hookwars/sim';
 import { Mesh, MeshStandardMaterial, SkinnedMesh, type Object3D } from 'three';
 import { clone as cloneSkinned } from 'three/addons/utils/SkeletonUtils.js';
 import type { CharacterAsset } from '../assets/loadAssets';

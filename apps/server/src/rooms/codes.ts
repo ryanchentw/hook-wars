@@ -1,5 +1,5 @@
 import { randomBytes, randomInt } from 'node:crypto';
-import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH } from '@hookbrawl/protocol';
+import { ROOM_CODE_ALPHABET, ROOM_CODE_LENGTH } from '@hookwars/protocol';
 import type { Entropy } from './types';
 
 const TOKEN_BYTES = 24;

@@ -1,5 +1,5 @@
-import { KILL_TARGETS, SCENE_IDS } from '@hookbrawl/room';
-import type { RoomSettings, SceneChoice } from '@hookbrawl/room';
+import { KILL_TARGETS, SCENE_IDS } from '@hookwars/room';
+import type { RoomSettings, SceneChoice } from '@hookwars/room';
 import { useId } from 'react';
 import type { AppView, LocalAction } from '../app/controller';
 import { SCENES } from '../render/scenes/registry';

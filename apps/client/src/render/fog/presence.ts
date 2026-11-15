@@ -1,4 +1,4 @@
-import type { PlayerId } from '@hookbrawl/sim';
+import type { PlayerId } from '@hookwars/sim';
 import type { PlayerFrame } from '../interpolate';
 
 /** The fighters drawn last frame, each with how present they were. */

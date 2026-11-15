@@ -1,6 +1,6 @@
-import { fighterCount, SLOTS_PER_TEAM } from '@hookbrawl/room';
-import type { MemberId, RoomState, Slot, SlotRef } from '@hookbrawl/room';
-import type { TeamId } from '@hookbrawl/sim';
+import { fighterCount, SLOTS_PER_TEAM } from '@hookwars/room';
+import type { MemberId, RoomState, Slot, SlotRef } from '@hookwars/room';
+import type { TeamId } from '@hookwars/sim';
 import { useId } from 'react';
 import type { AppView, LocalAction } from '../app/controller';
 import { TEAM_LABEL } from '../hud/labels';

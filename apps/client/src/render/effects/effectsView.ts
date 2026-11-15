@@ -1,4 +1,4 @@
-import type { SeenEvent, PlayerId } from '@hookbrawl/sim';
+import type { SeenEvent, PlayerId } from '@hookwars/sim';
 import { Group, type Camera, type Texture } from 'three';
 import type { Impact } from '../impact/impacts';
 import { burstFor, createRandom, impactBursts, stepParticles, type Particle } from './particles';

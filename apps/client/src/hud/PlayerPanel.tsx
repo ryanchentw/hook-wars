@@ -1,4 +1,4 @@
-import type { Purchase } from '@hookbrawl/sim';
+import type { Purchase } from '@hookwars/sim';
 import { CRITICAL_HP_FRACTION, LOW_HP_FRACTION } from '../game/health';
 import { cooldownLabel, type Bounty, type Feedback, type LocalView } from './hudView';
 import type { GrappleView } from './shopView';

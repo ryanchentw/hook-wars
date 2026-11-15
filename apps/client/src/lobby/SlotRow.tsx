@@ -1,5 +1,5 @@
-import { botName } from '@hookbrawl/room';
-import type { MemberId, Slot, SlotRef } from '@hookbrawl/room';
+import { botName } from '@hookwars/room';
+import type { MemberId, Slot, SlotRef } from '@hookwars/room';
 import { forwardRef } from 'react';
 import type { LocalAction } from '../app/controller';
 import { TEAM_LABEL } from '../hud/labels';

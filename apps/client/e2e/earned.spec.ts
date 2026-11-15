@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { ECONOMY } from '@hookbrawl/sim';
+import { ECONOMY } from '@hookwars/sim';
 
 const SHOT_DIR = 'test-results';
 const DESKTOP = { width: 1280, height: 720 };
@@ -10,14 +10,14 @@ const FEED_TRIES = 120;
 const SLACK = 1e-6;
 
 async function matchUp(page: Page): Promise<void> {
-  await page.waitForFunction(() => window.__hookbrawl !== undefined, null, { timeout: 30_000 });
+  await page.waitForFunction(() => window.__hookwars !== undefined, null, { timeout: 30_000 });
   await expect(page.locator('#stage')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
 }
 
 async function waitForKill(page: Page): Promise<void> {
   const kills = page.locator('.hud-feed li');
   for (let i = 0; i < FEED_TRIES && (await kills.count()) === 0; i += 1) {
-    await page.evaluate((s) => window.__hookbrawl!.fastForward(s), FEED_STEP_SECONDS);
+    await page.evaluate((s) => window.__hookwars!.fastForward(s), FEED_STEP_SECONDS);
   }
   await expect(kills.first()).toBeVisible();
 }
@@ -28,7 +28,7 @@ type Ledger = { readonly earned: number; readonly derived: number; readonly gold
 const ledger = (page: Page): Promise<readonly Ledger[]> =>
   page.evaluate(
     ({ economy, slack }) => {
-      const view = window.__hookbrawl!.getView();
+      const view = window.__hookwars!.getView();
       const seconds = Math.floor(view.time + slack);
       return view.roster.map((c) => ({
         earned: c.earned,
@@ -55,7 +55,7 @@ test('the scoreboard and the final table show gold earned, which spending never 
   await page.goto('/?roster=3v3&intro=off&seed=3&fog=on');
   await matchUp(page);
   await waitForKill(page);
-  await page.evaluate(() => window.__hookbrawl!.setPaused(true));
+  await page.evaluate(() => window.__hookwars!.setPaused(true));
 
   const rows = await ledger(page);
   expect(rows.some((row) => row.gold !== null && row.gold < row.earned)).toBe(true);
@@ -67,8 +67,8 @@ test('the scoreboard and the final table show gold earned, which spending never 
   await page.screenshot({ path: `${SHOT_DIR}/earned-scoreboard.png` });
   await page.getByRole('button', { name: 'Scores' }).click();
 
-  await page.evaluate(() => window.__hookbrawl!.setPaused(false));
-  await page.evaluate((s) => window.__hookbrawl!.fastForward(s), LONG_MATCH);
+  await page.evaluate(() => window.__hookwars!.setPaused(false));
+  await page.evaluate((s) => window.__hookwars!.fastForward(s), LONG_MATCH);
   const over = page.getByRole('dialog', { name: 'match over' });
   await expect(over).toBeVisible();
   await expectEarnedColumn(page, over);

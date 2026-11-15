@@ -1,21 +1,21 @@
 {
-  "name": "@hookbrawl/server",
+  "name": "@hookwars/server",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "PORT=${HOOKBRAWL_SERVER_PORT:-8787} tsx watch src/main.ts",
+    "dev": "PORT=${HOOKWARS_SERVER_PORT:-8787} tsx watch src/main.ts",
     "start": "node dist/server.js",
     "build": "tsc --noEmit && node build.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "serve": "PORT=${HOOKBRAWL_SERVER_PORT:-8787} tsx src/main.ts"
+    "serve": "PORT=${HOOKWARS_SERVER_PORT:-8787} tsx src/main.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.8",
-    "@hookbrawl/protocol": "workspace:*",
-    "@hookbrawl/room": "workspace:*",
-    "@hookbrawl/sim": "workspace:*",
+    "@hookwars/protocol": "workspace:*",
+    "@hookwars/room": "workspace:*",
+    "@hookwars/sim": "workspace:*",
     "hono": "^4.13.18",
     "ws": "^8.23.0",
     "zod": "^4.6.7"

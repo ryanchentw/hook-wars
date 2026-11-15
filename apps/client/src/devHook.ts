@@ -1,5 +1,5 @@
-import { TICK_DT } from '@hookbrawl/sim';
-import type { GameState, PlayerId, TeamView, Vec2 } from '@hookbrawl/sim';
+import { TICK_DT } from '@hookwars/sim';
+import type { GameState, PlayerId, TeamView, Vec2 } from '@hookwars/sim';
 import type { Session } from './game/session';
 import type { Renderer, RenderStats } from './render/renderer';
 import type { SceneId } from './render/scenes/types';
@@ -31,7 +31,7 @@ export type DevHook = {
 
 declare global {
   interface Window {
-    __hookbrawl?: DevHook;
+    __hookwars?: DevHook;
   }
 }
 
@@ -68,10 +68,10 @@ export function installDevHook(session: Session, renderer: Renderer, restart: ()
       for (let t = 0; t < seconds && session.getState().phase.kind === 'playing'; t += TICK_DT) session.advance(TICK_DT);
     },
   };
-  window.__hookbrawl = hook;
+  window.__hookwars = hook;
   return {
     uninstall() {
-      if (window.__hookbrawl === hook) delete window.__hookbrawl;
+      if (window.__hookwars === hook) delete window.__hookwars;
     },
   };
 }

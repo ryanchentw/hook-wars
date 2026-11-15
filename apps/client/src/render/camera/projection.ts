@@ -1,4 +1,4 @@
-import type { Vec2 } from '@hookbrawl/sim';
+import type { Vec2 } from '@hookwars/sim';
 import { Vector3, type PerspectiveCamera } from 'three';
 import type { Vec3 } from '../space';
 import { CAMERA } from '../theme';

@@ -1,4 +1,4 @@
-import type { SeenEvent, PlayerId } from '@hookbrawl/sim';
+import type { SeenEvent, PlayerId } from '@hookwars/sim';
 import { Group, type Vector3 } from 'three';
 import type { Assets } from '../assets/loadAssets';
 import type { Impact } from '../impact/impacts';

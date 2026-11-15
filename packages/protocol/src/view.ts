@@ -1,4 +1,4 @@
-import type { Arena, GrappleId, HookId, PlayerId, TeamView } from '@hookbrawl/sim';
+import type { Arena, GrappleId, HookId, PlayerId, TeamView } from '@hookwars/sim';
 import { z } from 'zod';
 import { idOf, purchaseSchema, teamSchema } from './common';
 import { RAW_NAME_MAX_LENGTH } from './limits';

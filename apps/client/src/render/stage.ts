@@ -1,4 +1,4 @@
-import type { Arena, PlayerId, SeenEvent, TeamId } from '@hookbrawl/sim';
+import type { Arena, PlayerId, SeenEvent, TeamId } from '@hookwars/sim';
 import { Color, FogExp2, Group, type BufferGeometry, type Camera, type Scene, type Texture, type Vector3, type WebGLRenderer } from 'three';
 import type { Assets } from './assets/loadAssets';
 import { createCharactersView } from './characters/charactersView';

@@ -21,7 +21,7 @@ FROM node:24-slim
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=8080 \
-    HOOKBRAWL_STATIC_DIR=/app/public
+    HOOKWARS_STATIC_DIR=/app/public
 WORKDIR /app
 COPY --from=build /repo/apps/server/dist ./dist
 COPY --from=build /repo/apps/client/dist ./public

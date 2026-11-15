@@ -16,10 +16,10 @@ kill_timeout = "5s"
 
 [env]
   PORT = "8080"
-  HOOKBRAWL_STATIC_DIR = "/app/public"
+  HOOKWARS_STATIC_DIR = "/app/public"
   # Fly's proxy puts the player's address in this header; the per-address limits need it, or everyone looks like the proxy.
-  HOOKBRAWL_CLIENT_IP_HEADER = "fly-client-ip"
-  HOOKBRAWL_LOG_LEVEL = "info"
+  HOOKWARS_CLIENT_IP_HEADER = "fly-client-ip"
+  HOOKWARS_LOG_LEVEL = "info"
 
 [http_service]
   internal_port = 8080

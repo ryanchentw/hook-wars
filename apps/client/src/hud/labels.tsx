@@ -1,4 +1,4 @@
-import type { TeamId } from '@hookbrawl/sim';
+import type { TeamId } from '@hookwars/sim';
 import { CREDITS_HASH } from '../app/route';
 
 /** Named for the side of the screen, so the same words fit a harbour, a bridge and a park. */

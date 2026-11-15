@@ -10,13 +10,13 @@ importers:
 
   apps/client:
     dependencies:
-      '@hookbrawl/protocol':
+      '@hookwars/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
-      '@hookbrawl/room':
+      '@hookwars/room':
         specifier: workspace:*
         version: link:../../packages/room
-      '@hookbrawl/sim':
+      '@hookwars/sim':
         specifier: workspace:*
         version: link:../../packages/sim
       react:
@@ -59,13 +59,13 @@ importers:
       '@hono/node-server':
         specifier: ^2.1.8
         version: 2.1.8(hono@4.13.18)
-      '@hookbrawl/protocol':
+      '@hookwars/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
-      '@hookbrawl/room':
+      '@hookwars/room':
         specifier: workspace:*
         version: link:../../packages/room
-      '@hookbrawl/sim':
+      '@hookwars/sim':
         specifier: workspace:*
         version: link:../../packages/sim
       hono:
@@ -99,10 +99,10 @@ importers:
 
   packages/protocol:
     dependencies:
-      '@hookbrawl/room':
+      '@hookwars/room':
         specifier: workspace:*
         version: link:../room
-      '@hookbrawl/sim':
+      '@hookwars/sim':
         specifier: workspace:*
         version: link:../sim
       zod:
@@ -118,7 +118,7 @@ importers:
 
   packages/room:
     dependencies:
-      '@hookbrawl/sim':
+      '@hookwars/sim':
         specifier: workspace:*
         version: link:../sim
     devDependencies:

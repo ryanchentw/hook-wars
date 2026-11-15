@@ -1,4 +1,4 @@
-import { parseRoomAction, type MatchStart, type RoomRequest, type RoomView, type ServerMessageOf } from '@hookbrawl/protocol';
+import { parseRoomAction, type MatchStart, type RoomRequest, type RoomView, type ServerMessageOf } from '@hookwars/protocol';
 import type { Connection, ConnStatus, LostReason } from '../net/connection';
 import type { NetLink } from '../net/netSession';
 import type { TokenStore } from '../net/tokenStore';

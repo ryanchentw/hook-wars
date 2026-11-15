@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { ECONOMY, hookStats, ITEMS, TUNING } from '@hookbrawl/sim';
-import type { GameState, Hook, Player, Vec2 } from '@hookbrawl/sim';
+import { ECONOMY, hookStats, ITEMS, TUNING } from '@hookwars/sim';
+import type { GameState, Hook, Player, Vec2 } from '@hookwars/sim';
 
 const SHOT_DIR = 'test-results';
 const SLACK = 1e-6;
@@ -18,7 +18,7 @@ type Snapshot = { readonly time: number; readonly me: Player; readonly dummy: Pl
 
 async function snapshot(page: Page): Promise<Snapshot> {
   return page.evaluate(() => {
-    const hb = window.__hookbrawl!;
+    const hb = window.__hookwars!;
     const state = hb.getState();
     const me = state.players.find((p) => p.id === hb.getLocalPlayerId())!;
     const dummy = state.players.find((p) => p.team === 'east')!;
@@ -28,14 +28,14 @@ async function snapshot(page: Page): Promise<Snapshot> {
 
 async function boot(page: Page, query: string): Promise<void> {
   await page.goto(`/${query}&intro=off`);
-  await page.waitForFunction(() => window.__hookbrawl !== undefined);
+  await page.waitForFunction(() => window.__hookwars !== undefined);
 }
 
 const passiveBetween = (t0: number, t1: number): number =>
   ECONOMY.passiveGold * (Math.floor(t1 + SLACK) - Math.floor(t0 + SLACK));
 
 async function toScreen(page: Page, p: Vec2): Promise<Vec2> {
-  return page.evaluate((world) => window.__hookbrawl!.worldToScreen(world), p);
+  return page.evaluate((world) => window.__hookwars!.worldToScreen(world), p);
 }
 
 /** Holds `key` until the local player's `axis` coordinate passes `mark` in the direction it moves. */
@@ -44,7 +44,7 @@ async function holdUntil(page: Page, key: string, axis: 'x' | 'y', mark: number)
   await page.keyboard.down(key);
   await page.waitForFunction(
     ([a, m, rising]) => {
-      const hb = window.__hookbrawl!;
+      const hb = window.__hookwars!;
       const p = hb.getState().players.find((q) => q.id === hb.getLocalPlayerId())!;
       return rising ? p.pos[a] >= m : p.pos[a] <= m;
     },
@@ -71,7 +71,7 @@ async function walkToStand(page: Page): Promise<Vec2> {
 
 async function localHook(page: Page): Promise<Hook | null> {
   return page.evaluate(() => {
-    const hb = window.__hookbrawl!;
+    const hb = window.__hookwars!;
     return hb.getState().hooks.find((h) => h.ownerId === hb.getLocalPlayerId()) ?? null;
   });
 }
@@ -103,13 +103,13 @@ type Framed = { readonly png: Png; readonly centre: Vec2 };
 const SETTLE_MS = 150;
 
 async function frameAround(page: Page, at: () => Promise<Vec2 | null>): Promise<Framed> {
-  await page.evaluate(() => window.__hookbrawl!.setPaused(true));
+  await page.evaluate(() => window.__hookwars!.setPaused(true));
   await page.waitForTimeout(SETTLE_MS);
   const point = await at();
   if (point === null) throw new Error('nothing to frame');
   const png = await page.screenshot();
   const centre = await toScreen(page, point);
-  await page.evaluate(() => window.__hookbrawl!.setPaused(false));
+  await page.evaluate(() => window.__hookwars!.setPaused(false));
   return { png, centre };
 }
 
@@ -151,7 +151,7 @@ async function throwAndWalkSouth(page: Page): Promise<void> {
   await page.keyboard.down('KeyS');
   await page.waitForFunction(
     () => {
-      const hb = window.__hookbrawl!;
+      const hb = window.__hookwars!;
       const s = hb.getState();
       const caught = s.players.some((p) => p.team === 'east' && p.status.kind === 'dragged');
       if (caught) hb.setPaused(true);
@@ -172,7 +172,7 @@ test('a barbed hook that missed on the way out catches the dummy on the way back
   expect(latched.dummy.hp).toBe(TUNING.maxHp - hookStats(latched.me).damage);
   await page.waitForTimeout(SETTLE_MS);
   await page.screenshot({ path: `${SHOT_DIR}/barb-return-catch.png` });
-  await page.evaluate(() => window.__hookbrawl!.setPaused(false));
+  await page.evaluate(() => window.__hookwars!.setPaused(false));
 
   await waitForHook(page, (h) => h === null);
   const home = await snapshot(page);

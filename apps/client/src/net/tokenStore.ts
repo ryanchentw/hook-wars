@@ -1,4 +1,4 @@
-const PREFIX = 'hookbrawl.room.';
+const PREFIX = 'hookwars.room.';
 
 /**
  * The rejoin token for each room, kept for this tab only: a reload gets the seat back, a second tab is a second

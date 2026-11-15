@@ -1,5 +1,5 @@
 import type { MouseEvent } from 'react';
-import type { Purchase } from '@hookbrawl/sim';
+import type { Purchase } from '@hookwars/sim';
 import type { Feedback, SlotFeedback } from './hudView';
 import type { PurchaseOutcome, ShopSlotView } from './shopView';
 

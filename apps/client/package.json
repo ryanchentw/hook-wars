@@ -1,5 +1,5 @@
 {
-  "name": "@hookbrawl/client",
+  "name": "@hookwars/client",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -13,9 +13,9 @@
     "e2e:online": "playwright test --config playwright.online.config.ts"
   },
   "dependencies": {
-    "@hookbrawl/protocol": "workspace:*",
-    "@hookbrawl/room": "workspace:*",
-    "@hookbrawl/sim": "workspace:*",
+    "@hookwars/protocol": "workspace:*",
+    "@hookwars/room": "workspace:*",
+    "@hookwars/sim": "workspace:*",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "three": "^0.187.0"

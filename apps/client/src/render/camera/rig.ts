@@ -1,4 +1,4 @@
-import type { Arena, PlayerId } from '@hookbrawl/sim';
+import type { Arena, PlayerId } from '@hookwars/sim';
 import { PerspectiveCamera, Vector3 } from 'three';
 import type { Impact } from '../impact/impacts';
 import type { RenderFrame } from '../interpolate';

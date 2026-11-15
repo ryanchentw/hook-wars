@@ -1,5 +1,5 @@
-import type { RoomView, ServerMessage } from '@hookbrawl/protocol';
-import type { MemberId } from '@hookbrawl/room';
+import type { RoomView, ServerMessage } from '@hookwars/protocol';
+import type { MemberId } from '@hookwars/room';
 import type { Member, Outbound, Room } from './types';
 
 export const isOnline = (member: Member): boolean => member.awaySince === null;

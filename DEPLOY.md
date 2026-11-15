@@ -88,11 +88,11 @@ The machine's limit is CPU, not memory. On a laptop, one 3v3 with six players wh
 
 After the first evening of play, look at the CPU graph in the Fly dashboard for the machine. If the graph sits near its ceiling during a match, or players report that everyone stutters at once, do one of the following.
 
-- Turn compression off. The service then uses about 40% less CPU, and sends each player ten times the data: 98 kB per second, not 9. Set `HOOKBRAWL_WS_COMPRESSION = "false"` in `[env]`.
-- Send fewer snapshots. Set `HOOKBRAWL_SNAPSHOT_HZ = "15"` in `[env]`.
+- Turn compression off. The service then uses about 40% less CPU, and sends each player ten times the data: 98 kB per second, not 9. Set `HOOKWARS_WS_COMPRESSION = "false"` in `[env]`.
+- Send fewer snapshots. Set `HOOKWARS_SNAPSHOT_HZ = "15"` in `[env]`.
 - Use a machine with a CPU of its own. Set `size = "performance-1x"` in `[[vm]]`, which costs more.
 
-`pnpm --filter @hookbrawl/server exec tsx bench/wire.ts` repeats the laptop measurement after `pnpm build`.
+`pnpm --filter @hookwars/server exec tsx bench/wire.ts` repeats the laptop measurement after `pnpm build`.
 
 ## Read the logs
 
@@ -117,12 +117,12 @@ Every setting is an environment variable with a default, checked when the servic
 
 | Variable | Default | What it does |
 |---|---|---|
-| `HOOKBRAWL_MAX_ROOMS` | 40 | Rooms the machine holds before it refuses to create more. |
-| `HOOKBRAWL_REJOIN_WINDOW_MS` | 60000 | How long a dropped player keeps their seat. |
-| `HOOKBRAWL_MATCH_COUNTDOWN_MS` | 3500 | Time between "Start match" and the first tick. |
-| `HOOKBRAWL_SNAPSHOT_HZ` | 20 | Snapshots sent to each player per second. |
-| `HOOKBRAWL_WS_COMPRESSION` | true | Whether messages are compressed. Compression trades CPU for bandwidth. |
-| `HOOKBRAWL_ALLOWED_ORIGINS` | unset | Sites allowed to open a room connection. Unset, only the site that served the page. Set it if you serve the page from another domain. |
+| `HOOKWARS_MAX_ROOMS` | 40 | Rooms the machine holds before it refuses to create more. |
+| `HOOKWARS_REJOIN_WINDOW_MS` | 60000 | How long a dropped player keeps their seat. |
+| `HOOKWARS_MATCH_COUNTDOWN_MS` | 3500 | Time between "Start match" and the first tick. |
+| `HOOKWARS_SNAPSHOT_HZ` | 20 | Snapshots sent to each player per second. |
+| `HOOKWARS_WS_COMPRESSION` | true | Whether messages are compressed. Compression trades CPU for bandwidth. |
+| `HOOKWARS_ALLOWED_ORIGINS` | unset | Sites allowed to open a room connection. Unset, only the site that served the page. Set it if you serve the page from another domain. |
 
 ## Do not add a second machine
 

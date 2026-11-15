@@ -1,4 +1,4 @@
-import type { TeamId, Vec2 } from '@hookbrawl/sim';
+import type { TeamId, Vec2 } from '@hookwars/sim';
 import type { Impact } from '../impact/impacts';
 import { envelope } from '../impact/timing';
 import { SLASH } from '../theme';

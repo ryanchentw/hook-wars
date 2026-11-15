@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { TUNING } from '@hookbrawl/sim';
-import type { HookId, PlayerId } from '@hookbrawl/sim';
+import { TUNING } from '@hookwars/sim';
+import type { HookId, PlayerId } from '@hookwars/sim';
 import { BOT, fakePlayer, fakeView, HUMAN } from '../game/fakeSim';
 import { appendKills, cooldownLabel, deriveHud, KILL_FEED_SIZE } from './hudView';
 

@@ -1,5 +1,5 @@
-import { botThink, createBotBrain, createMatch, step, TICK_DT } from '@hookbrawl/sim';
-import type { BotBrain, GameState } from '@hookbrawl/sim';
+import { botThink, createBotBrain, createMatch, step, TICK_DT } from '@hookwars/sim';
+import type { BotBrain, GameState } from '@hookwars/sim';
 import { describe, expect, it } from 'vitest';
 import { createRoom, parseName, reduce, SCENE_IDS, toMatchConfig, upcomingScene } from '../index';
 import type { MatchPlan, MemberId, RoomAction, RoomState } from '../index';

@@ -1,5 +1,5 @@
-import { canBuy, ECONOMY, ITEMS, priceOf, UPGRADES } from '@hookbrawl/sim';
-import type { Player, PlayerId, Purchase, SeenPlayer, TeamView } from '@hookbrawl/sim';
+import { canBuy, ECONOMY, ITEMS, priceOf, UPGRADES } from '@hookwars/sim';
+import type { Player, PlayerId, Purchase, SeenPlayer, TeamView } from '@hookwars/sim';
 import { SHOP_SLOTS } from '../game/bindings';
 
 export type SlotId = Purchase['id'];

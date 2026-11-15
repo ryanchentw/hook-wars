@@ -1,4 +1,4 @@
-import type { PlayerId, PlayerInput, Purchase, Vec2 } from '@hookbrawl/sim';
+import type { PlayerId, PlayerInput, Purchase, Vec2 } from '@hookwars/sim';
 import { actionForKey, HOOK_POINTER_BUTTON, STILL, steerVector, type Direction, type KeyAction } from './bindings';
 
 type Canvas = EventTarget & { getBoundingClientRect(): { readonly left: number; readonly top: number } };

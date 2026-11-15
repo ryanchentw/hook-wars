@@ -1,27 +1,27 @@
 import { expect, test, type Page } from '@playwright/test';
-import type { GameState, Player, Vec2 } from '@hookbrawl/sim';
+import type { GameState, Player, Vec2 } from '@hookwars/sim';
 
 const SHOT_DIR = 'test-results';
 
 async function state(page: Page): Promise<GameState> {
-  return page.evaluate(() => window.__hookbrawl!.getState());
+  return page.evaluate(() => window.__hookwars!.getState());
 }
 
 async function localPlayer(page: Page): Promise<Player> {
   return page.evaluate(() => {
-    const hb = window.__hookbrawl!;
+    const hb = window.__hookwars!;
     const id = hb.getLocalPlayerId();
     return hb.getState().players.find((p) => p.id === id)!;
   });
 }
 
 async function toScreen(page: Page, p: Vec2): Promise<Vec2> {
-  return page.evaluate((world) => window.__hookbrawl!.worldToScreen(world), p);
+  return page.evaluate((world) => window.__hookwars!.worldToScreen(world), p);
 }
 
 async function localHookCount(page: Page): Promise<number> {
   return page.evaluate(() => {
-    const hb = window.__hookbrawl!;
+    const hb = window.__hookwars!;
     return hb.getState().hooks.filter((h) => h.ownerId === hb.getLocalPlayerId()).length;
   });
 }
@@ -36,7 +36,7 @@ async function holdUntil(page: Page, key: string, axis: Axis, mark: number): Pro
   await page.keyboard.down(key);
   await page.waitForFunction(
     ([a, m, rising]) => {
-      const hb = window.__hookbrawl!;
+      const hb = window.__hookwars!;
       const p = hb.getState().players.find((q) => q.id === hb.getLocalPlayerId())!;
       return rising ? p.pos[a] >= m : p.pos[a] <= m;
     },
@@ -53,7 +53,7 @@ async function localScreenY(page: Page): Promise<number> {
 test('walk with W, throw a hook across the canal with Space, and see it come back', async ({ page }) => {
   await page.goto('/?seed=1&intro=off');
   await expect(page.locator('#stage canvas')).toBeVisible();
-  await page.waitForFunction(() => window.__hookbrawl !== undefined);
+  await page.waitForFunction(() => window.__hookwars !== undefined);
 
   const { arena } = await state(page);
   const start = await localPlayer(page);
@@ -72,7 +72,7 @@ test('walk with W, throw a hook across the canal with Space, and see it come bac
 
 async function waitForDummy(page: Page, status: Player['status']['kind']): Promise<void> {
   await page.waitForFunction(
-    (wanted) => window.__hookbrawl!.getState().players.find((p) => p.team === 'east')?.status.kind === wanted,
+    (wanted) => window.__hookwars!.getState().players.find((p) => p.team === 'east')?.status.kind === wanted,
     status,
     { timeout: 4_000 },
   );
@@ -80,7 +80,7 @@ async function waitForDummy(page: Page, status: Player['status']['kind']): Promi
 
 test('a hook drags a dummy across the canal and drops it beside the thrower', async ({ page }) => {
   await page.goto('/?opponent=idle&intro=off');
-  await page.waitForFunction(() => window.__hookbrawl !== undefined);
+  await page.waitForFunction(() => window.__hookwars !== undefined);
   const { arena } = await state(page);
   const dummy = async (): Promise<Player> => (await state(page)).players.find((p) => p.team === 'east')!;
   const fullHp = (await dummy()).hp;
@@ -117,7 +117,7 @@ test('a hook drags a dummy across the canal and drops it beside the thrower', as
 
 test('a left click throws the hook at the clicked point', async ({ page }) => {
   await page.goto('/?opponent=idle&intro=off');
-  await page.waitForFunction(() => window.__hookbrawl !== undefined);
+  await page.waitForFunction(() => window.__hookwars !== undefined);
   const { arena } = await state(page);
   const from = (await localPlayer(page)).pos;
   const target = { x: arena.canal.x1, y: arena.height * 0.25 };

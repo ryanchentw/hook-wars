@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ECONOMY, ITEMS, UPGRADES } from '@hookbrawl/sim';
-import type { GameEvent, GrappleId, HookId, Player, Purchase } from '@hookbrawl/sim';
+import { ECONOMY, ITEMS, UPGRADES } from '@hookwars/sim';
+import type { GameEvent, GrappleId, HookId, Player, Purchase } from '@hookwars/sim';
 import { BOT, fakePlayer, fakeView, HUMAN } from '../game/fakeSim';
 import { bountyEarned, describeOutcome, grappleView, resolvePurchases, shopSlots } from './shopView';
 

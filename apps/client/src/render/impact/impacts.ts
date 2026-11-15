@@ -1,4 +1,4 @@
-import type { SeenEvent, PlayerId, TeamId, Vec2 } from '@hookbrawl/sim';
+import type { SeenEvent, PlayerId, TeamId, Vec2 } from '@hookwars/sim';
 import type { BurstName } from '../effects/particles';
 import type { ImpactTiming, Pop } from './timing';
 

@@ -1,4 +1,4 @@
-import type { TeamId } from '@hookbrawl/sim';
+import type { TeamId } from '@hookwars/sim';
 import { AdditiveBlending, Color, MeshBasicMaterial, MeshStandardMaterial, SpriteMaterial, type Material, type Texture } from 'three';
 import type { Tints } from '../scenes/types';
 import { HOOK_GROUPS } from './hookGeometry';

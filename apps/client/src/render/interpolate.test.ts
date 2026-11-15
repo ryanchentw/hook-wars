@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Grapple, GrappleId, Hook, HookId } from '@hookbrawl/sim';
+import type { Grapple, GrappleId, Hook, HookId } from '@hookwars/sim';
 import { BOT, fakePlayer, fakeView, HUMAN } from '../game/fakeSim';
 import { interpolateFrame } from './interpolate';
 

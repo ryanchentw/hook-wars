@@ -1,6 +1,6 @@
-import { TUNING } from '@hookbrawl/sim';
+import { TUNING } from '@hookwars/sim';
 import { fighterName } from '../game/fighterName';
-import type { Player, PlayerCard, PlayerId, TeamId, TeamView } from '@hookbrawl/sim';
+import type { Player, PlayerCard, PlayerId, TeamId, TeamView } from '@hookwars/sim';
 import { grappleView, shopSlots, type GrappleView, type ShopSlotView, type SlotId, type PurchaseOutcome } from './shopView';
 
 export type Named = { readonly name: string; readonly team: TeamId };

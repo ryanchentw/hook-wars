@@ -34,10 +34,10 @@ export async function joinByLink(page: Page, code: string, name: string, extraQu
 }
 
 export async function matchUp(page: Page): Promise<void> {
-  await page.waitForFunction(() => window.__hookbrawl !== undefined, null, { timeout: 45_000 });
+  await page.waitForFunction(() => window.__hookwars !== undefined, null, { timeout: 45_000 });
   await expect(page.locator('#stage')).toHaveAttribute('data-state', 'ready', { timeout: 45_000 });
-  if (await page.evaluate(() => window.__hookbrawl!.introActive())) await page.keyboard.press('Enter');
-  await page.waitForFunction(() => window.__hookbrawl!.getView().tick > 0, null, { timeout: 30_000 });
+  if (await page.evaluate(() => window.__hookwars!.introActive())) await page.keyboard.press('Enter');
+  await page.waitForFunction(() => window.__hookwars!.getView().tick > 0, null, { timeout: 30_000 });
 }
 
 /** The host sets fog of war and waits for the server to agree. */
@@ -64,7 +64,7 @@ export async function startDuel(browser: Browser, options: { query?: string; fog
 
 /** Where this page draws a fighter, or null when it has not been told of them. */
 export function posOf(page: Page, id: string): Promise<Vec | null> {
-  return page.evaluate((playerId) => window.__hookbrawl!.getView().players.find((p) => p.id === playerId)?.pos ?? null, id);
+  return page.evaluate((playerId) => window.__hookwars!.getView().players.find((p) => p.id === playerId)?.pos ?? null, id);
 }
 
 /** Holds movement keys until this page's own fighter satisfies `arrived`, then lets go. */

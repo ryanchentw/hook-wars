@@ -9,20 +9,20 @@ async function ready(page: Page, query: string): Promise<void> {
 }
 
 async function sceneId(page: Page): Promise<SceneId> {
-  return page.evaluate(() => window.__hookbrawl!.sceneId());
+  return page.evaluate(() => window.__hookwars!.sceneId());
 }
 
 async function tick(page: Page): Promise<number> {
-  return page.evaluate(() => window.__hookbrawl!.getState().tick);
+  return page.evaluate(() => window.__hookwars!.getState().tick);
 }
 
 async function introActive(page: Page): Promise<boolean> {
-  return page.evaluate(() => window.__hookbrawl!.introActive());
+  return page.evaluate(() => window.__hookwars!.introActive());
 }
 
 /** Starts the next match and waits until it is being drawn. */
 async function nextMatch(page: Page): Promise<void> {
-  await page.evaluate(() => window.__hookbrawl!.restart());
+  await page.evaluate(() => window.__hookwars!.restart());
   // Two frames: one to build whatever the new match needs, one to have drawn it.
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
 }
@@ -38,7 +38,7 @@ for (const id of SCENE_IDS) {
     expect(await sceneId(page)).toBe(id);
     await expect(page.locator('#stage')).toHaveAttribute('data-scene', id);
     await expect.poll(() => tick(page)).toBeGreaterThan(15);
-    const stats = await page.evaluate(() => window.__hookbrawl!.renderStats());
+    const stats = await page.evaluate(() => window.__hookwars!.renderStats());
     expect(stats.calls).toBeGreaterThan(0);
     expect(errors).toEqual([]);
   });
@@ -78,7 +78,7 @@ test('cycling through every scene three times leaves no more geometries or textu
       const id = await sceneId(page);
       // Long enough for a fighter to have been drawn with everything it carries.
       await page.waitForTimeout(400);
-      const { geometries, textures } = await page.evaluate(() => window.__hookbrawl!.renderStats());
+      const { geometries, textures } = await page.evaluate(() => window.__hookwars!.renderStats());
       counts[id] = { geometries, textures };
       await nextMatch(page);
     }
@@ -111,14 +111,14 @@ test('any key skips the establishing shot without being played as a move, and a 
   await page.keyboard.press('Space');
   await expect.poll(() => introActive(page), { timeout: 2_000 }).toBe(false);
   await expect.poll(() => tick(page)).toBeGreaterThan(5);
-  expect(await page.evaluate(() => window.__hookbrawl!.getState().hooks.length)).toBe(0);
+  expect(await page.evaluate(() => window.__hookwars!.getState().hooks.length)).toBe(0);
 
   await ready(page, '?scene=daan&opponent=idle');
   expect(await introActive(page)).toBe(true);
   await page.mouse.click(640, 360);
   await expect.poll(() => introActive(page), { timeout: 2_000 }).toBe(false);
   await expect.poll(() => tick(page)).toBeGreaterThan(5);
-  expect(await page.evaluate(() => window.__hookbrawl!.getState().hooks.length)).toBe(0);
+  expect(await page.evaluate(() => window.__hookwars!.getState().hooks.length)).toBe(0);
 });
 
 test('the establishing shot replays on a new match only when the scene has changed', async ({ page }) => {
@@ -143,7 +143,7 @@ test('people who ask for less motion get a still shot and a cut', async ({ page 
   expect(await introActive(page)).toBe(true);
   const poseAt = (): Promise<{ readonly x: number; readonly y: number }> =>
     page.evaluate(() => {
-      const hb = window.__hookbrawl!;
+      const hb = window.__hookwars!;
       return hb.worldToScreen(hb.getState().arena.buoy.pos);
     });
   const early = await poseAt();

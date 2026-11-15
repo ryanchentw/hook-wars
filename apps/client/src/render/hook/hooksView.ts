@@ -1,4 +1,4 @@
-import type { HookId, PlayerId, TeamId } from '@hookbrawl/sim';
+import type { HookId, PlayerId, TeamId } from '@hookwars/sim';
 import { Group, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, Sprite, TorusGeometry, Vector3, type BufferGeometry, type Texture } from 'three';
 import type { HookFrame, RenderFrame } from '../interpolate';
 import { simToWorld, toWorldLength, type Vec3 } from '../space';

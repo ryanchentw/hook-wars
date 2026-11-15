@@ -1,5 +1,5 @@
-import type { ClientMessageOf, ErrorCode, LobbyAction, ServerMessage } from '@hookbrawl/protocol';
-import type { MemberId, PlayerName } from '@hookbrawl/room';
+import type { ClientMessageOf, ErrorCode, LobbyAction, ServerMessage } from '@hookwars/protocol';
+import type { MemberId, PlayerName } from '@hookwars/room';
 import type { Logger } from '../logger';
 import { advance, createRoomCore, disconnect, input, isAbandoned, join, leave, lobbyAction, rejoin, wakeAt, type Seated } from './core';
 import type { Entropy, Room, RoomRules, Step } from './types';

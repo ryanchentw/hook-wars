@@ -1,6 +1,6 @@
-import { createRoom, parseScene, reduce, SLOTS_PER_TEAM } from '@hookbrawl/room';
-import type { MatchPlan, MemberId, RoomAction, RoomState, SceneChoice, SlotRef } from '@hookbrawl/room';
-import type { TeamId } from '@hookbrawl/sim';
+import { createRoom, parseScene, reduce, SLOTS_PER_TEAM } from '@hookwars/room';
+import type { MatchPlan, MemberId, RoomAction, RoomState, SceneChoice, SlotRef } from '@hookwars/room';
+import type { TeamId } from '@hookwars/sim';
 import type { SessionSetup } from '../game/session';
 
 const SEED_RANGE = 2 ** 31;

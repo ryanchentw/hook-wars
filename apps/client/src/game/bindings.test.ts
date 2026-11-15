@@ -1,4 +1,4 @@
-import { DEFAULT_ARENA, ITEM_IDS, TUNING, UPGRADE_IDS, UPGRADES } from '@hookbrawl/sim';
+import { DEFAULT_ARENA, ITEM_IDS, TUNING, UPGRADE_IDS, UPGRADES } from '@hookwars/sim';
 import { PerspectiveCamera } from 'three';
 import { describe, expect, it } from 'vitest';
 import { focusFor, poseFor } from '../render/camera/framing';

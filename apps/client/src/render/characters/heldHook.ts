@@ -1,5 +1,5 @@
-import { hookStats, TUNING } from '@hookbrawl/sim';
-import type { SeenPlayer, TeamId } from '@hookbrawl/sim';
+import { hookStats, TUNING } from '@hookwars/sim';
+import type { SeenPlayer, TeamId } from '@hookwars/sim';
 import { Mesh, MeshStandardMaterial, type BufferGeometry, type Material, type Object3D } from 'three';
 import { createHiddenMaterial, facesFor } from '../hook/hookMaterials';
 import type { Tints } from '../scenes/types';

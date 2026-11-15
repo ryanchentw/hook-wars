@@ -1,6 +1,6 @@
-import { toSnapView, type ClientMessageOf, type MatchStart } from '@hookbrawl/protocol';
-import { toMatchConfig, type MemberId } from '@hookbrawl/room';
-import { botThink, createBotBrain, createMatch, step, TICK_DT, TICK_RATE, viewFor, withBotControl, type GameState, type PlayerInput, type TeamId } from '@hookbrawl/sim';
+import { toSnapView, type ClientMessageOf, type MatchStart } from '@hookwars/protocol';
+import { toMatchConfig, type MemberId } from '@hookwars/room';
+import { botThink, createBotBrain, createMatch, step, TICK_DT, TICK_RATE, viewFor, withBotControl, type GameState, type PlayerInput, type TeamId } from '@hookwars/sim';
 import { enqueueInput, takeInputs } from './inputQueue';
 import type { Entropy, Fighter, MatchRun, Outbound, QueuedInput, Room, RoomRules, Step } from './types';
 import { announce, isMemberOnline } from './view';

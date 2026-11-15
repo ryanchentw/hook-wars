@@ -1,4 +1,4 @@
-import * as sim from '@hookbrawl/sim';
+import * as sim from '@hookwars/sim';
 import { installDevHook } from '../devHook';
 import { facingAim } from '../game/bindings';
 import { bindInput } from '../game/input';
@@ -6,7 +6,7 @@ import { bindIntroSkip } from '../game/introSkip';
 import { bindMatchKeys } from '../game/matchKeys';
 import { createPauseGate, HOLDS_MATCH, HOLDS_ONLINE, type Holds, type PauseGate } from '../game/pauseGate';
 import { createSession, type Session, type SessionSetup } from '../game/session';
-import type { MatchStart } from '@hookbrawl/protocol';
+import type { MatchStart } from '@hookwars/protocol';
 import { createNetSession, type NetLink, type NetSession } from '../net/netSession';
 import { createHudStore, type HudStore } from '../hud/hudStore';
 import type { ContextEvents } from '../render/frameLoop';

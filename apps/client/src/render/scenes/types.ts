@@ -1,11 +1,11 @@
-import type { SceneId } from '@hookbrawl/room';
-import type { Arena, TeamId } from '@hookbrawl/sim';
+import type { SceneId } from '@hookwars/room';
+import type { Arena, TeamId } from '@hookwars/sim';
 import type { Camera, Object3D, Texture } from 'three';
 import type { Assets } from '../assets/loadAssets';
 import type { Vec3 } from '../space';
 import type { TeamPalette } from '../theme';
 
-export { SCENE_IDS, type SceneId } from '@hookbrawl/room';
+export { SCENE_IDS, type SceneId } from '@hookwars/room';
 
 export type Atmosphere = {
   readonly background: number;

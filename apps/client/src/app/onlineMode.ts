@@ -1,5 +1,5 @@
-import type { MatchStart, RoomRequest, RoomView, ServerMessageOf } from '@hookbrawl/protocol';
-import { createRoom, parseName, type MemberId } from '@hookbrawl/room';
+import type { MatchStart, RoomRequest, RoomView, ServerMessageOf } from '@hookwars/protocol';
+import { createRoom, parseName, type MemberId } from '@hookwars/room';
 import type { ConnStatus, LostReason } from '../net/connection';
 import { LOCAL, type AppCore } from './appCore';
 import { lostMessage } from './lostMessages';

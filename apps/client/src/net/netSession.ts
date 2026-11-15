@@ -1,5 +1,5 @@
-import { MAX_ACTS_PER_INPUT, toTeamView, type Act, type ClientMessageInput, type MatchStart, type ServerMessage } from '@hookbrawl/protocol';
-import { TICK_DT, type PlayerInput, type SeenPlayer, type TeamView, type Vec2 } from '@hookbrawl/sim';
+import { MAX_ACTS_PER_INPUT, toTeamView, type Act, type ClientMessageInput, type MatchStart, type ServerMessage } from '@hookwars/protocol';
+import { TICK_DT, type PlayerInput, type SeenPlayer, type TeamView, type Vec2 } from '@hookwars/sim';
 import type { Frame, Session, SessionListener } from '../game/session';
 import { lerp } from '../render/interpolate';
 import { NET } from './netConfig';

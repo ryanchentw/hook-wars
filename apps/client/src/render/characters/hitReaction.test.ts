@@ -1,4 +1,4 @@
-import type { GameEvent, PlayerId, Vec2 } from '@hookbrawl/sim';
+import type { GameEvent, PlayerId, Vec2 } from '@hookwars/sim';
 import { Object3D } from 'three';
 import { describe, expect, it } from 'vitest';
 import { CALM_IMPACTS, IMPACTS, impactsOf, type Impact } from '../impact/impacts';

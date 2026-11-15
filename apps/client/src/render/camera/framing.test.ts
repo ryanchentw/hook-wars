@@ -1,5 +1,5 @@
-import { DEFAULT_ARENA, TUNING } from '@hookbrawl/sim';
-import type { Arena, TeamId, Vec2 } from '@hookbrawl/sim';
+import { DEFAULT_ARENA, TUNING } from '@hookwars/sim';
+import type { Arena, TeamId, Vec2 } from '@hookwars/sim';
 import { PerspectiveCamera } from 'three';
 import { describe, expect, it } from 'vitest';
 import { simToWorld, toWorldLength } from '../space';

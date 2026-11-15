@@ -1,4 +1,4 @@
-import type { TeamId } from '@hookbrawl/sim';
+import type { TeamId } from '@hookwars/sim';
 import { Mesh, SkinnedMesh, type AnimationClip, type BufferGeometry, type MeshStandardMaterial, type Object3D, type Texture } from 'three';
 import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { REQUIRED_CLIPS } from '../characters/animation';

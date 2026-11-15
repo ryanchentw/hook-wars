@@ -9,7 +9,7 @@ const PHONE = { width: 390, height: 844 };
 /** The widest name a player may pick: 16 of the widest letter. */
 const LONG_NAME = 'WWWWWWWWWWWWWWWW';
 
-const goldOf = (page: Page, id: string): Promise<number | null> => page.evaluate((playerId) => window.__hookbrawl!.getView().players.find((p) => p.id === playerId)?.gold ?? null, id);
+const goldOf = (page: Page, id: string): Promise<number | null> => page.evaluate((playerId) => window.__hookwars!.getView().players.find((p) => p.id === playerId)?.gold ?? null, id);
 
 test('a dropped player sees a countdown, is played by a bot, and gets the fighter back on reconnecting', async ({ browser }) => {
   const { host, guest } = await startDuel(browser);
@@ -21,8 +21,8 @@ test('a dropped player sees a countdown, is played by a bot, and gets the fighte
   expect(gold).toBeLessThan(STARTING_GOLD);
 
   await guest.evaluate(() => {
-    window.__hookbrawlNet!.block(true);
-    window.__hookbrawlNet!.drop();
+    window.__hookwarsNet!.block(true);
+    window.__hookwarsNet!.drop();
   });
   const status = guest.locator('.net-status');
   await expect(status).toContainText('Connection lost. Reconnecting');
@@ -32,13 +32,13 @@ test('a dropped player sees a countdown, is played by a bot, and gets the fighte
   await expect.poll(async () => Math.hypot((await posOf(host, EAST))!.x - left.x, (await posOf(host, EAST))!.y - left.y), { timeout: 15_000 }).toBeGreaterThan(40);
   await guest.screenshot({ path: `${SHOT_DIR}/m4-reconnecting.png` });
 
-  await guest.evaluate(() => window.__hookbrawlNet!.block(false));
+  await guest.evaluate(() => window.__hookwarsNet!.block(false));
   await expect(status).toContainText('Online', { timeout: 15_000 });
   await expect(guest.locator('.hud-score')).toBeVisible();
   // The bot that stood in spent nothing: the purse has only grown, and the grapple bought before the drop is still owned.
   expect(await goldOf(guest, EAST)).toBeGreaterThanOrEqual(gold);
-  expect(await guest.evaluate((id) => window.__hookbrawl!.getView().players.find((p) => p.id === id)!.items.grapple.kind, EAST)).toBe('owned');
-  expect(await guest.evaluate((id) => window.__hookbrawl!.getView().players.find((p) => p.id === id)!.upgrades, EAST)).toEqual({ damage: 0, range: 0, speed: 0, size: 0 });
+  expect(await guest.evaluate((id) => window.__hookwars!.getView().players.find((p) => p.id === id)!.items.grapple.kind, EAST)).toBe('owned');
+  expect(await guest.evaluate((id) => window.__hookwars!.getView().players.find((p) => p.id === id)!.upgrades, EAST)).toEqual({ damage: 0, range: 0, speed: 0, size: 0 });
 
   // The keys are the player's again, and the other page sees it.
   const back = (await posOf(guest, EAST))!;
@@ -56,8 +56,8 @@ test('a dropped player is shown as (bot) over their fighter and on the scoreboar
   await expect(row).toHaveText(LONG_NAME);
 
   await guest.evaluate(() => {
-    window.__hookbrawlNet!.block(true);
-    window.__hookbrawlNet!.drop();
+    window.__hookwarsNet!.block(true);
+    window.__hookwarsNet!.drop();
   });
   await expect(label).toHaveText(`${LONG_NAME} (bot)`, { timeout: 15_000 });
   await expect(row).toHaveText(`${LONG_NAME} (bot)`);
@@ -72,7 +72,7 @@ test('a dropped player is shown as (bot) over their fighter and on the scoreboar
   await host.screenshot({ path: `${SHOT_DIR}/botname-online-dropped-phone.png` });
   await host.setViewportSize(DESKTOP);
 
-  await guest.evaluate(() => window.__hookbrawlNet!.block(false));
+  await guest.evaluate(() => window.__hookwarsNet!.block(false));
   await expect(guest.locator('.net-status')).toContainText('Online', { timeout: 15_000 });
   await expect(label).toHaveText(LONG_NAME, { timeout: 5_000 });
   await expect(row).toHaveText(LONG_NAME);
@@ -84,7 +84,7 @@ test('a reload inside the window comes straight back to the match', async ({ bro
   await guest.reload();
   await matchUp(guest);
   await expect(guest.locator('.net-status')).toContainText('Online');
-  expect(await guest.evaluate(() => window.__hookbrawl!.getLocalPlayerId())).toBe(EAST);
+  expect(await guest.evaluate(() => window.__hookwars!.getLocalPlayerId())).toBe(EAST);
   await close(host, guest);
 });
 
@@ -111,13 +111,13 @@ test('after the match both are back in the same lobby, and the host starts the r
   await expect(guest.locator('.slot-human')).toHaveCount(2);
   await expect(guest.locator('.slot-bot')).toHaveCount(4);
 
-  const first = await host.evaluate(() => window.__hookbrawl!.sceneId());
+  const first = await host.evaluate(() => window.__hookwars!.sceneId());
   await over(host).getByRole('button', { name: 'Rematch' }).click();
   // The finished match is still on the host's screen until the new one is drawn; only the new one is being played.
-  const playing = (page: Page) => page.waitForFunction(() => window.__hookbrawl?.getView().phase.kind === 'playing' && window.__hookbrawl.getView().tick > 0, null, { timeout: 45_000 });
+  const playing = (page: Page) => page.waitForFunction(() => window.__hookwars?.getView().phase.kind === 'playing' && window.__hookwars.getView().tick > 0, null, { timeout: 45_000 });
   await Promise.all([playing(host), playing(guest)]);
-  expect(await guest.evaluate(() => window.__hookbrawl!.sceneId())).not.toBe(first);
-  expect(await guest.evaluate(() => window.__hookbrawl!.getLocalPlayerId())).toBe(EAST);
+  expect(await guest.evaluate(() => window.__hookwars!.sceneId())).not.toBe(first);
+  expect(await guest.evaluate(() => window.__hookwars!.getLocalPlayerId())).toBe(EAST);
   await expect(over(host)).toBeHidden();
   await close(host, guest);
 });

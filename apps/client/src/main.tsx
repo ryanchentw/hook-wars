@@ -1,5 +1,5 @@
 // First, so the setting is in place before any schema is built.
-import '@hookbrawl/protocol/browser';
+import '@hookwars/protocol/browser';
 import { createRoot } from 'react-dom/client';
 import { App } from './app/App';
 import { createApp } from './app/controller';

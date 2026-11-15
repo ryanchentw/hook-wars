@@ -1,4 +1,4 @@
-import { encodeClientMessage, parseServerMessage, PROTOCOL_VERSION, type ClientMessageInput, type ErrorCode, type RoomRequest, type ServerMessage } from '@hookbrawl/protocol';
+import { encodeClientMessage, parseServerMessage, PROTOCOL_VERSION, type ClientMessageInput, type ErrorCode, type RoomRequest, type ServerMessage } from '@hookwars/protocol';
 import { createStore, type Store } from '../app/store';
 import { NET } from './netConfig';
 import { backoffDelay, secondsLeft } from './reconnect';

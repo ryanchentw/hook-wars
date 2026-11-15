@@ -22,17 +22,17 @@ export default defineConfig({
   use: { baseURL: `http://localhost:${port}` },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [
-    { command: 'pnpm dev', port, reuseExistingServer: true, timeout: 60_000, env: { HOOKBRAWL_SERVER_PORT: String(gamePort) } },
+    { command: 'pnpm dev', port, reuseExistingServer: true, timeout: 60_000, env: { HOOKWARS_SERVER_PORT: String(gamePort) } },
     {
-      command: 'pnpm --filter @hookbrawl/server serve',
+      command: 'pnpm --filter @hookwars/server serve',
       port: gamePort,
       reuseExistingServer: true,
       timeout: 60_000,
       env: {
-        HOOKBRAWL_SERVER_PORT: String(gamePort),
-        HOOKBRAWL_MATCH_COUNTDOWN_MS: String(COUNTDOWN_MS),
-        HOOKBRAWL_JOINS_PER_MINUTE: String(JOINS_PER_MINUTE),
-        HOOKBRAWL_LOG_LEVEL: 'warn',
+        HOOKWARS_SERVER_PORT: String(gamePort),
+        HOOKWARS_MATCH_COUNTDOWN_MS: String(COUNTDOWN_MS),
+        HOOKWARS_JOINS_PER_MINUTE: String(JOINS_PER_MINUTE),
+        HOOKWARS_LOG_LEVEL: 'warn',
       },
     },
   ],

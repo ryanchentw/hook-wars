@@ -32,7 +32,7 @@ export function createHttpApp(staticDir: string | null, health: () => Health): H
 
   const root = resolve(staticDir);
   const indexPath = join(root, 'index.html');
-  if (!existsSync(indexPath)) throw new Error(`HOOKBRAWL_STATIC_DIR has no index.html: ${root}`);
+  if (!existsSync(indexPath)) throw new Error(`HOOKWARS_STATIC_DIR has no index.html: ${root}`);
   const index = readFileSync(indexPath, 'utf8');
 
   app.use('*', async (c, next) => {

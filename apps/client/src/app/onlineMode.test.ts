@@ -1,7 +1,7 @@
-import type { ClientMessageInput, MatchStart, RoomRequest, ServerMessage } from '@hookbrawl/protocol';
-import { toSnapView } from '@hookbrawl/protocol';
-import { createRoom, reduce, type MemberId, type RoomState } from '@hookbrawl/room';
-import { createMatch, viewFor, type PlayerId } from '@hookbrawl/sim';
+import type { ClientMessageInput, MatchStart, RoomRequest, ServerMessage } from '@hookwars/protocol';
+import { toSnapView } from '@hookwars/protocol';
+import { createRoom, reduce, type MemberId, type RoomState } from '@hookwars/room';
+import { createMatch, viewFor, type PlayerId } from '@hookwars/sim';
 import { describe, expect, it } from 'vitest';
 import type { Connection, ConnStatus } from '../net/connection';
 import { createApp, type AppDeps } from './controller';

@@ -1,4 +1,4 @@
-import type { TeamId } from '@hookbrawl/sim';
+import type { TeamId } from '@hookwars/sim';
 import { SCENE_IDS, TEAMS, type MemberId, type RoomState, type SceneChoice, type SceneId, type Slot, type SlotRef } from './types';
 
 export type SeatedSlot = { readonly ref: SlotRef; readonly slot: Slot };

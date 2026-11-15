@@ -1,4 +1,4 @@
-import type { Arena } from '@hookbrawl/sim';
+import type { Arena } from '@hookwars/sim';
 import { docks, type DockSpec } from '../kit/docks';
 import { ball, block, post, ring, type Part } from '../kit/parts';
 import { planOf, type Plan, type Span } from '../kit/plan';

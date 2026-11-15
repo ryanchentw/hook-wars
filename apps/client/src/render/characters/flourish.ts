@@ -1,4 +1,4 @@
-import type { SeenEvent, SeenPlayer } from '@hookbrawl/sim';
+import type { SeenEvent, SeenPlayer } from '@hookwars/sim';
 import { envelope } from '../impact/timing';
 import { FLOURISH } from '../theme';
 

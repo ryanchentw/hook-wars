@@ -1,5 +1,5 @@
-import { createRoom, parseName, reduce, seatOf, toMatchConfig } from '@hookbrawl/room';
-import type { RoomAction } from '@hookbrawl/room';
+import { createRoom, parseName, reduce, seatOf, toMatchConfig } from '@hookwars/room';
+import type { RoomAction } from '@hookwars/room';
 import { createCore, LOCAL, type AppDeps, type AppView, type LocalAction } from './appCore';
 import { directRoom, matchSeed, sessionSetupFor } from './matchSetup';
 import { createOnlineMode } from './onlineMode';

@@ -1,4 +1,4 @@
-import { parseName } from '@hookbrawl/room';
+import { parseName } from '@hookwars/room';
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import type { Invite } from '../app/onlineMode';
 import { parseRoomCode } from '../app/roomAddress';

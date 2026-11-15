@@ -1,5 +1,5 @@
-import { createRoom } from '@hookbrawl/room';
-import { createMatch, viewFor, type PlayerId } from '@hookbrawl/sim';
+import { createRoom } from '@hookwars/room';
+import { createMatch, viewFor, type PlayerId } from '@hookwars/sim';
 import { describe, expect, it } from 'vitest';
 import {
   encodeClientMessage,
@@ -13,7 +13,7 @@ import {
   toSnapView,
   type ServerMessage,
 } from '../index';
-import type { MemberId } from '@hookbrawl/room';
+import type { MemberId } from '@hookwars/room';
 
 const TOKEN = 'a'.repeat(32);
 const frame = (value: unknown): string => JSON.stringify(value);

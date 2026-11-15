@@ -11,7 +11,7 @@ const LONG_BOT = 'WWWWWWWWWWWWWWWW (bot)';
 const BOTS = ['Gull', 'Tern', 'Pike', 'Eel', 'Skate'];
 
 async function matchUp(page: Page): Promise<void> {
-  await page.waitForFunction(() => window.__hookbrawl !== undefined, null, { timeout: 30_000 });
+  await page.waitForFunction(() => window.__hookwars !== undefined, null, { timeout: 30_000 });
   await expect(page.locator('#stage')).toHaveAttribute('data-state', 'ready', { timeout: 30_000 });
 }
 
@@ -26,14 +26,14 @@ async function openScores(page: Page): Promise<Locator> {
 async function waitForBotKill(page: Page): Promise<Locator> {
   const botKill = page.locator('.hud-feed li').filter({ has: page.locator('span:first-child', { hasText: '(bot)' }) });
   for (let i = 0; i < FEED_TRIES && (await botKill.count()) === 0; i += 1) {
-    await page.evaluate((s) => window.__hookbrawl!.fastForward(s), FEED_STEP_SECONDS);
+    await page.evaluate((s) => window.__hookwars!.fastForward(s), FEED_STEP_SECONDS);
   }
   await expect(botKill.first()).toBeVisible();
   return botKill.first();
 }
 
 async function finishMatch(page: Page): Promise<Locator> {
-  await page.evaluate((s) => window.__hookbrawl!.fastForward(s), LONG_MATCH);
+  await page.evaluate((s) => window.__hookwars!.fastForward(s), LONG_MATCH);
   const over = page.getByRole('dialog', { name: 'match over' });
   await expect(over).toBeVisible();
   return over;
@@ -49,7 +49,7 @@ async function lengthenNames(scope: Locator, selector: string): Promise<void> {
   }, LONG_BOT);
 }
 
-const setPaused = (page: Page, paused: boolean) => page.evaluate((p) => window.__hookbrawl!.setPaused(p), paused);
+const setPaused = (page: Page, paused: boolean) => page.evaluate((p) => window.__hookwars!.setPaused(p), paused);
 
 async function expectInside(page: Page, inner: Locator, outer: Locator): Promise<void> {
   const [a, b] = [(await inner.boundingBox())!, (await outer.boundingBox())!];

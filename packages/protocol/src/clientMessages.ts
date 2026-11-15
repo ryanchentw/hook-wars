@@ -1,4 +1,4 @@
-import { KILL_TARGETS, parseName, SCENE_IDS, type MemberId, type PlayerName, type RoomAction } from '@hookbrawl/room';
+import { KILL_TARGETS, parseName, SCENE_IDS, type MemberId, type PlayerName, type RoomAction } from '@hookwars/room';
 import { z } from 'zod';
 import { pointSchema, purchaseSchema, slotRefSchema } from './common';
 import { MAX_ACTS_PER_INPUT, MAX_SEQ, RAW_NAME_MAX_LENGTH, REJOIN_TOKEN_PATTERN, ROOM_CODE_PATTERN } from './limits';

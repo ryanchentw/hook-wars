@@ -8,7 +8,7 @@ const AGREE = 0.5;
 const HOOK_KEY = 'Space';
 
 async function hpOf(page: Page, id: string): Promise<number> {
-  return page.evaluate((playerId) => window.__hookbrawl!.getView().players.find((p) => p.id === playerId)!.hp, id);
+  return page.evaluate((playerId) => window.__hookwars!.getView().players.find((p) => p.id === playerId)!.hp, id);
 }
 
 /** How far along the line from thrower to target the cursor is put: near enough the thrower to be on screen whatever the camera shows. */
@@ -22,7 +22,7 @@ const MID_FLIGHT = 400;
 async function hookAt(page: Page, selfId: string, targetId: string): Promise<void> {
   const aim = await page.evaluate(
     ([self, target, along]) => {
-      const hook = window.__hookbrawl!;
+      const hook = window.__hookwars!;
       const at = (id: string) => hook.worldToScreen(hook.getView().players.find((p) => p.id === id)!.pos);
       const [from, to] = [at(self), at(target)];
       return { x: from.x + (to.x - from.x) * along, y: from.y + (to.y - from.y) * along };
@@ -53,7 +53,7 @@ async function playDuel(browser: Browser, query: string, shots: boolean): Promis
   const before = await hpOf(guest, EAST);
   await hookAt(host, WEST, EAST);
   if (shots) {
-    await guest.waitForFunction((far) => window.__hookbrawl!.getView().hooks.some((h) => h.pos.x > 930 + far), MID_FLIGHT);
+    await guest.waitForFunction((far) => window.__hookwars!.getView().hooks.some((h) => h.pos.x > 930 + far), MID_FLIGHT);
     await Promise.all([host.screenshot({ path: `${SHOT_DIR}/m4-match-host.png` }), guest.screenshot({ path: `${SHOT_DIR}/m4-match-guest.png` })]);
   }
   await expect.poll(() => hpOf(guest, EAST), { timeout: 15_000 }).toBeLessThan(before);
@@ -90,17 +90,17 @@ test('with fog on, a client is never sent the enemy it cannot see', async ({ bro
   const { host, guest } = await startDuel(browser, { fog: true });
   const sentEnemy = (page: Page, enemy: string) =>
     page.evaluate((id) => {
-      const frames = window.__hookbrawlNet!.received();
+      const frames = window.__hookwarsNet!.received();
       const views = frames.flatMap((m) => (m.t === 'snap' ? [m.view] : m.t === 'matchStart' ? [m.match.view] : []));
       return { snapshots: views.length, withEnemy: views.filter((v) => v.players.some((p) => p.id === id)).length, purses: views.filter((v) => v.roster.some((c) => c.id === id && 'gold' in c) || v.players.some((p) => p.id === id && p.gold !== null)).length };
     }, enemy);
 
-  await guest.waitForFunction(() => window.__hookbrawlNet!.received().filter((m) => m.t === 'snap').length > 60);
+  await guest.waitForFunction(() => window.__hookwarsNet!.received().filter((m) => m.t === 'snap').length > 60);
   const hidden = await sentEnemy(guest, WEST);
   expect(hidden.snapshots).toBeGreaterThan(60);
   expect(hidden).toMatchObject({ withEnemy: 0, purses: 0 });
   expect((await sentEnemy(host, EAST)).withEnemy).toBe(0);
-  expect(await guest.evaluate(() => window.__hookbrawl!.drawnPlayers())).toEqual([EAST]);
+  expect(await guest.evaluate(() => window.__hookwars!.drawnPlayers())).toEqual([EAST]);
 
   // The same check has teeth: once the two stand at the water's edge, the server does send them to each other.
   await walkUntil(host, ['KeyD'], WEST, (pos) => pos.x >= 960);
@@ -112,7 +112,7 @@ test('with fog on, a client is never sent the enemy it cannot see', async ({ bro
 
 test('Esc opens a menu that does not stop an online match, and leaving asks first', async ({ browser }) => {
   const { host, guest } = await startDuel(browser);
-  const tick = (page: Page): Promise<number> => page.evaluate(() => window.__hookbrawl!.getView().tick);
+  const tick = (page: Page): Promise<number> => page.evaluate(() => window.__hookwars!.getView().tick);
   await host.keyboard.press('Escape');
   const menu = host.getByRole('dialog', { name: 'Menu' });
   await expect(menu).toContainText('An online match cannot be paused');

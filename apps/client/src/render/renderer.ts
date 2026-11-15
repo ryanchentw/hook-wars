@@ -1,4 +1,4 @@
-import type { PlayerId, SeenEvent, Vec2 } from '@hookbrawl/sim';
+import type { PlayerId, SeenEvent, Vec2 } from '@hookwars/sim';
 import type { WebGLRenderer } from 'three';
 import type { SessionView } from '../game/session';
 import { screenToGround, worldToScreen } from './camera/projection';

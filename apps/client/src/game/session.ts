@@ -1,7 +1,7 @@
-import { TICK_DT } from '@hookbrawl/sim';
-import type { BotBrain, GameState, MatchConfig, PlayerId, PlayerInput, TeamId, TeamView, Vec2 } from '@hookbrawl/sim';
+import { TICK_DT } from '@hookwars/sim';
+import type { BotBrain, GameState, MatchConfig, PlayerId, PlayerInput, TeamId, TeamView, Vec2 } from '@hookwars/sim';
 
-/** The slice of `@hookbrawl/sim` a session needs, injectable so tests can use a fake stepper. */
+/** The slice of `@hookwars/sim` a session needs, injectable so tests can use a fake stepper. */
 export type SimApi = {
   readonly createMatch: (config: MatchConfig) => GameState;
   readonly step: (state: GameState, inputs: readonly PlayerInput[], dt: number) => GameState;

@@ -1,4 +1,4 @@
-import type { TeamId } from '@hookbrawl/sim';
+import type { TeamId } from '@hookwars/sim';
 
 /** Colours that are the same in every scene; each scene's own are in its look. Hex numbers so they can go straight into three.js materials. */
 export const COLORS = {

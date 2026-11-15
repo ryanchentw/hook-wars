@@ -1,4 +1,4 @@
-import type { GameEvent, GrappleId, HookId, PlayerId } from '@hookbrawl/sim';
+import type { GameEvent, GrappleId, HookId, PlayerId } from '@hookwars/sim';
 import { describe, expect, it } from 'vitest';
 import { IMPACTS, impactsOf, type Fighter, type Impact } from '../impact/impacts';
 import { simToWorld } from '../space';
