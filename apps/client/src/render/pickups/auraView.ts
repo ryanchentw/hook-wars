@@ -48,7 +48,7 @@ function boltGeometry(random: () => number): BufferGeometry {
  */
 export function createAuraView(softDot: Texture, calm: boolean, random: () => number = Math.random): AuraView {
   const group = new Group();
-  const arc = new TorusGeometry(AURA.galeRadius, 0.06, 6, 32, Math.PI * 0.8).rotateX(Math.PI / 2);
+  const arc = new TorusGeometry(AURA.galeRadius, AURA.galeThickness, 6, 32, Math.PI * 0.8).rotateX(Math.PI / 2);
   const wind = new MeshBasicMaterial({ color: EFFECT_COLORS.gale, blending: AdditiveBlending, depthWrite: false, transparent: true, opacity: AURA.galeOpacity, fog: false });
   const glow = new SpriteMaterial({ map: softDot, color: EFFECT_COLORS.storm, blending: AdditiveBlending, depthWrite: false, transparent: true, opacity: AURA.stormHaloOpacity, fog: false });
   const boltMaterial = new MeshBasicMaterial({ color: 0xf2e6ff, blending: AdditiveBlending, depthWrite: false, transparent: true, side: DoubleSide, fog: false });

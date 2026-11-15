@@ -3,7 +3,7 @@ import type { EffectKind, PickupKind } from '@hookwars/sim';
 /** One glow per kind, the same in every scene, picked to read against each scene's water from the top-down camera. */
 export const PICKUP_COLORS: Readonly<Record<PickupKind, number>> = {
   gold: 0xffc23a,
-  gale: 0xa8f4ff,
+  gale: 0x5fe3ff,
   storm: 0xb07bff,
 };
 
@@ -37,10 +37,11 @@ export const PICKUP_SIZES = {
 export const AURA = {
   galeRadius: 1.6,
   galeStreaks: 3,
+  galeThickness: 0.1,
   /** Radians per second the streaks wheel round the fighter. */
   galeSpin: 4.5,
   galeHeights: [0.6, 1.5, 2.4],
-  galeOpacity: 0.7,
+  galeOpacity: 0.9,
   stormHaloSize: 4.2,
   stormHaloOpacity: 0.45,
   /** How long one lightning strike stays drawn. */
