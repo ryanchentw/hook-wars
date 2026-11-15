@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { automationStorage } from './automation.ts';
 import { devPort } from './devPort.ts';
 
 const port = devPort();
@@ -11,6 +12,7 @@ export default defineConfig({
   workers: '33%',
   use: {
     baseURL: `http://localhost:${port}`,
+    storageState: automationStorage(`http://localhost:${port}`),
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {

@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { automationStorage } from './automation.ts';
 import { devPort, serverPort } from './devPort.ts';
 
 const port = devPort();
@@ -19,7 +20,7 @@ export default defineConfig({
   timeout: 120_000,
   // Each test is two pages of software WebGL and one shared server: one at a time keeps their clocks honest.
   workers: 1,
-  use: { baseURL: `http://localhost:${port}` },
+  use: { baseURL: `http://localhost:${port}`, storageState: automationStorage(`http://localhost:${port}`) },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [
     { command: 'pnpm dev', port, reuseExistingServer: true, timeout: 60_000, env: { HOOKWARS_SERVER_PORT: String(gamePort) } },
