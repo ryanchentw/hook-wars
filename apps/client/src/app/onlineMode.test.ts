@@ -84,7 +84,7 @@ function harness(options: { roomInAddress?: string; token?: string; storedName?:
     say: (message: ServerMessage) => listener(message),
     welcome(room: RoomState, match: MatchStart | null = null) {
       status.update(() => ({ kind: 'online', pingMs: null }));
-      listener({ t: 'welcome', v: 1, code: CODE, you: ME, token: 't'.repeat(32), lobby: { room, away: [] }, match });
+      listener({ t: 'welcome', v: 1, code: CODE, you: ME, token: 't'.repeat(32), lobby: { room, away: [] }, match, chat: [] });
     },
     lose: (reason: Extract<ConnStatus, { kind: 'lost' }>['reason']) => status.update(() => ({ kind: 'lost', reason })),
   };

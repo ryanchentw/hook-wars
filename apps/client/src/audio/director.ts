@@ -1,6 +1,8 @@
 import type { RoomState } from '@hookwars/room';
 import type { AppView } from '../app/appCore';
 import type { Store } from '../app/store';
+import type { ChatFeed } from '../chat/chatFeed';
+import { CHAT_SOUND, followChat } from './chatAudio';
 import { createEffects, type EffectRequest, type Effects } from './effects';
 import { attachMatchAudio } from './matchAudio';
 import type { TrackId } from './manifest';
@@ -70,6 +72,8 @@ function followApp(deps: DirectorDeps, effects: Effects, music: Music, ducker: D
   const { app, window: win } = deps;
   let detachMatch: (() => void) | null = null;
   let shownMatch: AppView['match'] = null;
+  let detachChat: (() => void) | null = null;
+  let shownChat: ChatFeed | null = null;
   let seats = seatsFilled(app.getSnapshot().room);
   const sink = { play: effects.play, sting: ducker.sting, paused: ducker.pause };
   return {
@@ -81,11 +85,20 @@ function followApp(deps: DirectorDeps, effects: Effects, music: Music, ducker: D
         shownMatch = view.match;
         detachMatch = view.match === null ? null : attachMatchAudio({ match: view.match, sink, hidden: () => win.document.hidden });
       }
+      const chat = view.match?.chat.feed ?? view.chat;
+      if (chat !== shownChat) {
+        detachChat?.();
+        shownChat = chat;
+        detachChat = chat === null ? null : followChat(chat, () => effects.play([CHAT_SOUND]));
+      }
       const filled = seatsFilled(view.room);
       if (view.route.screen === 'lobby' && filled > seats) effects.play(plain('seat'));
       seats = filled;
     },
-    dispose: () => detachMatch?.(),
+    dispose() {
+      detachMatch?.();
+      detachChat?.();
+    },
   };
 }
 

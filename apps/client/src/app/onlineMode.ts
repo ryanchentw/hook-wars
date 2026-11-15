@@ -45,7 +45,7 @@ export function createOnlineMode(core: AppCore): OnlineMode {
   const toOffline = (notice: string | null, invite: Invite | null): void => {
     room = null;
     core.stopMatch();
-    patch({ online: null, connecting: false, invite, room: createRoom(), member: LOCAL, notice });
+    patch({ online: null, chat: null, connecting: false, invite, room: createRoom(), member: LOCAL, notice });
     if (router.getRoute().screen !== 'menu') router.backTo('menu');
     core.showBackdrop();
   };
@@ -60,12 +60,12 @@ export function createOnlineMode(core: AppCore): OnlineMode {
   const enterMatch = (start: MatchStart): void => {
     const current = view().match;
     if (current !== null && current.matchId === start.matchId) return current.resume();
-    const link = room?.link;
-    if (link === undefined) return;
+    if (room === null) return;
+    const { link, chat } = room;
     core.stopMatch();
     patch({ starting: true });
     if (router.getRoute().screen !== 'match') router.push('match');
-    void core.launch(() => ({ source: { kind: 'online', start, link }, scene: start.scene, intro: !start.resumed && core.wantsIntro(start.scene) }));
+    void core.launch(() => ({ source: { kind: 'online', start, link, chat }, scene: start.scene, intro: !start.resumed && core.wantsIntro(start.scene) }));
   };
 
   const onWelcome = (welcome: ServerMessageOf<'welcome'>): void => {
@@ -100,6 +100,7 @@ export function createOnlineMode(core: AppCore): OnlineMode {
     if (deps.online === undefined || room !== null) return;
     patch({ connecting: true, notice: null });
     room = openOnlineRoom(deps.online, name, request, events);
+    patch({ chat: room.chat });
   };
 
   const leave = (): void => {

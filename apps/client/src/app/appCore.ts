@@ -1,5 +1,6 @@
 import { upcomingScene } from '@hookwars/room';
 import type { MemberId, RoomAction, RoomState } from '@hookwars/room';
+import type { ChatFeed } from '../chat/chatFeed';
 import type { Backdrop } from '../render/backdrop';
 import { playsIntro } from '../render/intro/intro';
 import type { MatchView } from '../render/renderer';
@@ -29,6 +30,8 @@ export type AppView = {
   readonly notice: string | null;
   /** The room on the server this page is in, or null when playing offline. */
   readonly online: OnlineView | null;
+  /** The room's chat, while in a room on the server: offline there is nobody to talk to in the lobby. */
+  readonly chat: ChatFeed | null;
   /** A room on the server has been asked for and has not answered yet. */
   readonly connecting: boolean;
   /** A room the menu offers to join: one a friend's link named, or one this player was dropped from. */

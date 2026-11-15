@@ -1,4 +1,5 @@
 import { parseRoomAction, type MatchStart, type RoomRequest, type RoomView, type ServerMessageOf } from '@hookwars/protocol';
+import { createChatInbox, type ChatFeed } from '../chat/chatFeed';
 import type { Connection, ConnStatus, LostReason } from '../net/connection';
 import type { NetLink } from '../net/netSession';
 import type { TokenStore } from '../net/tokenStore';
@@ -23,6 +24,8 @@ export type OnlineEvents = {
 
 export type OnlineRoom = {
   readonly link: NetLink;
+  /** The room's chat: one log for the lobby and every match played in it. */
+  readonly chat: ChatFeed;
   /** Asks the server for a lobby action. Anything that is not one is not sent. */
   act(action: unknown): void;
   /** Gives the seat up. */
@@ -35,6 +38,7 @@ export type OnlineRoom = {
  */
 export function openOnlineRoom(deps: OnlineDeps, name: string, request: RoomRequest, events: OnlineEvents): OnlineRoom {
   const conn = deps.connect(name, request);
+  const chat = createChatInbox({ deliver: (channel, text) => conn.send({ t: 'chat', channel, text }), now: () => performance.now() });
   let code = request.kind === 'create' ? null : request.code;
 
   const forget = (): void => {
@@ -48,11 +52,17 @@ export function openOnlineRoom(deps: OnlineDeps, name: string, request: RoomRequ
         code = message.code;
         deps.tokens.save(message.code, message.token);
         deps.address.set(message.code);
+        chat.setSelf(message.you);
+        chat.receive(message.chat, false);
         return events.onWelcome(message);
       case 'room':
         return events.onRoom(message.lobby);
       case 'matchStart':
         return events.onMatchStart(message.match);
+      case 'chat':
+        return chat.receive([message.line], true);
+      case 'chatLimited':
+        return chat.limited();
       default:
         return;
     }
@@ -66,6 +76,7 @@ export function openOnlineRoom(deps: OnlineDeps, name: string, request: RoomRequ
 
   return {
     link: conn,
+    chat,
     act(action) {
       const parsed = parseRoomAction(action);
       if (parsed.ok) conn.send({ t: 'lobby', action: parsed.value });

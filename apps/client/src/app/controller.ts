@@ -33,6 +33,7 @@ export function createApp(deps: AppDeps): App {
     starting: page.direct !== null,
     notice: null,
     online: null,
+    chat: null,
     connecting: false,
     invite: null,
   });

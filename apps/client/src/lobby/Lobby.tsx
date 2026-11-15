@@ -2,6 +2,7 @@ import { canStart, hasEmptySlot, TEAMS } from '@hookwars/room';
 import type { SlotRef } from '@hookwars/room';
 import { useEffect, useId, useRef } from 'react';
 import type { App, AppView, LocalAction } from '../app/controller';
+import { LobbyChat } from '../chat/LobbyChat';
 import { CreditsLink } from '../hud/labels';
 import type { QualitySetting } from '../render/quality';
 import { Notice } from '../screens/Notice';
@@ -104,6 +105,7 @@ export function Lobby({ view, app, quality }: Props & { readonly quality: Qualit
           <TeamColumn key={team} team={team} view={view} act={act} rowRef={keeper.rowRef} />
         ))}
       </div>
+      {view.chat !== null && <LobbyChat feed={view.chat} />}
       <LobbySettings view={view} act={act} />
       <Notice text={view.notice} />
       <LobbyActions view={view} app={app} act={act} />
