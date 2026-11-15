@@ -11,6 +11,7 @@ import { INTRO_TIMING, introHaze, introPose } from './intro/intro';
 import { createOpening, type Opening } from './intro/opening';
 import { trackPresence, type PresenceTrack } from './fog/presence';
 import { createWorldOverlay } from './overlay/worldOverlay';
+import { createGoldPops } from './pickups/goldPop';
 import type { SceneId } from './scenes/types';
 import { createSceneShow, type SceneShow } from './sceneShow';
 import { simToWorld, worldToSim, type Vec3 } from './space';
@@ -87,6 +88,7 @@ type PictureParts = {
 /** Keeps the picture in step with the session: collects each tick's events and draws. */
 function createPicture({ gl, session, surface, show, rig, opening, intro, calm }: PictureParts) {
   const overlay = createWorldOverlay(surface.overlay);
+  const goldPops = createGoldPops(surface.overlay, calm);
   let pending: readonly SeenEvent[] = [];
   let elapsed = 0;
   let stats: RenderStats = { calls: 0, triangles: 0, geometries: 0, textures: 0 };
@@ -117,6 +119,7 @@ function createPicture({ gl, session, surface, show, rig, opening, intro, calm }
     stage.update({ frame, events: tickEvents, impacts, dt, elapsed, camera: rig.camera });
     overlay.setVisible(intro === null);
     overlay.update(frame, impacts, { project, viewport: surface.viewport() }, dt);
+    goldPops.update(tickEvents, frame, project, dt);
   };
   const present = (): void => {
     rig.shaken(() => show.render(rig.camera));
@@ -151,6 +154,7 @@ function createPicture({ gl, session, surface, show, rig, opening, intro, calm }
       unsubscribe();
       overlay.setVisible(true);
       overlay.clear();
+      goldPops.clear();
     },
   };
 }
@@ -166,7 +170,7 @@ export async function createRenderer(graphics: Graphics, session: SessionView, v
   const { vision } = session.getView();
   const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const fog = vision.kind === 'fog' ? { viewer: session.localTeam, radius: vision.radius, fadeSeconds: calm ? 0 : SIGHT_FADE } : null;
-  const shared: StageShared = { arena, assets, softDot, hookGeometry, localPlayerId: session.localPlayerId, fog };
+  const shared: StageShared = { arena, assets, softDot, hookGeometry, localPlayerId: session.localPlayerId, fog, calm };
   const show = createSceneShow(gl, host, shared, view.scene, graphics.kit);
   const rig = createCameraRig(arena, session.localPlayerId);
   const opening = createOpening(surface.overlay, calm ? INTRO_TIMING.reduced : INTRO_TIMING.full, events.onIntro);

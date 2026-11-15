@@ -56,14 +56,23 @@ export const resolveMelee: Stage = (state, { t }) => {
   return { state: { ...state, players }, events };
 };
 
-/** The killer is whoever dealt the last damaging blow to the victim during this step. */
+/** Who struck each damaging blow, or null for an event that is not one. */
+function strikerOf(e: GameEvent, victim: PlayerId): PlayerId | null {
+  switch (e.kind) {
+    case 'melee':
+      return e.targetId === victim ? e.attackerId : null;
+    case 'hookHit':
+      return e.targetId === victim && e.damage > 0 ? e.ownerId : null;
+    case 'storm':
+      return e.targetId === victim ? e.sourceId : null;
+    default:
+      return null;
+  }
+}
+
+/** The killer is whoever dealt the last damaging blow to the victim during this step; Storm's blows are its collector's. */
 function killerOf(events: readonly GameEvent[], victim: PlayerId): PlayerId | null {
-  const blow = events
-    .filter((e) => (e.kind === 'melee' || (e.kind === 'hookHit' && e.damage > 0)) && e.targetId === victim)
-    .at(-1);
-  if (blow?.kind === 'melee') return blow.attackerId;
-  if (blow?.kind === 'hookHit') return blow.ownerId;
-  return null;
+  return events.map((e) => strikerOf(e, victim)).filter((id) => id !== null).at(-1) ?? null;
 }
 
 function die(p: Player, t: number): Player {
@@ -73,6 +82,7 @@ function die(p: Player, t: number): Player {
     move: interrupt(p.move),
     deaths: p.deaths + 1,
     recentDamage: [],
+    effects: [],
   };
 }
 
@@ -93,7 +103,7 @@ export const resolveDeaths: Stage = (state, { t, events: stepEvents }) => {
     state.score,
   );
   const hooks = state.hooks.map((h) =>
-    h.phase.kind === 'retracting' && h.phase.cargo !== null && victimIds.has(h.phase.cargo)
+    h.phase.kind === 'retracting' && h.phase.cargo?.kind === 'fighter' && victimIds.has(h.phase.cargo.id)
       ? { ...h, phase: { kind: 'retracting' as const, cargo: null } }
       : h,
   );

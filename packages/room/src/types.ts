@@ -28,9 +28,11 @@ export type RoomSettings = {
   readonly killTarget: KillTarget;
   /** Fog of war over the enemy: each side sees only what its own fighters can see. */
   readonly fog: boolean;
+  /** Pickups drifting down the water for hooks to catch. */
+  readonly pickups: boolean;
 };
 
-export const DEFAULT_SETTINGS: RoomSettings = { scene: 'rotate', killTarget: 10, fog: true };
+export const DEFAULT_SETTINGS: RoomSettings = { scene: 'rotate', killTarget: 10, fog: true, pickups: true };
 
 export type RoomPhase = { readonly kind: 'lobby' } | { readonly kind: 'in-match' };
 
@@ -59,6 +61,7 @@ export type RoomAction =
   | { readonly kind: 'setScene'; readonly by: MemberId; readonly scene: string }
   | { readonly kind: 'setKillTarget'; readonly by: MemberId; readonly killTarget: number }
   | { readonly kind: 'setFog'; readonly by: MemberId; readonly fog: boolean }
+  | { readonly kind: 'setPickups'; readonly by: MemberId; readonly pickups: boolean }
   | { readonly kind: 'startMatch'; readonly by: MemberId }
   | { readonly kind: 'endMatch'; readonly by: MemberId };
 

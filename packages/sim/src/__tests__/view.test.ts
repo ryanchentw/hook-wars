@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { distance } from '../geometry';
 import { VISION, viewFor } from '../index';
-import type { GameEvent, GameState, GrappleId, HookId, TeamView } from '../index';
+import type { GameEvent, GameState, GrappleId, HookId, PickupId, TeamView } from '../index';
 import { at, fogMatch, grappleOf, hookOf, pid, withPlayer } from './helpers';
 
 const R = VISION.radius;
@@ -105,6 +105,7 @@ describe('viewFor events', () => {
   }
   const h = 'h' as HookId;
   const g = 'g' as GrappleId;
+  const pk = 'p0' as PickupId;
   const cases: readonly [string, GameEvent, boolean][] = [
     ['hookCast by a hidden enemy', { kind: 'hookCast', hookId: h, ownerId: pid('e') }, false],
     ['hookCast by a seen enemy', { kind: 'hookCast', hookId: h, ownerId: pid('n') }, true],
@@ -125,6 +126,13 @@ describe('viewFor events', () => {
     ['respawn of a hidden enemy', { kind: 'respawn', playerId: pid('e') }, false],
     ['respawn of ours', { kind: 'respawn', playerId: pid('w') }, true],
     ['matchEnd', { kind: 'matchEnd', winner: 'east' }, true],
+    ['pickupCaught by a hidden enemy out of sight', { kind: 'pickupCaught', pickupId: pk, pickupKind: 'gold', hookId: h, ownerId: pid('e'), at: FAR }, false],
+    ['pickupCaught by a hidden enemy in sight', { kind: 'pickupCaught', pickupId: pk, pickupKind: 'gold', hookId: h, ownerId: pid('e'), at: NEAR }, true],
+    ['pickupCaught by us out of sight', { kind: 'pickupCaught', pickupId: pk, pickupKind: 'gale', hookId: h, ownerId: pid('w'), at: FAR }, true],
+    ['pickupCollected by a hidden enemy', { kind: 'pickupCollected', pickupId: pk, pickupKind: 'gold', playerId: pid('e'), gold: 250 }, true],
+    ['storm on a hidden enemy', { kind: 'storm', sourceId: pid('w'), targetId: pid('e'), damage: 30, at: FAR }, false],
+    ['storm on a seen enemy', { kind: 'storm', sourceId: pid('w'), targetId: pid('n'), damage: 30, at: NEAR }, true],
+    ['storm on us from a hidden collector', { kind: 'storm', sourceId: pid('e'), targetId: pid('w'), damage: 30, at: W }, true],
   ];
   it.each(cases)('%s reaches the view: %s', (_, event, kept) => {
     expect(viewFor(scene([event]), 'west').events).toEqual(kept ? [event] : []);

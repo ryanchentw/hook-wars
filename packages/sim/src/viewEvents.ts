@@ -18,6 +18,7 @@ const keepIf = <E extends GameEvent>(event: E, kept: boolean): E | null => (kept
 /**
  * What of each event a team may learn under fog, in one place. Seen means seen after the step that made it, so a
  * fighter the step dragged into the open counts as seen. A purchase is never news across the water: gold is hidden.
+ * A collected pickup is news to all, and says nothing of where the collector stands.
  */
 const RULES: Rules = {
   hookCast: (e, j) => keepIf(e, seen(j, e.ownerId)),
@@ -30,6 +31,9 @@ const RULES: Rules = {
   grappleLand: (e, j) => keepIf(e, inSight(j, e.at) || j.sight.grapples.has(e.grappleId)),
   grappleArrive: (e, j) => keepIf(e, seen(j, e.playerId)),
   respawn: (e, j) => keepIf(e, seen(j, e.playerId)),
+  pickupCaught: (e, j) => keepIf(e, ours(j, e.ownerId) || inSight(j, e.at)),
+  pickupCollected: (e) => e,
+  storm: (e, j) => keepIf(e, seen(j, e.targetId)),
   matchEnd: (e) => e,
 };
 

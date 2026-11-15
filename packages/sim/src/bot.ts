@@ -1,11 +1,11 @@
 import { dockAt, spawnPoint, walkableRect } from './arena';
-import { TUNING, UPGRADE_IDS } from './config';
+import { PICKUPS, TUNING, UPGRADE_IDS } from './config';
 import { add, distance, rotate, scale, sub } from './geometry';
 import { grappleReady } from './grapple';
 import { velocity } from './intent';
 import { createRng, nextRandom } from './rng';
 import { canBuy, hookStats } from './shop';
-import type { BotBrain, GameState, Player, PlayerId, PlayerInput, Purchase, Rect, Rng, SeenPlayer, TeamView, Vec2 } from './types';
+import type { BotBrain, GameState, Pickup, Player, PlayerId, PlayerInput, Purchase, Rect, Rng, SeenPlayer, TeamView, Vec2 } from './types';
 import { viewFor } from './view';
 import { findPlayer, isAlive, ownsHook } from './world';
 
@@ -92,15 +92,41 @@ function chooseMove(view: TeamView, bot: Player, rng: Rng): Decision {
   return { inputs: [{ kind: 'move', playerId: bot.id, target }], rng: afterV };
 }
 
+/** Somewhere to throw at: where it is and how it moves, so the throw can lead it. */
+type Mark = { readonly pos: Vec2; readonly vel: Vec2 };
+
+const pickupVelocity = (p: Pickup): Vec2 =>
+  p.state.kind === 'drifting' ? { x: 0, y: (p.from === 'north' ? 1 : -1) * PICKUPS.driftSpeed } : { x: 0, y: 0 };
+
+/** A pickup in sight and in reach that is not already on its way to the bot's own team. */
+function pickupInReach(view: TeamView, bot: Player, reach: number): Mark | null {
+  const ally = new Set(view.hooks.filter((h) => view.roster.find((c) => c.id === h.ownerId)?.team === bot.team).map((h) => h.id));
+  const open = view.pickups.filter((p) => !(p.state.kind === 'carried' && ally.has(p.state.hookId)) && distance(bot.pos, p.pos) <= reach);
+  const near = open.reduce<Pickup | null>((best, p) => (!best || distance(bot.pos, p.pos) < distance(bot.pos, best.pos) ? p : best), null);
+  return near && { pos: near.pos, vel: pickupVelocity(near) };
+}
+
+/** A fighter in reach, or a pickup: with both on offer the pickup wins only `botPickupChance` of the time. */
+function chooseMark(view: TeamView, bot: Player, reach: number, rng: Rng): { readonly mark: Mark | null; readonly rng: Rng } {
+  const target = nearest(bot.pos, enemies(view, bot).filter((p) => p.status.kind === 'alive'));
+  const fighter = target && distance(bot.pos, target.pos) <= reach ? { pos: target.pos, vel: velocity(target.move, target.pos) } : null;
+  const pickup = pickupInReach(view, bot, reach);
+  if (pickup === null || fighter === null) return { mark: pickup ?? fighter, rng };
+  const [roll, next] = nextRandom(rng);
+  return { mark: roll < TUNING.botPickupChance ? pickup : fighter, rng: next };
+}
+
 function chooseThrow(state: GameState, view: TeamView, bot: Player, rng: Rng): Decision {
   const stats = hookStats(bot);
   const canCast = state.time >= bot.hookReadyAt && !ownsHook(state, bot.id);
-  const target = nearest(bot.pos, enemies(view, bot).filter((p) => p.status.kind === 'alive'));
-  if (!canCast || !target || distance(bot.pos, target.pos) > stats.range * THROW_REACH_SHARE) return { inputs: [], rng };
-  const [roll, afterRoll] = nextRandom(rng);
+  if (!canCast) return { inputs: [], rng };
+  const chosen = chooseMark(view, bot, stats.range * THROW_REACH_SHARE, rng);
+  if (chosen.mark === null) return { inputs: [], rng: chosen.rng };
+  const [roll, afterRoll] = nextRandom(chosen.rng);
   if (roll >= TUNING.botFireChance) return { inputs: [], rng: afterRoll };
   const [noise, afterNoise] = nextRandom(afterRoll);
-  const lead = add(target.pos, scale(velocity(target.move, target.pos), distance(bot.pos, target.pos) / stats.speed));
+  const { pos, vel } = chosen.mark;
+  const lead = add(pos, scale(vel, distance(bot.pos, pos) / stats.speed));
   const angle = (noise * 2 - 1) * TUNING.botAimNoise;
   const aim = add(bot.pos, rotate(sub(lead, bot.pos), angle));
   return { inputs: [{ kind: 'hook', playerId: bot.id, target: aim }], rng: afterNoise };

@@ -1,4 +1,4 @@
-import type { PlayerId } from '@hookwars/sim';
+import { visibleTo, type PlayerId } from '@hookwars/sim';
 import { describe, expect, it } from 'vitest';
 import { takeInputs } from '../rooms/inputQueue';
 import { duel, harness, RULES, started, TICK_MS } from './roomHarness';
@@ -129,6 +129,27 @@ describe('fog of war', () => {
       h.run(TICK_MS);
     }
     expect(sawEnemy(h, east, WEST)).toBe(true);
+  });
+
+  it('sends a team a pickup exactly while it is in that team\'s sight', () => {
+    const { h, west, east } = started(RULES, true);
+    const state = () => h.room.match!.state;
+    while (state().pickups.length === 0) h.run(TICK_MS);
+    const id = state().pickups[0]!.id;
+    const shown = { west: [] as boolean[], east: [] as boolean[] };
+    for (let i = 0; i < 30 * 20 && state().pickups.some((p) => p.id === id); i += 1) {
+      h.forget();
+      h.run(TICK_MS);
+      ([['west', west], ['east', east]] as const).forEach(([team, member]) => {
+        const sees = visibleTo(state(), team).pickups.has(id);
+        h.sentTo(member, 'snap').forEach((snap) => {
+          expect(snap.view.pickups.some((p) => p.id === id)).toBe(sees);
+          shown[team].push(sees);
+        });
+      });
+    }
+    expect(shown.west).toContain(false);
+    expect(shown.west).toContain(true);
   });
 
   it('sends everyone everything when the fog is off', () => {

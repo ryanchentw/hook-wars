@@ -54,6 +54,8 @@ export type Session = {
   getView(): TeamView;
   /** The whole match, as only the authority may know it: for the dev hook, and nothing that draws. */
   getState(): GameState;
+  /** Replaces the match with `edit` of it, for the dev hook to set a scene up: never called by anything that plays. */
+  editState(edit: (state: GameState) => GameState): void;
   subscribe(listener: SessionListener): () => void;
 };
 
@@ -143,6 +145,10 @@ export function createSession(sim: SimApi, setup: SessionSetup, options: Session
     },
     getState() {
       return current;
+    },
+    editState(edit) {
+      current = edit(current);
+      view = sim.viewFor(current, localTeam);
     },
     subscribe(listener) {
       listeners.add(listener);

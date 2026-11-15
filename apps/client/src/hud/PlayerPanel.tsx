@@ -1,6 +1,6 @@
 import type { Purchase } from '@hookwars/sim';
 import { CRITICAL_HP_FRACTION, LOW_HP_FRACTION } from '../game/health';
-import { cooldownLabel, type Bounty, type Feedback, type LocalView } from './hudView';
+import { cooldownLabel, type ActiveEffect, type Bounty, type Feedback, type LocalView } from './hudView';
 import type { GrappleView } from './shopView';
 import { keepFocus, SlotFlash } from './ShopStrip';
 
@@ -17,6 +17,20 @@ function HealthBar({ local }: { readonly local: LocalView }) {
         {Math.max(0, Math.round(local.hp))} / {local.maxHp}
       </span>
     </div>
+  );
+}
+
+/** Sits over the hp bar without taking room in the panel, so the panel never jumps when an effect starts or ends. */
+function EffectChips({ effects }: { readonly effects: readonly ActiveEffect[] }) {
+  if (effects.length === 0) return null;
+  return (
+    <ul className="hud-effects" aria-label="Active effects">
+      {effects.map((e) => (
+        <li key={e.kind} className={`hud-effect hud-pickup-${e.kind}`}>
+          {e.name} <span className="hud-effect-time">{e.secondsLeft}s</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -110,6 +124,7 @@ export function PlayerPanel({ local, feedback, onBuy }: Props) {
   return (
     <div className="hud-panel hud-plate">
       <div className="hud-vitals">
+        <EffectChips effects={local.effects} />
         <HealthBar local={local} />
         <Purse gold={local.gold} bounty={feedback.bounty} />
       </div>

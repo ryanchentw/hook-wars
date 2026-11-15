@@ -25,7 +25,7 @@ function emptyFrame(): RenderFrame {
       { id: 'east' as PlayerId, name: '', team: 'east', isBot: false },
     ],
   });
-  return { state: viewFor(match, 'west'), players: [], hooks: [], grapples: [] };
+  return { state: viewFor(match, 'west'), players: [], hooks: [], grapples: [], pickups: [] };
 }
 
 /** Where along the establishing shot the camera is: a slow swing, or the shot's middle held still for less motion. */
@@ -36,7 +36,7 @@ function along(elapsed: number, calm: boolean): number {
 /** The scene behind the menu and the lobby, seen from its establishing shot with the water and lamps still moving. */
 export async function createBackdrop(graphics: Graphics, sceneId: SceneId, events: ContextEvents): Promise<Backdrop> {
   const { gl, surface, host, assets, softDot, hookGeometry } = graphics;
-  const show = createSceneShow(gl, host, { arena: DEFAULT_ARENA, assets, softDot, hookGeometry, localPlayerId: NOBODY, fog: null }, sceneId, graphics.kit);
+  const show = createSceneShow(gl, host, { arena: DEFAULT_ARENA, assets, softDot, hookGeometry, localPlayerId: NOBODY, fog: null, calm: false }, sceneId, graphics.kit);
   const shot = show.stage.theme.intro;
   const camera = new PerspectiveCamera();
   const frame = emptyFrame();

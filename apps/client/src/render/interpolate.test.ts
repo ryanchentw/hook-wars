@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Grapple, GrappleId, Hook, HookId } from '@hookwars/sim';
+import type { Grapple, GrappleId, Hook, HookId, Pickup, PickupId } from '@hookwars/sim';
 import { BOT, fakePlayer, fakeView, HUMAN } from '../game/fakeSim';
 import { interpolateFrame } from './interpolate';
 
@@ -23,7 +23,19 @@ function hook(overrides: Partial<Hook>): Hook {
   };
 }
 
+function pickup(overrides: Partial<Pickup>): Pickup {
+  return { id: 'p0' as PickupId, kind: 'gold', pos: { x: 1100, y: 100 }, from: 'north', lane: 1100, state: { kind: 'drifting' }, ...overrides };
+}
+
 describe('interpolateFrame', () => {
+  it('floats a drifting pickup between ticks and puts a carried one at its hook\'s head', () => {
+    const previous = fakeView({ pickups: [pickup({})], hooks: [hook({ pos: { x: 100, y: 0 } })] });
+    const drifting = fakeView({ pickups: [pickup({ pos: { x: 1100, y: 110 } })], hooks: [hook({ pos: { x: 200, y: 0 } })] });
+    expect(interpolateFrame({ previous, current: drifting, alpha: 0.5 }).pickups[0]?.pos).toEqual({ x: 1100, y: 105 });
+    const carried = fakeView({ pickups: [pickup({ pos: { x: 200, y: 0 }, state: { kind: 'carried', hookId } })], hooks: [hook({ pos: { x: 200, y: 0 } })] });
+    expect(interpolateFrame({ previous, current: carried, alpha: 0.5 }).pickups[0]?.pos).toEqual({ x: 150, y: 0 });
+  });
+
   it('blends player positions by alpha', () => {
     const previous = fakeView({ players: [fakePlayer({ id: HUMAN, pos: { x: 0, y: 0 } })] });
     const current = fakeView({ players: [fakePlayer({ id: HUMAN, pos: { x: 10, y: 20 } })] });

@@ -1,4 +1,4 @@
-import type { GameEvent, GrappleId, HookId, PlayerId } from '@hookwars/sim';
+import type { GameEvent, GrappleId, HookId, PickupId, PlayerId } from '@hookwars/sim';
 import { describe, expect, it } from 'vitest';
 import { IMPACTS, impactsOf, type Fighter, type Impact } from '../impact/impacts';
 import { simToWorld } from '../space';
@@ -23,6 +23,12 @@ describe('burstFor', () => {
     expect(kinds({ kind: 'kill', killerId: a, victimId: b, assistIds: [], at })).toEqual(['wisp']);
     expect(kinds({ kind: 'grappleLand', grappleId: 'g1' as GrappleId, at })).toEqual(['dust']);
     expect(kinds({ kind: 'grappleArrive', playerId: a, at })).toEqual(['dust']);
+    const caught = (pickupKind: 'gold' | 'gale' | 'storm'): GameEvent => ({ kind: 'pickupCaught', pickupId: 'p0' as PickupId, pickupKind, hookId, ownerId: a, at });
+    expect(kinds(caught('gold'))).toEqual(['spark']);
+    expect(kinds(caught('gale'))).toEqual(['gust']);
+    expect(kinds(caught('storm'))).toEqual(['bolt']);
+    expect(kinds({ kind: 'storm', sourceId: a, targetId: b, damage: 30, at })).toEqual(['bolt']);
+    expect(burstFor({ kind: 'pickupCollected', pickupId: 'p0' as PickupId, pickupKind: 'gold', playerId: a, gold: 250 }, random)).toEqual([]);
   });
 
   it('puffs where a grapple head bites and kicks dust up around a landing, at ground level', () => {
@@ -63,6 +69,8 @@ describe('burstFor', () => {
       { kind: 'kill', killerId: a, victimId: b, assistIds: [], at },
       { kind: 'grappleLand', grappleId: 'g1' as GrappleId, at },
       { kind: 'grappleArrive', playerId: a, at },
+      { kind: 'pickupCaught', pickupId: 'p0' as PickupId, pickupKind: 'gold', hookId, ownerId: a, at },
+      { kind: 'storm', sourceId: a, targetId: b, damage: 30, at },
     ];
     events.forEach((e) => expect(burstFor(e, random).length).toBeLessThanOrEqual(20));
   });

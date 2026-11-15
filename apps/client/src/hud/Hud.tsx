@@ -4,7 +4,7 @@ import type { QualitySetting } from '../render/quality';
 import { SHOP_SLOTS } from '../game/bindings';
 import { EndPanel } from './EndPanel';
 import { LeaveConfirm } from './LeaveConfirm';
-import type { KillFeedEntry } from './hudView';
+import { PICKUP_NAMES, type FeedEntry } from './hudView';
 import { CreditsLink, TEAM_LABEL } from './labels';
 import { PauseMenu } from './PauseMenu';
 import { PlayerPanel } from './PlayerPanel';
@@ -13,6 +13,7 @@ import { ShopStrip } from './ShopStrip';
 import './hud.css';
 import './shop.css';
 import './overlays.css';
+import './pickups.css';
 
 function ScoreBar({ west, east, target }: { readonly west: number; readonly east: number; readonly target: number }) {
   return (
@@ -26,10 +27,20 @@ function ScoreBar({ west, east, target }: { readonly west: number; readonly east
   );
 }
 
-function KillFeed({ entries }: { readonly entries: readonly KillFeedEntry[] }) {
+function PickupLine({ entry }: { readonly entry: Extract<FeedEntry, { kind: 'pickup' }> }) {
+  return (
+    <li className="hud-plate">
+      <span className={`hud-${entry.collector.team}`}>{entry.collector.name}</span> took the{' '}
+      <span className={`hud-pickup hud-pickup-${entry.pickup}`}>{PICKUP_NAMES[entry.pickup]}</span>
+      {entry.gold > 0 && <span className="hud-feed-gold"> +{entry.gold}</span>}
+    </li>
+  );
+}
+
+function KillFeed({ entries }: { readonly entries: readonly FeedEntry[] }) {
   return (
     <ul className="hud-feed">
-      {entries.map((e) => (
+      {entries.map((e) => e.kind === 'pickup' ? <PickupLine key={e.key} entry={e} /> : (
         <li key={e.key} className="hud-plate">
           <span className={`hud-${e.killer.team}`}>{e.killer.name}</span> decked{' '}
           <span className={`hud-${e.victim.team}`}>{e.victim.name}</span>

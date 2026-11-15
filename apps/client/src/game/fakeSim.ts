@@ -26,6 +26,7 @@ export function fakePlayer(overrides: Partial<Player> & Pick<Player, 'id'>): Pla
     upgrades: { damage: 0, range: 0, speed: 0, size: 0 },
     items: { grapple: { kind: 'unowned' }, barb: { kind: 'unowned' } },
     recentDamage: [],
+    effects: [],
     ...overrides,
   };
 }
@@ -38,12 +39,15 @@ export function fakeState(overrides: Partial<GameState> = {}): GameState {
     players: [fakePlayer({ id: HUMAN }), fakePlayer({ id: BOT, team: 'east', isBot: true })],
     hooks: [],
     grapples: [],
+    pickups: [],
+    river: null,
     score: { west: 0, east: 0 },
     killTarget: 5,
     vision: { kind: 'open' },
     phase: { kind: 'playing' },
     nextHookSeq: 0,
     nextGrappleSeq: 0,
+    nextPickupSeq: 0,
     events: [],
     ...overrides,
   };

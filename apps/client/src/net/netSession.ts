@@ -197,6 +197,9 @@ export function createNetSession({ link, start, now }: NetSessionDeps): NetSessi
     getState() {
       throw new Error('An online match lives on the server: this client holds only what its team may see.');
     },
+    editState() {
+      throw new Error('An online match lives on the server: this client cannot change it.');
+    },
     subscribe(listener) {
       listeners.add(listener);
       return () => {

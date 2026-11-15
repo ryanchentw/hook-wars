@@ -21,6 +21,7 @@ export const roomStateSchema: z.ZodType<RoomState> = z.object({
     scene: z.enum(['rotate', ...SCENE_IDS]),
     killTarget: z.union(KILL_TARGETS.map((n) => z.literal(n))),
     fog: z.boolean(),
+    pickups: z.boolean(),
   }),
   phase: z.discriminatedUnion('kind', [z.object({ kind: z.literal('lobby') }), z.object({ kind: z.literal('in-match') })]),
   matchesStarted: z.number().int().min(0),

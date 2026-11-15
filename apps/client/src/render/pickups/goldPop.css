@@ -1,0 +1,15 @@
+/* Over the collector in the world, styled as the purse's bounty is. */
+.gold-pop {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font: 700 18px var(--font);
+  color: var(--good);
+  text-shadow: var(--name-shadow);
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.world-overlay.is-away .gold-pop {
+  visibility: hidden;
+}

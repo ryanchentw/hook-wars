@@ -5,6 +5,7 @@ export type TeamId = 'west' | 'east';
 export type PlayerId = string & { readonly __brand: 'PlayerId' };
 export type HookId = string & { readonly __brand: 'HookId' };
 export type GrappleId = string & { readonly __brand: 'GrappleId' };
+export type PickupId = string & { readonly __brand: 'PickupId' };
 
 export type UpgradeId = 'damage' | 'range' | 'speed' | 'size';
 /** Used on its own key, then cools down. */
@@ -35,6 +36,13 @@ export type PlayerStatus =
   /** Just set down by a hook or a grapple: on their feet and hittable, but unable to act until `until`. */
   | { readonly kind: 'staggered'; readonly until: number }
   | { readonly kind: 'dead'; readonly respawnAt: number };
+
+/** What a pickup does once it reaches the hand of whoever hooked it. */
+export type PickupKind = 'gold' | 'gale' | 'storm';
+/** A timed effect on a fighter. Gale on its collector, Storm on each enemy of the collector's team. */
+export type EffectKind = 'gale' | 'storm';
+/** `source` is the collector who caused it; `since` and `until` are sim times. */
+export type Effect = { readonly kind: EffectKind; readonly source: PlayerId; readonly since: number; readonly until: number };
 
 export type MoveIntent =
   | { readonly kind: 'idle' }
@@ -71,11 +79,16 @@ export type Player = {
   readonly items: Items;
   /** The latest damage from each enemy inside the assist window. Emptied on death. */
   readonly recentDamage: readonly { readonly from: PlayerId; readonly at: number }[];
+  /** At most one of each kind. Present means in force: the step that reaches `until` removes it. Emptied on death. */
+  readonly effects: readonly Effect[];
 };
+
+/** What a hook can latch and carry home: one fighter or one pickup. */
+export type Cargo = { readonly kind: 'fighter'; readonly id: PlayerId } | { readonly kind: 'pickup'; readonly id: PickupId };
 
 export type HookPhase =
   | { readonly kind: 'extending'; readonly remaining: number }
-  | { readonly kind: 'retracting'; readonly cargo: PlayerId | null };
+  | { readonly kind: 'retracting'; readonly cargo: Cargo | null };
 
 export type Hook = {
   readonly id: HookId;
@@ -102,6 +115,26 @@ export type Grapple = {
   readonly anchor: Vec2;
   readonly phase: GrapplePhase;
 };
+
+/** The two ends of the strip of water; a pickup enters at one and drifts to the other. */
+export type RiverEnd = 'north' | 'south';
+
+export type PickupState = { readonly kind: 'drifting' } | { readonly kind: 'carried'; readonly hookId: HookId };
+
+/** Something floating down the water that a hook can catch and bring home. */
+export type Pickup = {
+  readonly id: PickupId;
+  readonly kind: PickupKind;
+  readonly pos: Vec2;
+  /** The end it entered at; it drifts toward the other. */
+  readonly from: RiverEnd;
+  /** The x it floats at, away from the buoy; around the buoy the water carries it aside. */
+  readonly lane: number;
+  readonly state: PickupState;
+};
+
+/** When and what the water sends next. Null on a match played without pickups. */
+export type River = { readonly rng: Rng; readonly nextAt: number };
 
 export type Rect = {
   readonly x0: number;
@@ -156,6 +189,18 @@ export type GameEvent =
   | { readonly kind: 'grappleLand'; readonly grappleId: GrappleId; readonly at: Vec2 }
   | { readonly kind: 'grappleArrive'; readonly playerId: PlayerId; readonly at: Vec2 }
   | { readonly kind: 'respawn'; readonly playerId: PlayerId }
+  | {
+      readonly kind: 'pickupCaught';
+      readonly pickupId: PickupId;
+      readonly pickupKind: PickupKind;
+      readonly hookId: HookId;
+      readonly ownerId: PlayerId;
+      readonly at: Vec2;
+    }
+  /** No position: everyone hears of it, wherever the collector stands. `gold` is what it paid, 0 for an effect. */
+  | { readonly kind: 'pickupCollected'; readonly pickupId: PickupId; readonly pickupKind: PickupKind; readonly playerId: PlayerId; readonly gold: number }
+  /** One pulse of Storm damage on one fighter. */
+  | { readonly kind: 'storm'; readonly sourceId: PlayerId; readonly targetId: PlayerId; readonly damage: number; readonly at: Vec2 }
   | { readonly kind: 'matchEnd'; readonly winner: TeamId };
 
 /** Open: everyone sees everything. Fog: a team sees only what is inside `radius` of one of its living fighters. */
@@ -169,12 +214,15 @@ export type GameState = {
   readonly players: readonly Player[];
   readonly hooks: readonly Hook[];
   readonly grapples: readonly Grapple[];
+  readonly pickups: readonly Pickup[];
+  readonly river: River | null;
   readonly score: Readonly<Record<TeamId, number>>;
   readonly killTarget: number;
   readonly vision: Vision;
   readonly phase: MatchPhase;
   readonly nextHookSeq: number;
   readonly nextGrappleSeq: number;
+  readonly nextPickupSeq: number;
   /** Events produced by the step that returned this state. Replaced, not accumulated. */
   readonly events: readonly GameEvent[];
 };
@@ -207,6 +255,10 @@ export type MatchConfig = {
   readonly startingGold?: number;
   /** Fog of war over the enemy, at `VISION.radius`. Off by default. */
   readonly fog?: boolean;
+  /** Pickups drifting down the water. Off by default. */
+  readonly pickups?: boolean;
+  /** Seeds what the water sends: which end, which kind, which lane. Defaults to 0. */
+  readonly seed?: number;
 };
 
 /** Opaque seeded-RNG state. Advance it with `nextRandom`. */
@@ -260,5 +312,7 @@ export type TeamView = {
   readonly roster: readonly PlayerCard[];
   readonly hooks: readonly Hook[];
   readonly grapples: readonly SeenGrapple[];
+  /** Only the pickups this team sees: in its vision, or on a hook it sees. */
+  readonly pickups: readonly Pickup[];
   readonly events: readonly SeenEvent[];
 };

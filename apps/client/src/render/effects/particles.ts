@@ -1,10 +1,11 @@
 import { TUNING } from '@hookwars/sim';
-import type { SeenEvent, PlayerId, Vec2 } from '@hookwars/sim';
+import type { PickupKind, SeenEvent, PlayerId, Vec2 } from '@hookwars/sim';
 import { contactPoint, type Impact } from '../impact/impacts';
 import { simToWorld, type Vec3 } from '../space';
+import { EFFECT_COLORS } from '../pickups/pickupLook';
 import { COLORS, SIZES } from '../theme';
 
-export type ParticleKind = 'blood' | 'spark' | 'flare' | 'wisp' | 'dust';
+export type ParticleKind = 'blood' | 'spark' | 'flare' | 'wisp' | 'dust' | 'gust' | 'bolt';
 
 export type Particle = {
   readonly kind: ParticleKind;
@@ -37,6 +38,8 @@ export const PARTICLE_STYLES: Readonly<Record<ParticleKind, ParticleStyle>> = {
   wisp: { color: COLORS.wisp, glows: true, intensity: 1, gravity: -2.6, drag: 0.8, endScale: 0.35 },
   // Billows out and slows hard, so it hangs where it was kicked up instead of flying off like debris.
   dust: { color: COLORS.dust, glows: false, intensity: 1, gravity: -0.6, drag: 3.2, endScale: 2.2 },
+  gust: { color: EFFECT_COLORS.gale, glows: true, intensity: 1.6, gravity: -1, drag: 2.4, endScale: 1.8 },
+  bolt: { color: EFFECT_COLORS.storm, glows: true, intensity: 2.6, gravity: 8, drag: 2, endScale: 0.3 },
 };
 
 export const MAX_PARTICLES = 160;
@@ -68,10 +71,16 @@ const BURSTS = {
   meleeBlood: { kind: 'blood', count: 7, height: CHEST, speed: [1.5, 4], lift: [0.3, 1], life: [0.35, 0.6], size: [0.8, 1.3], spread: 0.3, along: [3, 6] },
   grappleLand: { kind: 'dust', count: 9, height: 0.3, speed: [2, 4], lift: [0.3, 0.7], life: [0.4, 0.65], size: [1.1, 1.8], spread: 0.4, along: STILL },
   grappleArrive: { kind: 'dust', count: 14, height: 0.3, speed: [3.5, 6.5], lift: [0.1, 0.45], life: [0.45, 0.75], size: [1.3, 2.2], spread: 0.6, along: STILL },
+  pickupGold: { kind: 'spark', count: 16, height: CHEST, speed: [2, 6], lift: [0.4, 1], life: [0.35, 0.6], size: [0.6, 1], spread: 0.3, along: STILL },
+  pickupGale: { kind: 'gust', count: 12, height: CHEST, speed: [2, 5], lift: [0, 0.4], life: [0.4, 0.7], size: [0.9, 1.4], spread: 0.3, along: STILL },
+  pickupStorm: { kind: 'bolt', count: 14, height: CHEST, speed: [3, 8], lift: [0.2, 1], life: [0.25, 0.45], size: [0.6, 1], spread: 0.2, along: STILL },
+  storm: { kind: 'bolt', count: 10, height: 0.4, speed: [2, 6], lift: [0.3, 0.9], life: [0.2, 0.4], size: [0.6, 1.1], spread: 0.5, along: STILL },
   kill: { kind: 'wisp', count: 16, height: 0.8, speed: [0.3, 1.1], lift: [0.75, 1], life: [1.3, 2.3], size: [1.1, 1.9], spread: 1.3, along: STILL },
 } as const satisfies Record<string, Burst>;
 
 export type BurstName = keyof typeof BURSTS;
+
+const CAUGHT: Readonly<Record<PickupKind, Burst>> = { gold: BURSTS.pickupGold, gale: BURSTS.pickupGale, storm: BURSTS.pickupStorm };
 
 /** Sim units from the victim's centre, towards the attacker, at which a blow lands: just inside the rim of the body. */
 const CONTACT_INSET = TUNING.playerRadius * 0.75;
@@ -139,6 +148,10 @@ function burstOf(event: SeenEvent): Burst | null {
       return BURSTS.grappleLand;
     case 'grappleArrive':
       return BURSTS.grappleArrive;
+    case 'pickupCaught':
+      return CAUGHT[event.pickupKind];
+    case 'storm':
+      return BURSTS.storm;
     // Blows are drawn from their impact, which knows where the fighters stood.
     case 'hookHit':
     case 'melee':
@@ -147,6 +160,7 @@ function burstOf(event: SeenEvent): Burst | null {
     case 'matchEnd':
     case 'purchase':
     case 'grappleCast':
+    case 'pickupCollected':
       return null;
   }
 }

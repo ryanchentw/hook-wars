@@ -143,7 +143,7 @@ describe('in a room', () => {
     app.start();
     expect(sent).toEqual([{ t: 'lobby', action: { kind: 'setFog', fog: false } }, { t: 'lobby', action: { kind: 'startMatch' } }]);
     expect(app.getSnapshot().room.settings.fog).toBe(true);
-    server.say({ t: 'room', lobby: { room: { ...lobbyOf('Ada', 'Bo'), settings: { scene: 'rotate', killTarget: 10, fog: false } }, away: ['m2' as MemberId] } });
+    server.say({ t: 'room', lobby: { room: { ...lobbyOf('Ada', 'Bo'), settings: { scene: 'rotate', killTarget: 10, fog: false, pickups: true } }, away: ['m2' as MemberId] } });
     expect(app.getSnapshot()).toMatchObject({ room: { settings: { fog: false } }, online: { away: ['m2'] } });
   });
 

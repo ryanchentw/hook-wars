@@ -1,0 +1,55 @@
+:root {
+  --pickup-gold: #ffc23a;
+  --pickup-gale: #7fe9ff;
+  --pickup-storm: #c39bff;
+}
+
+.hud-pickup-gold {
+  --pickup: var(--pickup-gold);
+}
+
+.hud-pickup-gale {
+  --pickup: var(--pickup-gale);
+}
+
+.hud-pickup-storm {
+  --pickup: var(--pickup-storm);
+}
+
+.hud-feed .hud-pickup {
+  color: var(--pickup);
+}
+
+.hud-feed .hud-feed-gold {
+  color: var(--good);
+}
+
+.hud-vitals {
+  position: relative;
+}
+
+.hud-effects {
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  gap: 4px;
+}
+
+.hud-effect {
+  padding: 2px 8px;
+  border: 1px solid var(--pickup);
+  border-radius: 2px;
+  background: rgba(10, 8, 7, 0.85);
+  color: var(--pickup);
+  font: 700 12px var(--font);
+  white-space: nowrap;
+}
+
+.hud-effect-time {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}

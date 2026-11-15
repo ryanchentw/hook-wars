@@ -43,6 +43,14 @@ describe('toMatchConfig', () => {
     expect(createMatch(planOf(start(clear), 1).config).vision.kind).not.toBe('fog');
   });
 
+  it('carries river pickups into the match, seeded by the room\'s seed, and their absence when the host turns them off', () => {
+    const plan = planOf(start(duel()), 41);
+    expect(plan.config).toMatchObject({ pickups: true, seed: 41 });
+    expect(createMatch(plan.config).river).not.toBeNull();
+    const dry = play(duel(), { kind: 'setPickups', by: HOST, pickups: false });
+    expect(createMatch(planOf(start(dry), 41).config).river).toBeNull();
+  });
+
   it('gives a full room six fighters with distinct names and seeds, and the sim accepts it', () => {
     const plan = planOf(start(full()), 7);
     expect(plan.config.players).toHaveLength(6);

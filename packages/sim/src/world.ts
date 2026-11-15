@@ -1,5 +1,5 @@
 import { TUNING } from './config';
-import type { GameEvent, GameState, Hook, HookId, Player, PlayerId } from './types';
+import type { GameEvent, GameState, Hook, HookId, Pickup, PickupId, Player, PlayerId } from './types';
 
 /** What one stage of a step produces: the next state and the events it emitted. */
 export type Outcome = { readonly state: GameState; readonly events: readonly GameEvent[] };
@@ -11,6 +11,10 @@ export type Stage = (state: GameState, ctx: StepContext) => Outcome;
 
 export function findPlayer(state: GameState, id: PlayerId): Player | undefined {
   return state.players.find((p) => p.id === id);
+}
+
+export function findPickup(state: GameState, id: PickupId): Pickup | undefined {
+  return state.pickups.find((p) => p.id === id);
 }
 
 export function updatePlayer(state: GameState, id: PlayerId, update: (p: Player) => Player): GameState {

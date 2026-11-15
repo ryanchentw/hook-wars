@@ -1,5 +1,6 @@
 import { facingCanal, spawnPoint, TEAMS } from './arena';
-import { DEFAULT_ARENA, ECONOMY, TUNING, VISION } from './config';
+import { DEFAULT_ARENA, ECONOMY, PICKUPS, TUNING, VISION } from './config';
+import { createRng } from './rng';
 import { IDLE } from './intent';
 import type { Arena, GameState, MatchConfig, MatchPlayerConfig, Player } from './types';
 
@@ -43,6 +44,7 @@ function spawnPlayer(arena: Arena, cfg: MatchPlayerConfig, spawnIndex: number, g
     upgrades: { damage: 0, range: 0, speed: 0, size: 0 },
     items: { grapple: { kind: 'unowned' }, barb: { kind: 'unowned' } },
     recentDamage: [],
+    effects: [],
   };
 }
 
@@ -60,12 +62,15 @@ export function createMatch(config: MatchConfig): GameState {
     players,
     hooks: [],
     grapples: [],
+    pickups: [],
+    river: config.pickups === true ? { rng: createRng(config.seed ?? 0), nextAt: PICKUPS.firstAt } : null,
     score: { west: 0, east: 0 },
     killTarget: config.killTarget,
     vision: config.fog === true ? { kind: 'fog', radius: VISION.radius } : { kind: 'open' },
     phase: { kind: 'playing' },
     nextHookSeq: 0,
     nextGrappleSeq: 0,
+    nextPickupSeq: 0,
     events: [],
   };
 }

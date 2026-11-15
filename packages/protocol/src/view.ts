@@ -1,4 +1,4 @@
-import type { Arena, GrappleId, HookId, PlayerId, TeamView } from '@hookwars/sim';
+import type { Arena, GrappleId, HookId, PickupId, PlayerId, TeamView } from '@hookwars/sim';
 import { z } from 'zod';
 import { idOf, purchaseSchema, teamSchema } from './common';
 import { RAW_NAME_MAX_LENGTH } from './limits';
@@ -6,10 +6,15 @@ import { RAW_NAME_MAX_LENGTH } from './limits';
 const MAX_FIGHTERS = 6;
 const MAX_EVENTS = 256;
 const MAX_PATH = 64;
+/** One pickup enters every interval and takes about as long to cross, so a handful is already far past normal. */
+const MAX_PICKUPS = 8;
+const MAX_EFFECTS = 2;
 
 const playerId = idOf<PlayerId>();
 const hookId = idOf<HookId>();
 const grappleId = idOf<GrappleId>();
+const pickupId = idOf<PickupId>();
+const pickupKind = z.enum(['gold', 'gale', 'storm']);
 const num = z.number();
 const count = z.number().int().min(0);
 const vec = z.object({ x: num, y: num });
@@ -55,6 +60,7 @@ const seenPlayerSchema = z.object({
   upgrades: z.object({ damage: count, range: count, speed: count, size: count }),
   items: itemsSchema,
   recentDamage: z.array(z.object({ from: playerId, at: num })).max(MAX_FIGHTERS),
+  effects: z.array(z.object({ kind: z.enum(['gale', 'storm']), source: playerId, since: num, until: num })).max(MAX_EFFECTS),
 });
 
 const cardSchema = z.object({
@@ -68,6 +74,20 @@ const cardSchema = z.object({
   earned: count,
 });
 
+const cargoSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('fighter'), id: playerId }),
+  z.object({ kind: z.literal('pickup'), id: pickupId }),
+]);
+
+const pickupSchema = z.object({
+  id: pickupId,
+  kind: pickupKind,
+  pos: vec,
+  from: z.enum(['north', 'south']),
+  lane: num,
+  state: z.discriminatedUnion('kind', [z.object({ kind: z.literal('drifting') }), z.object({ kind: z.literal('carried'), hookId })]),
+});
+
 const hookSchema = z.object({
   id: hookId,
   ownerId: playerId,
@@ -76,7 +96,7 @@ const hookSchema = z.object({
   path: z.array(vec).max(MAX_PATH),
   phase: z.discriminatedUnion('kind', [
     z.object({ kind: z.literal('extending'), remaining: num }),
-    z.object({ kind: z.literal('retracting'), cargo: playerId.nullable() }),
+    z.object({ kind: z.literal('retracting'), cargo: cargoSchema.nullable() }),
   ]),
   stats: z.object({ damage: num, range: num, speed: num, retractSpeed: num, radius: num, barbed: z.boolean() }),
 });
@@ -101,6 +121,9 @@ const eventSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('grappleLand'), grappleId, at: vec }),
   z.object({ kind: z.literal('grappleArrive'), playerId, at: vec }),
   z.object({ kind: z.literal('respawn'), playerId }),
+  z.object({ kind: z.literal('pickupCaught'), pickupId, pickupKind, hookId, ownerId: playerId, at: vec }),
+  z.object({ kind: z.literal('pickupCollected'), pickupId, pickupKind, playerId, gold: count }),
+  z.object({ kind: z.literal('storm'), sourceId: playerId, targetId: playerId, damage: num, at: vec }),
   z.object({ kind: z.literal('matchEnd'), winner: teamSchema }),
 ]);
 
@@ -128,6 +151,7 @@ export const snapViewSchema: z.ZodType<SnapView> = z.object({
   roster: z.array(cardSchema).max(MAX_FIGHTERS),
   hooks: z.array(hookSchema).max(MAX_FIGHTERS),
   grapples: z.array(grappleSchema).max(MAX_FIGHTERS),
+  pickups: z.array(pickupSchema).max(MAX_PICKUPS),
   events: z.array(eventSchema).max(MAX_EVENTS),
 });
 

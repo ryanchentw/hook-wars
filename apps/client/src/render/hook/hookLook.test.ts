@@ -16,7 +16,7 @@ function hook(phase: Hook['phase'], barbed: boolean): Hook {
 
 const OUT = { kind: 'extending', remaining: 400 } as const;
 const EMPTY_BACK = { kind: 'retracting', cargo: null } as const;
-const LOADED_BACK = { kind: 'retracting', cargo: 'e' as PlayerId } as const;
+const LOADED_BACK = { kind: 'retracting', cargo: { kind: 'fighter', id: 'e' as PlayerId } } as const;
 
 describe('hookLook', () => {
   it('reads every outgoing hook as live, barbed or not', () => {

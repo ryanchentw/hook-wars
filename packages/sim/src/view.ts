@@ -59,6 +59,7 @@ export function viewFor(state: GameState, team: TeamId): TeamView {
     roster: state.players.map(card),
     hooks: state.hooks.filter((h) => sight.hooks.has(h.id)).map((h) => seenHook(h, byId.get(h.ownerId), sight)),
     grapples: state.grapples.filter((g) => sight.grapples.has(g.id)).map((g) => seenGrapple(g, byId.get(g.ownerId), sight)),
+    pickups: state.pickups.filter((p) => sight.pickups.has(p.id)),
     events: seenEvents(state.events, sight, (id) => byId.get(id)?.team),
   };
 }

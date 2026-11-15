@@ -47,8 +47,18 @@ export async function setFog(host: Page, on: boolean): Promise<void> {
   await expect(fog).toBeChecked({ checked: on });
 }
 
-/** Two players in one room, a side each, in a match the first of them started. Fog is off unless asked for, since most specs follow the enemy. */
-export async function startDuel(browser: Browser, options: { query?: string; fog?: boolean; guestName?: string; beforeStart?: (host: Page) => Promise<void> } = {}) {
+/** The host sets river pickups and waits for the server to agree. */
+export async function setPickups(host: Page, on: boolean): Promise<void> {
+  const pickups = host.getByRole('switch', { name: 'River pickups' });
+  if ((await pickups.isChecked()) !== on) await pickups.click();
+  await expect(pickups).toBeChecked({ checked: on });
+}
+
+/**
+ * Two players in one room, a side each, in a match the first of them started. Fog is off unless asked for, since most
+ * specs follow the enemy; pickups are off unless asked for, since a seeded pickup drifting across a throw would block it.
+ */
+export async function startDuel(browser: Browser, options: { query?: string; fog?: boolean; pickups?: boolean; guestName?: string; beforeStart?: (host: Page) => Promise<void> } = {}) {
   const [host, guest] = [await player(browser), await player(browser)];
   const query = options.query ?? '';
   const guestName = options.guestName ?? 'Bo';
@@ -56,6 +66,7 @@ export async function startDuel(browser: Browser, options: { query?: string; fog
   await joinByLink(guest, code, guestName, query === '' ? '' : `&${query}`);
   await expect(host.locator('.team-east .slot-human')).toContainText(guestName);
   await setFog(host, options.fog ?? false);
+  await setPickups(host, options.pickups ?? false);
   await options.beforeStart?.(host);
   await host.getByRole('button', { name: 'Start match' }).click();
   await Promise.all([matchUp(host), matchUp(guest)]);

@@ -70,7 +70,7 @@ describe('visibleTo', () => {
 
   it('sees a hook that carries someone, since the one it drags is seen by all', () => {
     const base = withPlayer(apart(1800), 'e', { status: { kind: 'dragged', hookId: 'e-hook' as HookId } });
-    const hauling = { ...base, hooks: [hookOf('e', at(2200, 600), { phase: { kind: 'retracting', cargo: pid('e') } })] };
+    const hauling = { ...base, hooks: [hookOf('e', at(2200, 600), { phase: { kind: 'retracting', cargo: { kind: 'fighter', id: pid('e') } } })] };
     expect(visibleTo(hauling, 'west').hooks.has('e-hook' as HookId)).toBe(true);
   });
 

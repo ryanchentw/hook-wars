@@ -9,6 +9,8 @@ import { createGrapplesView } from './grapple/grapplesView';
 import { createHooksView } from './hook/hooksView';
 import type { Impact } from './impact/impacts';
 import type { PlayerFrame, RenderFrame } from './interpolate';
+import { createAuraView } from './pickups/auraView';
+import { createPickupsView } from './pickups/pickupsView';
 import { createDrift } from './scenes/kit/drift';
 import { createLighting, type Lighting } from './scenes/kit/lighting';
 import { createSky } from './scenes/kit/sky';
@@ -25,6 +27,8 @@ export type StageShared = {
   readonly localPlayerId: PlayerId;
   /** Fog of war over the enemy, seen from the viewer's side; null draws no veil. */
   readonly fog: { readonly viewer: TeamId; readonly radius: number; readonly fadeSeconds: number } | null;
+  /** The viewer asked for less motion. */
+  readonly calm: boolean;
 };
 
 export type StageUpdate = {
@@ -71,9 +75,11 @@ export function createStage(theme: SceneTheme, shared: StageShared): Stage {
   const hooks = createHooksView(hookGeometry, softDot, theme.tints, shared.fog?.fadeSeconds ?? 0);
   const grapples = createGrapplesView(softDot, theme.tints);
   const effects = createEffectsView(softDot);
+  const pickups = createPickupsView({ softDot, waterLevel: theme.water.level, fadeSeconds: shared.fog?.fadeSeconds ?? 0, calm: shared.calm });
+  const auras = createAuraView(softDot, shared.calm);
   const fog = shared.fog === null ? null : createFogLayer({ ...shared.fog, arena: shared.arena, look: theme.fogOfWar });
   const group = new Group();
-  group.add(...scenery.map((part) => part.group), characters.group, hooks.group, grapples.group, effects.group);
+  group.add(...scenery.map((part) => part.group), characters.group, hooks.group, grapples.group, effects.group, pickups.group, auras.group);
   if (fog !== null) group.add(fog.mesh);
 
   return {
@@ -87,6 +93,8 @@ export function createStage(theme: SceneTheme, shared: StageShared): Stage {
       hooks.update(frame, characters.handPosition, dt);
       grapples.update(frame, characters.offHandPosition);
       effects.update(events, impacts, dt, camera, (id) => frameOf(id)?.player.facing ?? null);
+      pickups.update(frame, elapsed, dt);
+      auras.update(frame, events, elapsed, dt, camera);
     },
     retune(look, reflect) {
       lighting.retune(look.lights);
@@ -103,7 +111,7 @@ export function createStage(theme: SceneTheme, shared: StageShared): Stage {
     handPosition: characters.handPosition,
     dispose() {
       characters.clear();
-      [...scenery, hooks, grapples, effects].forEach((part) => part.dispose());
+      [...scenery, hooks, grapples, effects, pickups, auras].forEach((part) => part.dispose());
       fog?.dispose();
     },
   };
