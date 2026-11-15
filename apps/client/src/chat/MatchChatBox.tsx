@@ -13,7 +13,8 @@ export function RateNotice({ limitedAt }: { readonly limitedAt: number | null })
   const now = useNow();
   const shown = limitedAt !== null && now - limitedAt < LIMIT_NOTICE_MS;
   return (
-    <p className="chat-notice" role="status">
+    // aria-live without role="status": the boot screen owns the page's status role.
+    <p className="chat-notice" aria-live="polite">
       {shown ? 'Too fast: that line was not sent.' : ''}
     </p>
   );
