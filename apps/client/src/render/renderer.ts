@@ -166,7 +166,7 @@ export async function createRenderer(graphics: Graphics, session: SessionView, v
   const { vision } = session.getView();
   const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const fog = vision.kind === 'fog' ? { viewer: session.localTeam, radius: vision.radius, fadeSeconds: calm ? 0 : SIGHT_FADE } : null;
-  const shared: StageShared = { arena, assets, softDot, hookGeometry, localPlayerId: session.localPlayerId, fog };
+  const shared: StageShared = { arena, assets, softDot, hookGeometry, localPlayerId: session.localPlayerId, fog, calm };
   const show = createSceneShow(gl, host, shared, view.scene);
   const rig = createCameraRig(arena, session.localPlayerId);
   const opening = createOpening(surface.overlay, calm ? INTRO_TIMING.reduced : INTRO_TIMING.full, events.onIntro);

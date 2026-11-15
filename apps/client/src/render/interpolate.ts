@@ -1,4 +1,4 @@
-import type { Hook, PlayerId, SeenGrapple, SeenPlayer, TeamId, TeamView, Vec2 } from '@hookwars/sim';
+import type { Hook, Pickup, PlayerId, SeenGrapple, SeenPlayer, TeamId, TeamView, Vec2 } from '@hookwars/sim';
 import type { Frame } from '../game/session';
 
 /** `presence` runs from 0 to 1 as a fighter comes into sight, and back down as one leaves it. */
@@ -18,11 +18,14 @@ export type GrappleFrame = {
   readonly team: TeamId | null;
   readonly head: Vec2;
 };
+/** A carried pickup rides at its hook's head, so it is placed there rather than at its own last position. */
+export type PickupFrame = { readonly pickup: Pickup; readonly pos: Vec2 };
 export type RenderFrame = {
   readonly state: TeamView;
   readonly players: readonly PlayerFrame[];
   readonly hooks: readonly HookFrame[];
   readonly grapples: readonly GrappleFrame[];
+  readonly pickups: readonly PickupFrame[];
 };
 
 // A jump larger than this between two ticks is a teleport (respawn), not motion.
@@ -62,11 +65,20 @@ function grappleFrame(previous: TeamView, grapple: SeenGrapple, alpha: number, t
   return { grapple, team: teamOf(grapple.ownerId), head: before === undefined ? grapple.pos : lerp(before.pos, grapple.pos, alpha) };
 }
 
+function pickupFrame(previous: TeamView, pickup: Pickup, hooks: readonly HookFrame[], alpha: number): PickupFrame {
+  const { state } = pickup;
+  const carrier = state.kind === 'carried' ? hooks.find((h) => h.hook.id === state.hookId) : undefined;
+  if (carrier !== undefined) return { pickup, pos: carrier.head };
+  const before = previous.pickups.find((p) => p.id === pickup.id);
+  return { pickup, pos: before === undefined || before.state.kind !== 'drifting' ? pickup.pos : lerp(before.pos, pickup.pos, alpha) };
+}
+
 export function interpolateFrame(frame: Frame): RenderFrame {
   const { previous, current, alpha } = frame;
   const players = current.players.map((p) => playerFrame(previous, p, alpha));
   const teamOf: TeamOf = (id) => current.roster.find((c) => c.id === id)?.team ?? null;
   const hooks = current.hooks.map((h) => hookFrame(previous, h, players, alpha, teamOf));
   const grapples = current.grapples.map((g) => grappleFrame(previous, g, alpha, teamOf));
-  return { state: current, players, hooks, grapples };
+  const pickups = current.pickups.map((p) => pickupFrame(previous, p, hooks, alpha));
+  return { state: current, players, hooks, grapples, pickups };
 }
