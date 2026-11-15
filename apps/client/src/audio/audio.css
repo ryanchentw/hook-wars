@@ -1,0 +1,78 @@
+.audio-settings {
+  box-sizing: border-box;
+  inline-size: 100%;
+  margin: 18px 0 0;
+  padding: 12px 14px 10px;
+  border: 1px solid var(--iron-dim);
+  border-radius: 2px;
+  text-align: start;
+  accent-color: var(--gold);
+}
+
+.audio-settings legend {
+  padding: 0 6px;
+}
+
+.audio-row {
+  display: grid;
+  grid-template-columns: 4.5em 1fr 3.2em;
+  align-items: center;
+  gap: 10px;
+}
+
+.audio-label,
+.audio-mute label {
+  font: 700 13px var(--font-display);
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+
+.audio-slider {
+  inline-size: 100%;
+  min-inline-size: 0;
+  block-size: 32px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.audio-slider:focus-visible,
+.audio-mute input:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+.audio-value {
+  font: 13px var(--font);
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+  color: var(--muted);
+}
+
+.audio-mute {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.audio-mute input {
+  inline-size: 18px;
+  block-size: 18px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.audio-mute label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.audio-key {
+  padding: 1px 6px;
+  border: 1px solid var(--iron);
+  border-radius: 2px;
+  font: 600 11px var(--font);
+  color: var(--muted);
+}

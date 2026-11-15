@@ -8,6 +8,7 @@ import { pageOptionsFromQuery } from './app/matchSetup';
 import { createNameStore } from './app/nameStore';
 import { browserOnline } from './app/onlineSetup';
 import { createRouter } from './app/route';
+import { startAudio } from './audio/startAudio';
 import { createBootScreen } from './boot/bootScreen';
 import { loadAssets } from './render/assets/loadAssets';
 import { createBackdrop } from './render/backdrop';
@@ -52,6 +53,7 @@ async function start(): Promise<void> {
       },
     });
     createRoot(hud).render(<App app={app} />);
+    startAudio(window, app, import.meta.env.BASE_URL);
   } catch (error) {
     // Leave nothing half-started behind, so "Try again" begins from a clean page.
     graphics.dispose();

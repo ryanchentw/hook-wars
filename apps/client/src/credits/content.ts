@@ -1,7 +1,7 @@
 /**
  * Credits copy, kept apart from layout so a name or fact can be corrected here alone.
- * Every line was checked against the original map's loading screen or the Hive Workshop thread;
- * do not add names, dates or links that those sources do not support.
+ * Every line was checked against the original map's loading screen or the Hive Workshop thread, and each asset
+ * entry against its pack's licence file or its item page; do not add names, dates or links those sources do not support.
  */
 
 export type CreditEntry = { readonly name: string; readonly text: string };
@@ -63,6 +63,20 @@ export const CREDITS: CreditsContent = {
           name: 'Kay Lousberg',
           text: '角色和場景的 3D 模型來自 KayKit 系列（Adventurers、Dungeon Remastered），以 CC0 授權釋出（www.kaylousberg.com）。',
         },
+      ],
+    },
+    {
+      heading: '音效與音樂',
+      entries: [
+        {
+          name: 'Kenney',
+          text: '大部分音效來自 Impact Sounds、RPG Audio、Interface Sounds、Digital Audio、Sci-Fi Sounds 和 Music Jingles 音效包，以 CC0 授權釋出（www.kenney.nl）。',
+        },
+        { name: 'artisticdude', text: '出鉤的破風聲來自 Swishes Sound Pack，以 CC0 授權釋出（opengameart.org）。' },
+        { name: 'SketchMan3', text: '拿到 Gale 時的風聲來自 Wind Woosh Loop，以 CC0 授權釋出（opengameart.org）。' },
+        { name: 'WuxiaScrub', text: '拿到 Storm 時的雷聲來自 Rain Long Thunder，以 CC0 授權釋出（opengameart.org）。' },
+        { name: 'Ruskerdax', text: '選單與大廳的音樂是〈Pondering the Cosmos〉，以 CC0 授權釋出（opengameart.org）。' },
+        { name: 'Wolfgang_', text: '對戰中的音樂是〈Battle Theme〉，以 CC0 授權釋出（opengameart.org）。' },
       ],
     },
   ],

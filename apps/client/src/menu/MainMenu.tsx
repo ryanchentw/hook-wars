@@ -1,6 +1,7 @@
 import { parseName } from '@hookwars/room';
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import type { Invite } from '../app/onlineMode';
+import { AudioSettings } from '../audio/AudioSettings';
 import { parseRoomCode } from '../app/roomAddress';
 import { CreditsLink } from '../hud/labels';
 import { Notice } from '../screens/Notice';
@@ -156,6 +157,7 @@ export function MainMenu({ name, notice, invite, connecting, onPlay, onCreate, o
           </button>
         </section>
         <Notice text={notice} />
+        <AudioSettings />
         <div className="menu-links">
           <CreditsLink />
         </div>

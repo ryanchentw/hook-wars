@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from 'react';
+import { AudioSettings } from '../audio/AudioSettings';
 import { CreditsLink } from './labels';
 
 type Props = {
@@ -38,6 +39,7 @@ export function PauseMenu({ open, holds, leaveLabel, onResume, onLeave }: Props)
         </button>
         <CreditsLink />
       </div>
+      <AudioSettings />
     </dialog>
   );
 }
