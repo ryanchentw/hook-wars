@@ -1,4 +1,5 @@
 import { TUNING } from '@hookbrawl/sim';
+import { fighterName } from '../game/fighterName';
 import type { Player, PlayerCard, PlayerId, TeamId, TeamView } from '@hookbrawl/sim';
 import { grappleView, shopSlots, type GrappleView, type ShopSlotView, type SlotId, type PurchaseOutcome } from './shopView';
 
@@ -49,7 +50,6 @@ export type ScoreRow = {
   /** Null for an enemy under fog. */
   readonly gold: number | null;
   readonly isLocal: boolean;
-  readonly isBot: boolean;
 };
 
 /** Every fighter, side by side, in roster order within each side. */
@@ -71,7 +71,7 @@ export type HudView = {
 
 export const KILL_FEED_SIZE = 4;
 
-const named = (p: PlayerCard): Named => ({ name: p.name, team: p.team });
+const named = (p: PlayerCard): Named => ({ name: fighterName(p), team: p.team });
 
 /** The local player with their purse, which their own team always sees; undefined once they are not in the view. */
 export function ownPlayer(state: TeamView, localId: PlayerId): Player | undefined {
@@ -121,14 +121,13 @@ function localView(state: TeamView, me: Player): LocalView {
 
 const scoreRow = (p: PlayerCard, localId: PlayerId): ScoreRow => ({
   id: p.id,
-  name: p.name,
+  name: fighterName(p),
   team: p.team,
   kills: p.kills,
   deaths: p.deaths,
   assists: p.assists,
   gold: p.gold,
   isLocal: p.id === localId,
-  isBot: p.isBot,
 });
 
 function scoreboardOf(state: TeamView, localId: PlayerId): Scoreboard {

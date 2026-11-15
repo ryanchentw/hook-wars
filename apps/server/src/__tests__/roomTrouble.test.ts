@@ -21,6 +21,21 @@ describe('dropping out of a match', () => {
     expect(after.gold).toBeGreaterThanOrEqual(before.gold + 5 * 49);
   });
 
+  it('tells both teams the dropped fighter is a bot, and that it is not once its member takes it back', () => {
+    const { h, west, east } = started();
+    const shownAsBot = () => h.last(west, 'snap').view.roster.find((p) => p.id === EAST)!.isBot;
+    h.run(TICK_MS * 4);
+    expect(shownAsBot()).toBe(false);
+    h.disconnect(east);
+    h.run(1000);
+    expect(shownAsBot()).toBe(true);
+    h.rejoin(h.tokenOf(east));
+    expect(h.last(east, 'welcome').match!.view.roster.find((p) => p.id === EAST)!.isBot).toBe(false);
+    h.run(1000);
+    expect(shownAsBot()).toBe(false);
+    expect(h.last(east, 'snap').view.players.find((p) => p.id === EAST)!.isBot).toBe(false);
+  });
+
   it('stops sending to the dropped member and keeps sending to the rest', () => {
     const { h, west, east } = started();
     h.disconnect(east);

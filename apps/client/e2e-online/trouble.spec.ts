@@ -5,6 +5,9 @@ test.use({ viewport: DESKTOP });
 
 const GRAPPLE_KEY = 'Digit5';
 const STARTING_GOLD = 150;
+const PHONE = { width: 390, height: 844 };
+/** The widest name a player may pick: 16 of the widest letter. */
+const LONG_NAME = 'WWWWWWWWWWWWWWWW';
 
 const goldOf = (page: Page, id: string): Promise<number | null> => page.evaluate((playerId) => window.__hookbrawl!.getView().players.find((p) => p.id === playerId)?.gold ?? null, id);
 
@@ -41,6 +44,41 @@ test('a dropped player sees a countdown, is played by a bot, and gets the fighte
   const back = (await posOf(guest, EAST))!;
   await walkUntil(guest, ['KeyW'], EAST, (pos) => pos.y <= back.y - 60 || pos.y <= 40);
   await expect.poll(async () => Math.abs((await posOf(host, EAST))!.y - (await posOf(guest, EAST))!.y), { timeout: 10_000 }).toBeLessThan(1);
+  await close(host, guest);
+});
+
+test('a dropped player is shown as (bot) over their fighter and on the scoreboard until they take it back', async ({ browser }) => {
+  const { host, guest } = await startDuel(browser, { guestName: LONG_NAME });
+  const label = host.locator('.unit-name', { hasText: LONG_NAME });
+  const row = host.getByRole('region', { name: 'Scoreboard' }).locator('tbody th[scope="row"]', { hasText: LONG_NAME });
+  await host.getByRole('button', { name: 'Scores' }).click();
+  await expect(label).toHaveText(LONG_NAME);
+  await expect(row).toHaveText(LONG_NAME);
+
+  await guest.evaluate(() => {
+    window.__hookbrawlNet!.block(true);
+    window.__hookbrawlNet!.drop();
+  });
+  await expect(label).toHaveText(`${LONG_NAME} (bot)`, { timeout: 15_000 });
+  await expect(row).toHaveText(`${LONG_NAME} (bot)`);
+  await expect(label).toBeVisible();
+  await host.screenshot({ path: `${SHOT_DIR}/botname-online-dropped.png` });
+  await host.setViewportSize(PHONE);
+  await expect(label).toBeVisible();
+  const board = (await host.getByRole('region', { name: 'Scoreboard' }).boundingBox())!;
+  const table = (await host.getByRole('region', { name: 'Scoreboard' }).locator('table').boundingBox())!;
+  expect(table.x + table.width).toBeLessThanOrEqual(board.x + board.width + 0.5);
+  const labelBox = (await label.boundingBox())!;
+  expect(labelBox.x).toBeGreaterThanOrEqual(0);
+  expect(labelBox.x + labelBox.width).toBeLessThanOrEqual(PHONE.width);
+  expect(await host.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(PHONE.width);
+  await host.screenshot({ path: `${SHOT_DIR}/botname-online-dropped-phone.png` });
+  await host.setViewportSize(DESKTOP);
+
+  await guest.evaluate(() => window.__hookbrawlNet!.block(false));
+  await expect(guest.locator('.net-status')).toContainText('Online', { timeout: 15_000 });
+  await expect(label).toHaveText(LONG_NAME, { timeout: 5_000 });
+  await expect(row).toHaveText(LONG_NAME);
   await close(host, guest);
 });
 

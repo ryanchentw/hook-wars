@@ -8,5 +8,6 @@ export { step } from './step';
 export { walkPlayer } from './movement';
 export { steerIntent } from './intent';
 export { createBotBrain, botThink } from './bot';
+export { withBotControl } from './control';
 export { visibleTo, seesPoint, type Sight, type SightArea } from './vision';
 export { viewFor } from './view';

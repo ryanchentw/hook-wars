@@ -48,12 +48,13 @@ export async function setFog(host: Page, on: boolean): Promise<void> {
 }
 
 /** Two players in one room, a side each, in a match the first of them started. Fog is off unless asked for, since most specs follow the enemy. */
-export async function startDuel(browser: Browser, options: { query?: string; fog?: boolean; beforeStart?: (host: Page) => Promise<void> } = {}) {
+export async function startDuel(browser: Browser, options: { query?: string; fog?: boolean; guestName?: string; beforeStart?: (host: Page) => Promise<void> } = {}) {
   const [host, guest] = [await player(browser), await player(browser)];
   const query = options.query ?? '';
+  const guestName = options.guestName ?? 'Bo';
   const code = await createRoom(host, 'Ada', query === '' ? '' : `?${query}`);
-  await joinByLink(guest, code, 'Bo', query === '' ? '' : `&${query}`);
-  await expect(host.locator('.team-east .slot-human')).toContainText('Bo');
+  await joinByLink(guest, code, guestName, query === '' ? '' : `&${query}`);
+  await expect(host.locator('.team-east .slot-human')).toContainText(guestName);
   await setFog(host, options.fog ?? false);
   await options.beforeStart?.(host);
   await host.getByRole('button', { name: 'Start match' }).click();

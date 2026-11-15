@@ -4,9 +4,10 @@ import type { Viewport } from '../camera/framing';
 import type { Impact } from '../impact/impacts';
 import type { RenderFrame } from '../interpolate';
 import { simToWorld, type Vec3 } from '../space';
+import { fighterName } from '../../game/fighterName';
 import { SIZES } from '../theme';
 import { createDamageNumbers } from './damageNumbers';
-import { createLabels, type LabelView } from './labels';
+import { createLabels, type Labels, type LabelView } from './labels';
 import { keepInView, spreadLabels } from './spreadLabels';
 import './overlay.css';
 
@@ -17,18 +18,22 @@ export type WorldOverlay = {
   clear(): void;
 };
 
-/** Screen room one name-and-bar block needs before the next must be stacked clear of it. */
+/** Screen room the narrowest name-and-bar block needs before the next must be stacked clear of it. */
 const LABEL_BOX = { width: 72, height: SIZES.labelBlockPx };
+/** Clear air left between two labels side by side. */
+const LABEL_GAP_PX = 8;
 
-function labelsFor(frame: RenderFrame, project: (world: Vec3) => Vec2, viewport: Viewport): readonly LabelView[] {
+function labelsFor(frame: RenderFrame, labels: Labels, project: (world: Vec3) => Vec2, viewport: Viewport): readonly LabelView[] {
+  const widths = frame.players.map(({ player }) => Math.max(LABEL_BOX.width, (labels.widthOf(player.id) ?? 0) + LABEL_GAP_PX));
   const spread = spreadLabels(
     frame.players.map(({ player, pos }) => (player.status.kind === 'dead' ? null : project(simToWorld(pos, SIZES.labelHeight)))),
-    LABEL_BOX,
+    widths,
+    LABEL_BOX.height,
   );
-  const anchors = spread.map((anchor) => (anchor === null ? null : keepInView(anchor, LABEL_BOX, viewport)));
+  const anchors = spread.map((anchor, i) => (anchor === null ? null : keepInView(anchor, { width: widths[i] ?? LABEL_BOX.width, height: LABEL_BOX.height }, viewport)));
   return frame.players.map(({ player, presence }, i) => ({
     id: player.id,
-    name: player.name,
+    name: fighterName(player),
     team: player.team,
     hpFraction: player.hp / TUNING.maxHp,
     presence,
@@ -43,7 +48,7 @@ export function createWorldOverlay(parent: HTMLElement): WorldOverlay {
   return {
     update(frame, impacts, { project, viewport }, dt) {
       const positionOf = (id: PlayerId): Vec2 | null => frame.players.find((p) => p.player.id === id)?.pos ?? null;
-      labels.update(labelsFor(frame, project, viewport), dt);
+      labels.update(labelsFor(frame, labels, project, viewport), dt);
       damage.spawn(impacts);
       damage.update(dt, project, positionOf);
     },

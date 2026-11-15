@@ -38,12 +38,12 @@ describe('deriveHud', () => {
       fakePlayer({ id: 'ally' as PlayerId, name: 'Gull', isBot: true, assists: 4 }),
     ];
     const board = deriveHud(fakeView({ players: roster }), HUMAN, []).scoreboard;
-    expect(board.west.map((r) => [r.name, r.isLocal, r.isBot])).toEqual([
-      ['You', true, false],
-      ['Gull', false, true],
+    expect(board.west.map((r) => [r.name, r.isLocal])).toEqual([
+      ['You', true],
+      ['Gull (bot)', false],
     ]);
     expect(board.west[0]).toMatchObject({ kills: 2, deaths: 1, assists: 3, gold: 40 });
-    expect(board.east.map((r) => r.name)).toEqual(['Pike']);
+    expect(board.east.map((r) => r.name)).toEqual(['Pike (bot)']);
   });
 
   it('keeps hidden enemies on the board under fog, with their gold hidden and ours shown', () => {
@@ -81,6 +81,7 @@ describe('appendKills', () => {
     expect(feed).toHaveLength(KILL_FEED_SIZE);
     expect(feed[0]?.key.startsWith('10-')).toBe(true);
     expect(feed[0]?.killer.name).toBe('You');
+    expect(feed[0]?.victim.name).toBe('Bot (bot)');
   });
 
   it('lists a kill once even when the same state is seen twice', () => {

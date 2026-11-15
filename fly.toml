@@ -2,7 +2,7 @@
 # Nothing here has been deployed. DEPLOY.md has the commands.
 
 # A placeholder. App names are global on Fly: pick your own, and put the same name here.
-app = "hook-wars-change-me"
+app = "hook-wars"
 
 # Tokyo. Of Fly's regions it and Hong Kong (hkg) are the nearest to Taiwan; see DEPLOY.md for how to compare them.
 primary_region = "nrt"

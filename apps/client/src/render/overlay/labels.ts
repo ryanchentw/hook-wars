@@ -13,9 +13,21 @@ export type LabelView = {
   readonly anchor: Vec2 | null;
 };
 
-export type Labels = { update(views: readonly LabelView[], dt: number): void; clear(): void };
+export type Labels = {
+  update(views: readonly LabelView[], dt: number): void;
+  /** CSS pixels the label took when last shown, or null before it has been shown with its current name. */
+  widthOf(id: PlayerId): number | null;
+  clear(): void;
+};
 
-type Entry = { readonly root: HTMLElement; readonly fill: HTMLElement; readonly lost: HTMLElement; readonly loss: HpLoss };
+type Entry = {
+  readonly root: HTMLElement;
+  readonly name: HTMLElement;
+  readonly fill: HTMLElement;
+  readonly lost: HTMLElement;
+  readonly loss: HpLoss;
+  readonly width: number | null;
+};
 
 const percent = (fraction: number): string => `${(fraction * 100).toFixed(1)}%`;
 const clamp01 = (value: number): number => Math.min(1, Math.max(0, value));
@@ -36,8 +48,17 @@ function createEntry(parent: HTMLElement, view: LabelView): Entry {
   bar.append(lost, fill);
   root.append(name, bar);
   parent.append(root);
-  return { root, fill, lost, loss: startLoss(clamp01(view.hpFraction)) };
+  return { root, name, fill, lost, loss: startLoss(clamp01(view.hpFraction)), width: null };
 }
+
+/** A name can change mid-match, as when a bot takes over a fighter; the width is measured again once it is on screen. */
+function renamed(entry: Entry, name: string): Entry {
+  if (entry.name.textContent === name) return entry;
+  entry.name.textContent = name;
+  return { ...entry, width: null };
+}
+
+const measured = (entry: Entry): Entry => (entry.width !== null || entry.root.hidden ? entry : { ...entry, width: entry.root.offsetWidth });
 
 /** Name and hp bar floating over each character, as DOM so the text stays crisp at any zoom. */
 export function createLabels(parent: HTMLElement): Labels {
@@ -47,7 +68,8 @@ export function createLabels(parent: HTMLElement): Labels {
     update(views, dt) {
       const next = new Map<PlayerId, Entry>();
       for (const view of views) {
-        const entry = entries.get(view.id) ?? createEntry(parent, view);
+        const known = entries.get(view.id);
+        const entry = known === undefined ? createEntry(parent, view) : renamed(known, view.name);
         const fraction = clamp01(view.hpFraction);
         const loss = stepLoss(entry.loss, fraction, dt);
         entry.root.hidden = view.anchor === null || view.presence <= 0;
@@ -58,13 +80,14 @@ export function createLabels(parent: HTMLElement): Labels {
         entry.fill.style.width = percent(fraction);
         entry.fill.dataset.level = hpLevel(fraction);
         if (loss !== entry.loss) entry.lost.style.width = percent(loss.shown);
-        next.set(view.id, loss === entry.loss ? entry : { ...entry, loss });
+        next.set(view.id, measured(loss === entry.loss ? entry : { ...entry, loss }));
       }
       entries.forEach((entry, id) => {
         if (!next.has(id)) entry.root.remove();
       });
       entries = next;
     },
+    widthOf: (id) => entries.get(id)?.width ?? null,
     clear() {
       entries.forEach((entry) => entry.root.remove());
       entries = new Map();

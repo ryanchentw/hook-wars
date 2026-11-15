@@ -29,7 +29,8 @@
 .score-table tbody th[scope='row'] {
   text-align: left;
   font-weight: 700;
-  white-space: nowrap;
+  /* A 16-letter name with its (bot) suffix is wider than a phone's table: it wraps rather than pushing the numbers out. */
+  overflow-wrap: anywhere;
 }
 
 .score-side th {

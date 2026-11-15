@@ -47,6 +47,7 @@ export type Player = {
   readonly id: PlayerId;
   readonly name: string;
   readonly team: TeamId;
+  /** A computer drives this fighter right now: a bot, or a stand-in for a member who dropped. */
   readonly isBot: boolean;
   readonly spawnIndex: number;
   readonly pos: Vec2;
@@ -192,6 +193,7 @@ export type MatchPlayerConfig = {
   readonly id: PlayerId;
   readonly name: string;
   readonly team: TeamId;
+  /** A computer drives this fighter from the start. */
   readonly isBot: boolean;
 };
 
@@ -221,6 +223,7 @@ export type PlayerCard = {
   readonly id: PlayerId;
   readonly name: string;
   readonly team: TeamId;
+  /** A computer drives this fighter right now: a bot, or a stand-in for a member who dropped. */
   readonly isBot: boolean;
   readonly kills: number;
   readonly deaths: number;
