@@ -1,4 +1,6 @@
 **/node_modules
+.pnpm-store
+assets.local
 **/dist
 **/coverage
 **/test-results

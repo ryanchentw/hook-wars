@@ -62,6 +62,7 @@ export function instantiateCharacter(asset: CharacterAsset, team: TeamId, tints:
   const palette = tints.teams[team];
   const materials: MeshStandardMaterial[] = [];
   const skinned: SkinnedMesh[] = [];
+  const abomination = asset.scene.userData.hookwarsCharacter === 'abomination';
 
   root.traverse((node) => {
     if (!(node instanceof Mesh)) return;
@@ -70,7 +71,13 @@ export function instantiateCharacter(asset: CharacterAsset, team: TeamId, tints:
       return;
     }
     const source = (Array.isArray(node.material) ? node.material[0] : node.material) as MeshStandardMaterial;
-    const material = dress(node.name, source, palette, tints.characterSelfLight);
+    const material = abomination ? source.clone() : dress(node.name, source, palette, tints.characterSelfLight);
+    if (abomination) {
+      if (source.userData.hookwarsTeamColor === true) material.color.setHex(palette.signal);
+      material.emissive.copy(material.color);
+      material.emissiveMap = material.map;
+      material.emissiveIntensity = tints.characterSelfLight;
+    }
     rim.light(material, palette.glow);
     node.material = material;
     materials.push(material);

@@ -6,7 +6,7 @@ A hook duel across the water, in the browser. Two teams stand on opposite banks,
 
 ![Hook Wars](apps/client/public/og.jpg)
 
-Hook Wars is an original game inspired by the Warcraft III custom map Pudge Wars. It borrows the idea of the mechanic and nothing else: the name, characters, art and code are its own. The in-game credits page thanks the map's authors.
+Hook Wars is a browser game inspired by the Warcraft III custom map Pudge Wars. Its code and arenas are independently made; the fighters use an adapted Warcraft III Abomination model. The in-game credits page thanks the map and asset authors.
 
 ## How to play
 
@@ -98,7 +98,8 @@ Rooms live in that machine's memory, so there is exactly one machine, and a depl
 ## Credits
 
 - Inspired by Pudge Wars, a Warcraft III custom map, and the people who built and maintained it. The in-game credits page lists them.
-- Character and dungeon models are from the KayKit packs by Kay Lousberg (<https://www.kaylousberg.com>), released under CC0. Their licence files are in `apps/client/public/assets/kaykit/`.
+- The Abomination character is adapted from johnwar's Re-Classic model, based on Ujimasa Hojo / Blizzard Entertainment's Abomination and Derivatives. The model and textures are credited in `apps/client/public/assets/wc3/CREDITS.txt`; they are not CC0.
+- Dungeon props and the original knight model are from the KayKit packs by Kay Lousberg (<https://www.kaylousberg.com>), released under CC0. Their licence files are in `apps/client/public/assets/kaykit/`.
 - The Victoria Harbour, Golden Gate and Daan Forest Park scenes are generated in code and use no third-party assets.
 
-Hook Wars is an unofficial fan project. It is not affiliated with or endorsed by Blizzard Entertainment, Valve, or the authors of the original map, and uses none of their art, audio or code.
+Hook Wars is an unofficial fan project. It is not affiliated with or endorsed by Blizzard Entertainment, Valve, or the authors of the original map. Third-party model and texture rights remain with their respective owners.

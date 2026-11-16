@@ -2,7 +2,7 @@ import type { TeamId } from '@hookwars/sim';
 import { Mesh, SkinnedMesh, type AnimationClip, type BufferGeometry, type MeshStandardMaterial, type Object3D, type Texture } from 'three';
 import { GLTFLoader, type GLTF } from 'three/addons/loaders/GLTFLoader.js';
 import { REQUIRED_CLIPS } from '../characters/animation';
-import { CHARACTER_FILES, HAND_BONE, PROP_FILES, type PropName } from './manifest';
+import { CHARACTER_FILES, HAND_BONE, OFF_HAND_BONE, PROP_FILES, type PropName } from './manifest';
 
 export type CharacterAsset = {
   /** Template scene; instances are made with `SkeletonUtils.clone`. */
@@ -45,7 +45,9 @@ function toCharacter(file: string, gltf: GLTF): CharacterAsset {
   const clips = new Map(gltf.animations.map((clip) => [clip.name, clip]));
   const missing = REQUIRED_CLIPS.filter((name) => !clips.has(name));
   if (missing.length > 0) throw new AssetLoadError(file, `missing animation ${missing.join(', ')}`);
-  if (gltf.scene.getObjectByName(HAND_BONE) === undefined) throw new AssetLoadError(file, `missing bone ${HAND_BONE}`);
+  for (const bone of [HAND_BONE, OFF_HAND_BONE]) {
+    if (gltf.scene.getObjectByName(bone) === undefined) throw new AssetLoadError(file, `missing bone ${bone}`);
+  }
   let skinned = false;
   gltf.scene.traverse((node) => {
     if (node instanceof SkinnedMesh) skinned = true;

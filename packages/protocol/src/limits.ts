@@ -2,7 +2,7 @@
 export const PROTOCOL_VERSION = 4;
 
 /** The release a player or the health check reports. Kept equal to every package.json by a test. */
-export const GAME_VERSION = '0.1.0';
+export const GAME_VERSION = '0.2.0';
 
 /** No client message comes near this; the server's socket refuses anything longer before it is read. */
 export const MAX_CLIENT_MESSAGE_BYTES = 2048;

@@ -1,0 +1,21 @@
+Abomination (Re-Classic)
+
+Model author: johnwar
+https://www.hiveworkshop.com/threads/abomination-re-classic.357166/
+Based on Abomination and Derivatives by Ujimasa Hojo / Blizzard Entertainment:
+https://www.hiveworkshop.com/threads/abomination-and-derivatives.237374/
+Original Warcraft III model and textures: Blizzard Entertainment.
+
+Adaptation for Hook Wars: converted MDX to GLB, preserved eight source animation
+sequences, added game animation aliases and hand attachments, corrected texture
+coordinates, flattened team-colour material, removed built-in chain/hook and fly
+cards, and omitted particle, portrait and decay effects.
+
+Converted with wc3studio 1.6.4 (MIT-licensed conversion code):
+https://github.com/zxclushkin/wc3studio
+The converter's MIT license does not license the game model or textures.
+
+The model author permits editing with proper credits. Original model and texture
+rights remain with their respective owners. This asset is not CC0, and attribution
+does not itself grant an additional license to Blizzard's underlying content.
+Hook Wars is an unofficial fan project, without affiliation or endorsement.

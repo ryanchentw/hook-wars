@@ -60,8 +60,12 @@ export const CREDITS: CreditsContent = {
       heading: '美術素材',
       entries: [
         {
+          name: 'johnwar、Ujimasa Hojo 與 Blizzard Entertainment',
+          text: '縫合怪使用 johnwar 的 Abomination (Re-Classic)，基於 Ujimasa Hojo 的 Abomination and Derivatives；原始模型與貼圖來自 Blizzard Entertainment。模型經轉檔並調整動畫與鉤子掛點（hiveworkshop.com/threads/abomination-re-classic.357166/）。',
+        },
+        {
           name: 'Kay Lousberg',
-          text: '角色和場景的 3D 模型來自 KayKit 系列（Adventurers、Dungeon Remastered），以 CC0 授權釋出（www.kaylousberg.com）。',
+          text: '場景道具與原版騎士模型來自 KayKit 系列（Adventurers、Dungeon Remastered），以 CC0 授權釋出（www.kaylousberg.com）。',
         },
       ],
     },
@@ -83,7 +87,7 @@ export const CREDITS: CreditsContent = {
   about: {
     heading: '關於這個專案',
     paragraphs: [
-      'Hook Wars 是非官方的同人致敬作品，與上述任何作者或公司沒有關係，也沒有使用原地圖的任何圖像、模型、音效或程式碼。角色、美術和場地都是重新設計的。Warcraft、Dota 及相關名稱是其各自權利人的商標。',
+      'Hook Wars 是非官方的同人致敬作品，與上述任何作者或公司沒有隸屬或背書關係。角色模型與貼圖的來源列於美術素材；遊戲程式碼與場地另行製作。Warcraft、Dota 及相關名稱是其各自權利人的商標。',
       '如果你是上面任何一位作者，希望我們修改或移除關於你的內容，請跟我們說。',
     ],
   },

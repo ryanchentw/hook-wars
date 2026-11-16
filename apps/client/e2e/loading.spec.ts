@@ -1,6 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 
-const MODELS = '**/assets/kaykit/**/*.glb';
+const MODELS = '**/assets/**/*.glb';
 
 async function tick(page: Page): Promise<number> {
   return page.evaluate(() => window.__hookwars!.getState().tick);
@@ -10,7 +10,7 @@ test('shows a loading panel, then a retryable error when a model fails, and star
   const heldProps: Route[] = [];
   const heldCharacters: Route[] = [];
   await page.route(MODELS, (route) => {
-    (route.request().url().includes('/characters/') ? heldCharacters : heldProps).push(route);
+    (route.request().url().includes('/wc3/') ? heldCharacters : heldProps).push(route);
   });
   await page.goto('/?seed=1&intro=off');
 
@@ -21,10 +21,11 @@ test('shows a loading panel, then a retryable error when a model fails, and star
   expect(await page.evaluate(() => window.__hookwars === undefined)).toBe(true);
   await expect(page.locator('#stage canvas')).toHaveCount(0);
 
+  await expect.poll(() => heldCharacters.length).toBe(1);
   await Promise.all(heldCharacters.map((route) => route.abort()));
   const alert = page.getByRole('alert');
   const retry = page.getByRole('button', { name: 'Try again' });
-  await expect(alert).toContainText('Could not load characters/');
+  await expect(alert).toContainText('Could not load ../wc3/Abomination.glb');
   await expect(stage).toHaveAttribute('data-state', 'error');
 
   // The other downloads finishing late must not paint the progress bar back over the error.

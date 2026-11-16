@@ -1,9 +1,9 @@
 import type { TeamId } from '@hookwars/sim';
 
-/** KayKit models (CC0, Kay Lousberg), served from `public/assets/kaykit/`. */
+/** Paths relative to the shared KayKit asset base. WC3 attribution is in assets/wc3/CREDITS.txt. */
 export const CHARACTER_FILES: Readonly<Record<TeamId, string>> = {
-  west: 'characters/Knight.glb',
-  east: 'characters/Knight.glb',
+  west: '../wc3/Abomination.glb',
+  east: '../wc3/Abomination.glb',
 };
 
 export const PROP_FILES = {
